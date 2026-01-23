@@ -1,0 +1,266 @@
+<?php
+
+use App\Http\Controllers\Admin\CourierAssignmentController;
+use App\Http\Controllers\Api\Auth\LoginController;
+use App\Http\Controllers\Api\Auth\RegisterController;
+use App\Http\Controllers\Api\Customer\OrderController as CustomerOrderController;
+use App\Http\Controllers\Api\Customer\PharmacyController;
+use App\Http\Controllers\Api\Customer\PrescriptionController;
+use App\Http\Controllers\Api\Pharmacy\OrderController as PharmacyOrderController;
+use App\Http\Controllers\Api\Pharmacy\InventoryController;
+use App\Http\Controllers\Api\Courier\DeliveryController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\WebhookController;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+*/
+
+// Webhooks (no auth required, rate limited by IP)
+Route::middleware('throttle:webhook')->group(function () {
+    Route::post('/webhooks/cinetpay', [WebhookController::class, 'cinetpay'])->name('webhooks.cinetpay');
+    Route::post('/webhooks/jeko', [\App\Http\Controllers\Api\JekoWebhookController::class, 'handle'])->name('webhooks.jeko');
+    Route::get('/webhooks/jeko/health', [\App\Http\Controllers\Api\JekoWebhookController::class, 'health']);
+});
+
+// JEKO Payment Callbacks (no auth required - redirect from JEKO)
+Route::get('/payments/callback/success', [\App\Http\Controllers\Api\JekoPaymentController::class, 'callbackSuccess']);
+Route::get('/payments/callback/error', [\App\Http\Controllers\Api\JekoPaymentController::class, 'callbackError']);
+
+// SANDBOX: Route pour confirmer un paiement en mode test (sans vraie passerelle JEKO)
+// SECURITY: Cette route n'est disponible qu'en environnement local/testing
+if (app()->environment('local', 'testing')) {
+    Route::get('/payments/sandbox/confirm', [\App\Http\Controllers\Api\JekoPaymentController::class, 'sandboxConfirm']);
+}
+
+// Public Data Routes (rate limited for public access)
+Route::middleware('throttle:public')->group(function () {
+    Route::get('/duty-zones', [\App\Http\Controllers\Api\Pharmacy\DutyZoneController::class, 'index']);
+    Route::get('/duty-zones/{id}', [\App\Http\Controllers\Api\Pharmacy\DutyZoneController::class, 'show']);
+});
+
+// Public Product routes (no auth required - customers can browse)
+// Rate limited for search operations
+Route::prefix('products')->middleware('throttle:search')->group(function () {
+    Route::get('/', [ProductController::class, 'index']);
+    Route::get('/featured', [ProductController::class, 'featured']);
+    Route::get('/categories', [ProductController::class, 'categories']);
+    Route::get('/category/{category}', [ProductController::class, 'byCategory']);
+    Route::get('/search', [ProductController::class, 'search']);
+    Route::get('/{id}', [ProductController::class, 'show'])->where('id', '[0-9]+');
+    Route::get('/slug/{slug}', [ProductController::class, 'showBySlug']);
+});
+
+// Authentication routes with rate limiting for security
+Route::prefix('auth')->group(function () {
+    // Auth routes - strict rate limiting (5 attempts per minute)
+    Route::middleware('throttle:auth')->group(function () {
+        Route::post('/register', [RegisterController::class, 'register']);
+        Route::post('/register/courier', [RegisterController::class, 'registerCourier']);
+        Route::post('/register/pharmacy', [RegisterController::class, 'registerPharmacy']);
+        Route::post('/login', [LoginController::class, 'login']);
+    });
+    
+    // OTP verification - very strict (3 attempts per minute)
+    Route::middleware('throttle:otp')->group(function () {
+        Route::post('/verify', [\App\Http\Controllers\Api\Auth\VerificationController::class, 'verify']);
+        Route::post('/verify-reset-otp', [\App\Http\Controllers\Api\Auth\PasswordResetController::class, 'verifyResetOtp']);
+    });
+    
+    // OTP sending - limited to prevent SMS spam
+    Route::middleware('throttle:otp-send')->group(function () {
+        Route::post('/resend', [\App\Http\Controllers\Api\Auth\VerificationController::class, 'resend']);
+        Route::post('/forgot-password', [\App\Http\Controllers\Api\Auth\PasswordResetController::class, 'forgotPassword']);
+    });
+    
+    // Password reset - strict
+    Route::middleware('throttle:password-reset')->group(function () {
+        Route::post('/reset-password', [\App\Http\Controllers\Api\Auth\PasswordResetController::class, 'resetPassword']);
+    });
+    
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/logout', [LoginController::class, 'logout']);
+        Route::get('/me', [LoginController::class, 'me']);
+        Route::post('/me/update', [LoginController::class, 'updateProfile']);
+    });
+});
+
+// Protected routes
+Route::middleware('auth:sanctum')->group(function () {
+    
+    // Secure Document Access
+    Route::prefix('documents')->group(function () {
+        Route::get('/{type}/{filename}', [\App\Http\Controllers\Api\SecureDocumentController::class, 'serve'])
+            ->name('secure.document')
+            ->where('filename', '.*');
+        Route::get('/{type}/{filename}/url', [\App\Http\Controllers\Api\SecureDocumentController::class, 'getTemporaryUrl'])
+            ->where('filename', '.*');
+    });
+    
+    // Notifications (for all authenticated users)
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::get('/unread', [NotificationController::class, 'unread']);
+        Route::get('/sounds', [NotificationController::class, 'getSoundSettings']);
+        Route::post('/{id}/read', [NotificationController::class, 'markAsRead']);
+        Route::post('/read-all', [NotificationController::class, 'markAllAsRead']);
+        Route::post('/fcm-token', [NotificationController::class, 'updateFcmToken']);
+        Route::delete('/fcm-token', [NotificationController::class, 'removeFcmToken']);
+        Route::delete('/{id}', [NotificationController::class, 'destroy']);
+    });
+    
+    // Customer routes - Nécessite téléphone vérifié pour les actions sensibles
+    Route::prefix('customer')->group(function () {
+        // Pharmacies - Lecture seule, pas de vérification requise
+        Route::middleware('throttle:search')->group(function () {
+            Route::get('/pharmacies', [PharmacyController::class, 'index']);
+            Route::get('/pharmacies/nearby', [PharmacyController::class, 'nearby']);
+            Route::get('/pharmacies/on-duty', [PharmacyController::class, 'onDuty']);
+            Route::get('/pharmacies/{id}', [PharmacyController::class, 'show']);
+        });
+        
+        // Orders - Lecture seule
+        Route::get('/orders', [CustomerOrderController::class, 'index']);
+        Route::get('/orders/{id}', [CustomerOrderController::class, 'show']);
+        Route::get('/orders/{id}/delivery-waiting-status', [CustomerOrderController::class, 'deliveryWaitingStatus']);
+        
+        // Orders - Actions sensibles nécessitent téléphone vérifié et rate limiting
+        Route::middleware(['verified.phone', 'throttle:orders'])->group(function () {
+            Route::post('/orders', [CustomerOrderController::class, 'store']);
+            Route::post('/orders/{id}/cancel', [CustomerOrderController::class, 'cancel']);
+        });
+        
+        // Payment - Rate limiting strict
+        Route::middleware(['verified.phone', 'throttle:payment'])->group(function () {
+            Route::post('/orders/{id}/payment/initiate', [CustomerOrderController::class, 'initiatePayment']);
+        });
+        
+        // Prescriptions - Lecture
+        Route::get('/prescriptions', [PrescriptionController::class, 'index']);
+        Route::get('/prescriptions/{id}', [PrescriptionController::class, 'show']);
+        
+        // Prescriptions - Upload nécessite téléphone vérifié et rate limiting
+        Route::middleware(['verified.phone', 'throttle:uploads'])->group(function () {
+            Route::post('/prescriptions/upload', [PrescriptionController::class, 'upload']);
+        });
+        
+        // Prescription payment - rate limiting strict
+        Route::middleware(['verified.phone', 'throttle:payment'])->group(function () {
+            Route::post('/prescriptions/{id}/pay', [PrescriptionController::class, 'pay']);
+        });
+    });
+    
+    // Pharmacy routes
+    Route::prefix('pharmacy')->group(function () {
+        // Pharmacy Profile
+        Route::get('/profile', [\App\Http\Controllers\Api\Pharmacy\PharmacyProfileController::class, 'index']);
+        Route::post('/profile/{id}', [\App\Http\Controllers\Api\Pharmacy\PharmacyProfileController::class, 'update']);
+
+        // Orders
+        Route::get('/orders', [PharmacyOrderController::class, 'index']);
+        Route::get('/orders/{id}', [PharmacyOrderController::class, 'show']);
+        Route::post('/orders/{id}/confirm', [PharmacyOrderController::class, 'confirm']);
+        Route::post('/orders/{id}/ready', [PharmacyOrderController::class, 'ready']);
+        Route::post('/orders/{id}/reject', [PharmacyOrderController::class, 'reject']);
+        Route::post('/orders/{id}/notes', [PharmacyOrderController::class, 'addNotes']);
+        Route::get('/orders/{id}/delivery-waiting-status', [PharmacyOrderController::class, 'deliveryWaitingStatus']);
+
+        // Inventory
+        Route::get('/inventory/categories', [InventoryController::class, 'categories']);
+        Route::post('/inventory/categories', [InventoryController::class, 'storeCategory']); // Add Category
+        Route::get('/inventory', [InventoryController::class, 'index']);
+        Route::post('/inventory', [InventoryController::class, 'store']); // Create new product
+        Route::post('/inventory/{id}/update', [InventoryController::class, 'update']); // Update product (POST for files)
+        Route::delete('/inventory/{id}', [InventoryController::class, 'destroy']); // Delete product
+        
+        // Inventory Item Actions
+        Route::post('/inventory/{id}/stock', [InventoryController::class, 'updateStock']);
+        Route::post('/inventory/{id}/price', [InventoryController::class, 'updatePrice']);
+        Route::post('/inventory/{id}/toggle-status', [InventoryController::class, 'toggleStatus']);
+
+        // Prescriptions
+        Route::get('/prescriptions', [\App\Http\Controllers\Api\Pharmacy\PrescriptionController::class, 'index']);
+        Route::get('/prescriptions/{id}', [\App\Http\Controllers\Api\Pharmacy\PrescriptionController::class, 'show']);
+        Route::post('/prescriptions/{id}/status', [\App\Http\Controllers\Api\Pharmacy\PrescriptionController::class, 'updateStatus']);
+
+        // Wallet
+        Route::get('/wallet', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'index']);
+
+        // On-Call Management
+        Route::get('/on-calls', [\App\Http\Controllers\Api\Pharmacy\OnCallController::class, 'index']);
+        Route::post('/on-calls', [\App\Http\Controllers\Api\Pharmacy\OnCallController::class, 'store']);
+        Route::put('/on-calls/{id}', [\App\Http\Controllers\Api\Pharmacy\OnCallController::class, 'update']);
+        Route::delete('/on-calls/{id}', [\App\Http\Controllers\Api\Pharmacy\OnCallController::class, 'destroy']);
+    });
+    
+    // Courier routes
+    Route::prefix('courier')->group(function () {
+        Route::get('/profile', [DeliveryController::class, 'profile']);
+        
+        // Wallet
+        Route::get('/wallet', [\App\Http\Controllers\Api\Courier\WalletController::class, 'index']);
+        Route::post('/wallet/topup', [\App\Http\Controllers\Api\Courier\WalletController::class, 'topUp']);
+        Route::post('/wallet/withdraw', [\App\Http\Controllers\Api\Courier\WalletController::class, 'withdraw']);
+        Route::get('/wallet/can-deliver', [\App\Http\Controllers\Api\Courier\WalletController::class, 'canDeliver']);
+        Route::get('/wallet/earnings-history', [\App\Http\Controllers\Api\Courier\WalletController::class, 'earningsHistory']);
+
+        // Statistics
+        Route::get('/statistics', [\App\Http\Controllers\Api\Courier\StatisticsController::class, 'index']);
+        Route::get('/statistics/leaderboard', [\App\Http\Controllers\Api\Courier\StatisticsController::class, 'leaderboard']);
+
+        // Challenges & Bonuses
+        Route::get('/challenges', [\App\Http\Controllers\Api\Courier\ChallengeController::class, 'index']);
+        Route::post('/challenges/{id}/claim', [\App\Http\Controllers\Api\Courier\ChallengeController::class, 'claimReward']);
+        Route::get('/bonuses', [\App\Http\Controllers\Api\Courier\ChallengeController::class, 'bonuses']);
+        Route::post('/bonuses/calculate', [\App\Http\Controllers\Api\Courier\ChallengeController::class, 'calculateBonus']);
+
+        Route::get('/deliveries', [DeliveryController::class, 'index']);
+        Route::get('/deliveries/{id}', [DeliveryController::class, 'show']);
+        Route::post('/deliveries/{id}/accept', [DeliveryController::class, 'accept']);
+        Route::post('/deliveries/{id}/reject', [DeliveryController::class, 'reject']); // Nouvelle route de refus
+        Route::post('/deliveries/{id}/pickup', [DeliveryController::class, 'pickup']);
+        Route::post('/deliveries/{id}/deliver', [DeliveryController::class, 'deliver']);
+        Route::post('/deliveries/{id}/rate-customer', [DeliveryController::class, 'rateCustomer']);
+        
+        // Minuterie d'attente livraison
+        Route::post('/deliveries/{id}/arrived', [DeliveryController::class, 'arrived']);
+        Route::get('/deliveries/{id}/waiting-status', [DeliveryController::class, 'waitingStatus']);
+        Route::get('/waiting-settings', [DeliveryController::class, 'getWaitingSettings']);
+        
+        // Batch deliveries
+        Route::post('/deliveries/batch-accept', [DeliveryController::class, 'batchAccept']);
+        Route::get('/deliveries/route', [DeliveryController::class, 'getOptimizedRoute']);
+        
+        Route::post('/location/update', [DeliveryController::class, 'updateLocation']);
+        Route::post('/availability/toggle', [DeliveryController::class, 'toggleAvailability']);
+        
+        // Chat
+        Route::get('/orders/{id}/messages', [\App\Http\Controllers\Api\Courier\ChatController::class, 'index']);
+        Route::post('/orders/{id}/messages', [\App\Http\Controllers\Api\Courier\ChatController::class, 'store']);
+        
+        // JEKO Payments
+        // SECURITY V-003: Rate limiting - max 10 initiations de paiement par minute par utilisateur
+        Route::post('/payments/initiate', [\App\Http\Controllers\Api\JekoPaymentController::class, 'initiate'])
+            ->middleware('throttle:10,1');
+        Route::get('/payments', [\App\Http\Controllers\Api\JekoPaymentController::class, 'index']);
+        Route::get('/payments/methods', [\App\Http\Controllers\Api\JekoPaymentController::class, 'methods']);
+        Route::get('/payments/{reference}/status', [\App\Http\Controllers\Api\JekoPaymentController::class, 'status']);
+        
+        // Support
+        Route::post('/report-problem', [\App\Http\Controllers\Api\Courier\SupportController::class, 'reportProblem']);
+    });
+    
+    // Admin routes - Courier Assignment
+    Route::prefix('admin')->middleware('role:admin')->group(function () {
+        Route::get('/orders/{order}/couriers/available', [CourierAssignmentController::class, 'getAvailableCouriers']);
+        Route::post('/orders/{order}/couriers/auto-assign', [CourierAssignmentController::class, 'autoAssign']);
+        Route::post('/orders/{order}/couriers/manual-assign', [CourierAssignmentController::class, 'manualAssign']);
+        Route::post('/deliveries/{delivery}/reassign', [CourierAssignmentController::class, 'reassign']);
+        Route::post('/orders/{order}/estimate-time', [CourierAssignmentController::class, 'estimateDeliveryTime']);
+    });
+});
+

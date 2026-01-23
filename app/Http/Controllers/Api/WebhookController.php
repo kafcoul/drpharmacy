@@ -1,0 +1,100 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\PaymentGateways\CinetPayGateway;
+use App\PaymentGateways\JekoGateway;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
+class WebhookController extends Controller
+{
+    /**
+     * Webhook CinetPay
+     */
+    public function cinetpay(Request $request)
+    {
+        Log::info('CinetPay webhook endpoint hit', [
+            'payload' => $request->all(),
+            'headers' => $request->headers->all(),
+        ]);
+
+        try {
+            $gateway = new CinetPayGateway();
+            $payload = $request->all();
+
+            // Vérifier la signature
+            if (!$gateway->verifySignature($payload, null)) {
+                Log::warning('CinetPay webhook signature verification failed');
+                return response()->json(['error' => 'Invalid signature'], 403);
+            }
+
+            // Traiter le webhook
+            $paymentIntent = $gateway->handleWebhook($payload);
+
+            if (!$paymentIntent) {
+                return response()->json(['error' => 'Payment not found'], 404);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Webhook processed',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('CinetPay webhook error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'Webhook processing failed',
+            ], 500);
+        }
+    }
+
+    /**
+     * Webhook Jeko
+     */
+    public function jeko(Request $request)
+    {
+        Log::info('Jeko webhook endpoint hit', [
+            'payload' => $request->all(),
+            'headers' => $request->headers->all(),
+        ]);
+
+        try {
+            $gateway = new JekoGateway();
+            $payload = $request->all();
+            $signature = $request->header('X-Jeko-Signature');
+
+            // Vérifier la signature
+            if (!$gateway->verifySignature($payload, $signature)) {
+                Log::warning('Jeko webhook signature verification failed');
+                return response()->json(['error' => 'Invalid signature'], 403);
+            }
+
+            // Traiter le webhook
+            $paymentIntent = $gateway->handleWebhook($payload);
+
+            if (!$paymentIntent) {
+                return response()->json(['error' => 'Payment not found'], 404);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Webhook processed',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Jeko webhook error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'Webhook processing failed',
+            ], 500);
+        }
+    }
+}
+
