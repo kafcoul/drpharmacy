@@ -1,9 +1,20 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\PrivateDocumentController;
 
 Route::get('/', function () {
     return view('welcome');
+});
+
+// Routes pour servir les documents privés (admin uniquement)
+Route::middleware(['web', 'auth'])->prefix('admin/documents')->group(function () {
+    Route::get('/view/{path}', [PrivateDocumentController::class, 'show'])
+        ->where('path', '.*')
+        ->name('admin.documents.view');
+    Route::get('/download/{path}', [PrivateDocumentController::class, 'download'])
+        ->where('path', '.*')
+        ->name('admin.documents.download');
 });
 
 // Proxy for images to handle CORS in development

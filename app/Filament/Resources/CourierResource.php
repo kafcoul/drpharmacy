@@ -64,18 +64,153 @@ class CourierResource extends Resource
                 Forms\Components\TextInput::make('vehicle_type'),
                 Forms\Components\TextInput::make('vehicle_number'),
                 Forms\Components\TextInput::make('license_number'),
-                Forms\Components\Section::make('Documents')
+                Forms\Components\Section::make('Documents KYC')
+                    ->description('Documents d\'identité soumis par le coursier (recto/verso)')
                     ->schema([
-                        Forms\Components\FileUpload::make('driving_license_document')
-                            ->label('Permis de Conduire')
+                        Forms\Components\Placeholder::make('id_card_front_preview')
+                            ->label('CNI (Recto)')
+                            ->content(function ($record) {
+                                if (!$record || !$record->id_card_front_document) {
+                                    return 'Aucun document';
+                                }
+                                $url = route('admin.documents.view', ['path' => $record->id_card_front_document]);
+                                return new \Illuminate\Support\HtmlString(
+                                    '<a href="'.$url.'" target="_blank" class="text-primary-600 hover:underline">
+                                        <img src="'.$url.'" class="max-h-32 rounded border" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'"/>
+                                        <span style="display:none">📄 Voir le document</span>
+                                    </a>'
+                                );
+                            }),
+                        Forms\Components\Placeholder::make('id_card_back_preview')
+                            ->label('CNI (Verso)')
+                            ->content(function ($record) {
+                                if (!$record || !$record->id_card_back_document) {
+                                    return 'Aucun document';
+                                }
+                                $url = route('admin.documents.view', ['path' => $record->id_card_back_document]);
+                                return new \Illuminate\Support\HtmlString(
+                                    '<a href="'.$url.'" target="_blank" class="text-primary-600 hover:underline">
+                                        <img src="'.$url.'" class="max-h-32 rounded border" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'"/>
+                                        <span style="display:none">📄 Voir le document</span>
+                                    </a>'
+                                );
+                            }),
+                        Forms\Components\Placeholder::make('selfie_preview')
+                            ->label('Selfie de vérification')
+                            ->content(function ($record) {
+                                if (!$record || !$record->selfie_document) {
+                                    return 'Aucun document';
+                                }
+                                $url = route('admin.documents.view', ['path' => $record->selfie_document]);
+                                return new \Illuminate\Support\HtmlString(
+                                    '<a href="'.$url.'" target="_blank" class="text-primary-600 hover:underline">
+                                        <img src="'.$url.'" class="max-h-32 rounded border" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'"/>
+                                        <span style="display:none">📄 Voir le document</span>
+                                    </a>'
+                                );
+                            }),
+                        Forms\Components\Placeholder::make('driving_license_front_preview')
+                            ->label('Permis de Conduire (Recto)')
+                            ->content(function ($record) {
+                                if (!$record || !$record->driving_license_front_document) {
+                                    return 'Aucun document';
+                                }
+                                $url = route('admin.documents.view', ['path' => $record->driving_license_front_document]);
+                                return new \Illuminate\Support\HtmlString(
+                                    '<a href="'.$url.'" target="_blank" class="text-primary-600 hover:underline">
+                                        <img src="'.$url.'" class="max-h-32 rounded border" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'"/>
+                                        <span style="display:none">📄 Voir le document</span>
+                                    </a>'
+                                );
+                            }),
+                        Forms\Components\Placeholder::make('driving_license_back_preview')
+                            ->label('Permis de Conduire (Verso)')
+                            ->content(function ($record) {
+                                if (!$record || !$record->driving_license_back_document) {
+                                    return 'Aucun document';
+                                }
+                                $url = route('admin.documents.view', ['path' => $record->driving_license_back_document]);
+                                return new \Illuminate\Support\HtmlString(
+                                    '<a href="'.$url.'" target="_blank" class="text-primary-600 hover:underline">
+                                        <img src="'.$url.'" class="max-h-32 rounded border" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'"/>
+                                        <span style="display:none">📄 Voir le document</span>
+                                    </a>'
+                                );
+                            }),
+                        Forms\Components\Placeholder::make('vehicle_registration_preview')
+                            ->label('Carte Grise')
+                            ->content(function ($record) {
+                                if (!$record || !$record->vehicle_registration_document) {
+                                    return 'Aucun document';
+                                }
+                                $url = route('admin.documents.view', ['path' => $record->vehicle_registration_document]);
+                                return new \Illuminate\Support\HtmlString(
+                                    '<a href="'.$url.'" target="_blank" class="text-primary-600 hover:underline">
+                                        <img src="'.$url.'" class="max-h-32 rounded border" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'"/>
+                                        <span style="display:none">📄 Voir le document</span>
+                                    </a>'
+                                );
+                            }),
+                    ])->columns(3)
+                    ->visible(fn ($record) => $record !== null),
+                Forms\Components\Section::make('Télécharger des documents')
+                    ->description('Ajouter ou remplacer les documents KYC')
+                    ->schema([
+                        Forms\Components\FileUpload::make('id_card_front_document')
+                            ->label('CNI (Recto)')
+                            ->disk('private')
                             ->directory('courier-documents')
                             ->acceptedFileTypes(['application/pdf', 'image/*'])
-                            ->openable(),
+                            ->maxSize(5120),
+                        Forms\Components\FileUpload::make('id_card_back_document')
+                            ->label('CNI (Verso)')
+                            ->disk('private')
+                            ->directory('courier-documents')
+                            ->acceptedFileTypes(['application/pdf', 'image/*'])
+                            ->maxSize(5120),
+                        Forms\Components\FileUpload::make('selfie_document')
+                            ->label('Selfie')
+                            ->disk('private')
+                            ->directory('courier-documents')
+                            ->acceptedFileTypes(['image/*'])
+                            ->maxSize(5120),
+                        Forms\Components\FileUpload::make('driving_license_front_document')
+                            ->label('Permis (Recto)')
+                            ->disk('private')
+                            ->directory('courier-documents')
+                            ->acceptedFileTypes(['application/pdf', 'image/*'])
+                            ->maxSize(5120),
+                        Forms\Components\FileUpload::make('driving_license_back_document')
+                            ->label('Permis (Verso)')
+                            ->disk('private')
+                            ->directory('courier-documents')
+                            ->acceptedFileTypes(['application/pdf', 'image/*'])
+                            ->maxSize(5120),
                         Forms\Components\FileUpload::make('vehicle_registration_document')
                             ->label('Carte Grise')
+                            ->disk('private')
                             ->directory('courier-documents')
                             ->acceptedFileTypes(['application/pdf', 'image/*'])
-                            ->openable(),
+                            ->maxSize(5120),
+                    ])->columns(3)
+                    ->collapsible()
+                    ->collapsed(),
+                Forms\Components\Section::make('Statut KYC')
+                    ->schema([
+                        Forms\Components\Select::make('kyc_status')
+                            ->label('Statut KYC')
+                            ->options([
+                                'incomplete' => 'Incomplet',
+                                'pending_review' => 'En attente de vérification',
+                                'approved' => 'Approuvé',
+                                'rejected' => 'Rejeté',
+                            ])
+                            ->default('incomplete'),
+                        Forms\Components\Textarea::make('kyc_rejection_reason')
+                            ->label('Motif du rejet')
+                            ->visible(fn ($get) => $get('kyc_status') === 'rejected'),
+                        Forms\Components\DateTimePicker::make('kyc_verified_at')
+                            ->label('Date de vérification'),
                     ])->columns(2),
                 Forms\Components\TextInput::make('latitude')
                     ->numeric(),
@@ -129,18 +264,40 @@ class CourierResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
+                        'pending_approval' => 'warning',
                         'available' => 'success',
-                        'busy' => 'warning',
+                        'busy' => 'info',
                         'offline' => 'gray',
+                        'suspended' => 'danger',
+                        'rejected' => 'danger',
                         default => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'pending_approval' => 'En attente',
                         'available' => 'Disponible',
                         'busy' => 'Occupé',
                         'offline' => 'Hors ligne',
+                        'suspended' => 'Suspendu',
+                        'rejected' => 'Rejeté',
                         default => $state,
                     })
                     ->searchable(),
+                Tables\Columns\TextColumn::make('kyc_status')
+                    ->label('KYC')
+                    ->badge()
+                    ->color(fn (?string $state): string => match ($state) {
+                        'approved' => 'success',
+                        'pending_review' => 'warning',
+                        'rejected' => 'danger',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'approved' => '✓ Vérifié',
+                        'pending_review' => 'En attente',
+                        'rejected' => 'Rejeté',
+                        'incomplete' => 'Incomplet',
+                        default => $state ?? 'N/A',
+                    }),
                 Tables\Columns\TextColumn::make('rating')
                     ->numeric()
                     ->sortable(),
@@ -167,25 +324,89 @@ class CourierResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Statut')
                     ->options([
+                        'pending_approval' => 'En attente d\'approbation',
                         'available' => 'Disponible',
                         'busy' => 'Occupé',
                         'offline' => 'Hors ligne',
+                        'suspended' => 'Suspendu',
+                        'rejected' => 'Rejeté',
+                    ]),
+                Tables\Filters\SelectFilter::make('kyc_status')
+                    ->label('Statut KYC')
+                    ->options([
+                        'incomplete' => 'Incomplet',
+                        'pending_review' => 'En attente de vérification',
+                        'approved' => 'Approuvé',
+                        'rejected' => 'Rejeté',
                     ]),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                // Action: Approuver le coursier
+                Tables\Actions\Action::make('approve')
+                    ->label('Approuver')
+                    ->icon('heroicon-o-check-badge')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->status === 'pending_approval')
+                    ->requiresConfirmation()
+                    ->modalHeading('Approuver ce coursier ?')
+                    ->modalDescription('Le coursier pourra se connecter et commencer à livrer.')
+                    ->action(function ($record) {
+                        $record->update([
+                            'status' => 'available',
+                            'kyc_status' => 'approved',
+                            'kyc_verified_at' => now(),
+                        ]);
+                    }),
+                // Action: Rejeter le coursier
+                Tables\Actions\Action::make('reject')
+                    ->label('Rejeter')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->visible(fn ($record) => in_array($record->status, ['pending_approval']))
+                    ->form([
+                        Forms\Components\Textarea::make('rejection_reason')
+                            ->label('Motif du rejet')
+                            ->required()
+                            ->placeholder('Expliquez pourquoi la demande est rejetée...'),
+                    ])
+                    ->action(function ($record, array $data) {
+                        $record->update([
+                            'status' => 'rejected',
+                            'kyc_status' => 'rejected',
+                            'kyc_rejection_reason' => $data['rejection_reason'],
+                        ]);
+                    }),
+                // Action: Suspendre le coursier
+                Tables\Actions\Action::make('suspend')
+                    ->label('Suspendre')
+                    ->icon('heroicon-o-pause-circle')
+                    ->color('warning')
+                    ->visible(fn ($record) => in_array($record->status, ['available', 'busy', 'offline']))
+                    ->requiresConfirmation()
+                    ->modalHeading('Suspendre ce coursier ?')
+                    ->modalDescription('Le coursier ne pourra plus se connecter.')
+                    ->action(fn ($record) => $record->update(['status' => 'suspended'])),
+                // Action: Réactiver le coursier
+                Tables\Actions\Action::make('reactivate')
+                    ->label('Réactiver')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('success')
+                    ->visible(fn ($record) => in_array($record->status, ['suspended', 'rejected']))
+                    ->requiresConfirmation()
+                    ->action(fn ($record) => $record->update(['status' => 'available'])),
                 Tables\Actions\Action::make('setAvailable')
                     ->label('Disponible')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn ($record) => $record->status !== 'available')
+                    ->visible(fn ($record) => $record->status === 'offline')
                     ->action(fn ($record) => $record->update(['status' => 'available'])),
                 Tables\Actions\Action::make('setOffline')
                     ->label('Hors ligne')
                     ->icon('heroicon-o-x-circle')
                     ->color('gray')
-                    ->visible(fn ($record) => $record->status !== 'offline')
+                    ->visible(fn ($record) => $record->status === 'available')
                     ->action(fn ($record) => $record->update(['status' => 'offline'])),
             ])
             ->bulkActions([

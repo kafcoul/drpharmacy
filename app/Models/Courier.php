@@ -21,10 +21,12 @@ class Courier extends Model
         'vehicle_type',
         'vehicle_number',
         'license_number',
-        // KYC Documents
-        'id_card_document',
+        // KYC Documents - Recto/Verso
+        'id_card_front_document',
+        'id_card_back_document',
         'selfie_document',
-        'driving_license_document',
+        'driving_license_front_document',
+        'driving_license_back_document',
         'vehicle_registration_document',
         'kyc_status', // incomplete, pending_review, approved, rejected
         'kyc_rejection_reason',

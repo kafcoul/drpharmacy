@@ -32,6 +32,9 @@ class RegisterController extends Controller
             'device_name' => 'string',
         ]);
 
+        // Normaliser l'email en minuscules pour éviter les problèmes de case sensitivity
+        $validated['email'] = strtolower(trim($validated['email']));
+
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -65,7 +68,7 @@ class RegisterController extends Controller
     }
 
     /**
-     * Register a new courier with KYC documents
+     * Register a new courier with KYC documents (recto/verso)
      */
     public function registerCourier(Request $request)
     {
@@ -78,15 +81,20 @@ class RegisterController extends Controller
             'vehicle_registration' => 'required|string|max:50',
             'license_number' => 'nullable|string|max:50',
             'device_name' => 'nullable|string',
-            // KYC Documents
-            'id_card_document' => 'nullable|file|mimetypes:image/jpeg,image/png,application/pdf|max:5120',
-            'selfie_document' => 'nullable|file|mimetypes:image/jpeg,image/png|max:5120',
-            'driving_license_document' => 'nullable|file|mimetypes:image/jpeg,image/png,application/pdf|max:5120',
+            // KYC Documents - Recto/Verso
+            'id_card_front_document' => 'required|file|mimetypes:image/jpeg,image/png,application/pdf|max:5120',
+            'id_card_back_document' => 'required|file|mimetypes:image/jpeg,image/png,application/pdf|max:5120',
+            'selfie_document' => 'required|file|mimetypes:image/jpeg,image/png|max:5120',
+            'driving_license_front_document' => 'nullable|file|mimetypes:image/jpeg,image/png,application/pdf|max:5120',
+            'driving_license_back_document' => 'nullable|file|mimetypes:image/jpeg,image/png,application/pdf|max:5120',
         ]);
 
         DB::beginTransaction();
         
         try {
+            // Normaliser l'email en minuscules pour éviter les problèmes de case sensitivity
+            $validated['email'] = strtolower(trim($validated['email']));
+
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
@@ -95,13 +103,20 @@ class RegisterController extends Controller
                 'role' => 'courier',
             ]);
 
-            // Handle KYC document uploads
-            $idCardPath = null;
+            // Handle KYC document uploads - Recto/Verso
+            $idCardFrontPath = null;
+            $idCardBackPath = null;
             $selfiePath = null;
-            $drivingLicensePath = null;
+            $drivingLicenseFrontPath = null;
+            $drivingLicenseBackPath = null;
 
-            if ($request->hasFile('id_card_document')) {
-                $idCardPath = $request->file('id_card_document')
+            if ($request->hasFile('id_card_front_document')) {
+                $idCardFrontPath = $request->file('id_card_front_document')
+                    ->store("courier-documents/{$user->id}", 'private');
+            }
+
+            if ($request->hasFile('id_card_back_document')) {
+                $idCardBackPath = $request->file('id_card_back_document')
                     ->store("courier-documents/{$user->id}", 'private');
             }
 
@@ -110,36 +125,44 @@ class RegisterController extends Controller
                     ->store("courier-documents/{$user->id}", 'private');
             }
 
-            if ($request->hasFile('driving_license_document')) {
-                $drivingLicensePath = $request->file('driving_license_document')
+            if ($request->hasFile('driving_license_front_document')) {
+                $drivingLicenseFrontPath = $request->file('driving_license_front_document')
                     ->store("courier-documents/{$user->id}", 'private');
             }
 
-            // Create courier profile with KYC documents
+            if ($request->hasFile('driving_license_back_document')) {
+                $drivingLicenseBackPath = $request->file('driving_license_back_document')
+                    ->store("courier-documents/{$user->id}", 'private');
+            }
+
+            // Create courier profile with KYC documents (recto/verso)
             $user->courier()->create([
                 'name' => $user->name,
                 'phone' => $user->phone,
                 'vehicle_type' => $validated['vehicle_type'],
                 'vehicle_number' => $validated['vehicle_registration'],
                 'license_number' => $validated['license_number'] ?? null,
-                'id_card_document' => $idCardPath,
+                'id_card_front_document' => $idCardFrontPath,
+                'id_card_back_document' => $idCardBackPath,
                 'selfie_document' => $selfiePath,
-                'driving_license_document' => $drivingLicensePath,
+                'driving_license_front_document' => $drivingLicenseFrontPath,
+                'driving_license_back_document' => $drivingLicenseBackPath,
                 'status' => 'pending_approval',
-                'kyc_status' => $idCardPath && $selfiePath ? 'pending_review' : 'incomplete',
+                'kyc_status' => ($idCardFrontPath && $idCardBackPath && $selfiePath) ? 'pending_review' : 'incomplete',
             ]);
 
-            // Send OTP
+            // Send OTP for phone verification
             $otp = $this->otpService->generateOtp($user->phone);
             $this->otpService->sendOtp($user->phone, $otp);
 
-            $token = $user->createToken($request->device_name ?? 'mobile-app')->plainTextToken;
+            // NE PAS créer de token pour les coursiers en attente d'approbation
+            // Le token sera créé uniquement lors de la connexion après approbation admin
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Inscription livreur réussie. Veuillez vérifier votre compte. En attente d\'approbation.',
+                'message' => 'Inscription livreur réussie. Votre compte est en attente d\'approbation par l\'administrateur. Vous recevrez une notification une fois approuvé.',
                 'data' => [
                     'user' => [
                         'id' => $user->id,
@@ -147,8 +170,10 @@ class RegisterController extends Controller
                         'email' => $user->email,
                         'phone' => $user->phone,
                         'role' => $user->role,
+                        'status' => 'pending_approval',
                     ],
-                    'token' => $token,
+                    // Pas de token - le coursier doit attendre l'approbation
+                    'requires_approval' => true,
                 ],
             ], 201);
             
@@ -186,6 +211,9 @@ class RegisterController extends Controller
         DB::beginTransaction();
 
         try {
+            // Normaliser l'email en minuscules pour éviter les problèmes de case sensitivity
+            $validated['email'] = strtolower(trim($validated['email']));
+
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
@@ -198,7 +226,7 @@ class RegisterController extends Controller
             $pharmacy = \App\Models\Pharmacy::create([
                 'name' => $validated['pharmacy_name'],
                 'phone' => $validated['phone'],
-                'email' => $validated['email'],
+                'email' => $validated['email'],  // Déjà en minuscules
                 'address' => $validated['pharmacy_address'],
                 'city' => $validated['city'],
                 'license_number' => $validated['pharmacy_license'],

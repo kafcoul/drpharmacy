@@ -27,6 +27,19 @@ class PharmacyController extends Controller
             ->nearLocation($latitude, $longitude, $radius)
             ->get()
             ->map(function ($pharmacy) use ($latitude, $longitude) {
+                // Check if pharmacy is currently on duty
+                $isOnDuty = $pharmacy->onCalls()
+                    ->where('start_at', '<=', now())
+                    ->where('end_at', '>=', now())
+                    ->where('is_active', true)
+                    ->exists();
+                
+                $currentOnCall = $isOnDuty ? $pharmacy->onCalls()
+                    ->where('start_at', '<=', now())
+                    ->where('end_at', '>=', now())
+                    ->where('is_active', true)
+                    ->first() : null;
+
                 return [
                     'id' => $pharmacy->id,
                     'name' => $pharmacy->name,
@@ -34,9 +47,16 @@ class PharmacyController extends Controller
                     'email' => $pharmacy->email,
                     'address' => $pharmacy->address,
                     'city' => $pharmacy->city,
-                    'latitude' => $pharmacy->latitude,
-                    'longitude' => $pharmacy->longitude,
+                    'latitude' => $pharmacy->latitude ? (float) $pharmacy->latitude : null,
+                    'longitude' => $pharmacy->longitude ? (float) $pharmacy->longitude : null,
                     'distance' => $pharmacy->distance ?? null,
+                    'status' => $pharmacy->status,
+                    'is_open' => $pharmacy->is_open ?? true,
+                    'is_on_duty' => $isOnDuty,
+                    'duty_info' => $currentOnCall ? [
+                        'type' => $currentOnCall->type,
+                        'end_at' => $currentOnCall->end_at?->toIso8601String(),
+                    ] : null,
                 ];
             });
 
@@ -56,9 +76,40 @@ class PharmacyController extends Controller
     public function index()
     {
         $pharmacies = Pharmacy::approved()
-            ->select('id', 'name', 'phone', 'email', 'address', 'city', 'latitude', 'longitude')
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->map(function ($pharmacy) {
+                // Check if pharmacy is currently on duty
+                $isOnDuty = $pharmacy->onCalls()
+                    ->where('start_at', '<=', now())
+                    ->where('end_at', '>=', now())
+                    ->where('is_active', true)
+                    ->exists();
+                
+                $currentOnCall = $isOnDuty ? $pharmacy->onCalls()
+                    ->where('start_at', '<=', now())
+                    ->where('end_at', '>=', now())
+                    ->where('is_active', true)
+                    ->first() : null;
+
+                return [
+                    'id' => $pharmacy->id,
+                    'name' => $pharmacy->name,
+                    'phone' => $pharmacy->phone,
+                    'email' => $pharmacy->email,
+                    'address' => $pharmacy->address,
+                    'city' => $pharmacy->city,
+                    'latitude' => $pharmacy->latitude ? (float) $pharmacy->latitude : null,
+                    'longitude' => $pharmacy->longitude ? (float) $pharmacy->longitude : null,
+                    'status' => $pharmacy->status,
+                    'is_open' => $pharmacy->is_open ?? true, // Default to open if not specified
+                    'is_on_duty' => $isOnDuty,
+                    'duty_info' => $currentOnCall ? [
+                        'type' => $currentOnCall->type,
+                        'end_at' => $currentOnCall->end_at?->toIso8601String(),
+                    ] : null,
+                ];
+            });
 
         return response()->json([
             'success' => true,
@@ -72,6 +123,19 @@ class PharmacyController extends Controller
     public function show($id)
     {
         $pharmacy = Pharmacy::approved()->findOrFail($id);
+        
+        // Check if pharmacy is currently on duty
+        $isOnDuty = $pharmacy->onCalls()
+            ->where('start_at', '<=', now())
+            ->where('end_at', '>=', now())
+            ->where('is_active', true)
+            ->exists();
+        
+        $currentOnCall = $isOnDuty ? $pharmacy->onCalls()
+            ->where('start_at', '<=', now())
+            ->where('end_at', '>=', now())
+            ->where('is_active', true)
+            ->first() : null;
 
         return response()->json([
             'success' => true,
@@ -83,10 +147,17 @@ class PharmacyController extends Controller
                 'address' => $pharmacy->address,
                 'city' => $pharmacy->city,
                 'region' => $pharmacy->region,
-                'latitude' => $pharmacy->latitude,
-                'longitude' => $pharmacy->longitude,
+                'latitude' => $pharmacy->latitude ? (float) $pharmacy->latitude : null,
+                'longitude' => $pharmacy->longitude ? (float) $pharmacy->longitude : null,
                 'license_number' => $pharmacy->license_number,
                 'owner_name' => $pharmacy->owner_name,
+                'status' => $pharmacy->status,
+                'is_open' => $pharmacy->is_open ?? true,
+                'is_on_duty' => $isOnDuty,
+                'duty_info' => $currentOnCall ? [
+                    'type' => $currentOnCall->type,
+                    'end_at' => $currentOnCall->end_at?->toIso8601String(),
+                ] : null,
             ],
         ]);
     }
@@ -127,13 +198,15 @@ class PharmacyController extends Controller
                     'email' => $pharmacy->email,
                     'address' => $pharmacy->address,
                     'city' => $pharmacy->city,
-                    'latitude' => $pharmacy->latitude,
-                    'longitude' => $pharmacy->longitude,
+                    'latitude' => $pharmacy->latitude ? (float) $pharmacy->latitude : null,
+                    'longitude' => $pharmacy->longitude ? (float) $pharmacy->longitude : null,
                     'distance' => $pharmacy->distance ?? null,
+                    'status' => $pharmacy->status,
+                    'is_open' => true, // On-duty pharmacies are always considered open
                     'is_on_duty' => true,
                     'duty_info' => $currentOnCall ? [
                          'type' => $currentOnCall->type,
-                         'end_at' => $currentOnCall->end_at,
+                         'end_at' => $currentOnCall->end_at?->toIso8601String(),
                     ] : null,
                 ];
             });
@@ -152,12 +225,14 @@ class PharmacyController extends Controller
                     'email' => $pharmacy->email,
                     'address' => $pharmacy->address,
                     'city' => $pharmacy->city,
-                    'latitude' => $pharmacy->latitude,
-                    'longitude' => $pharmacy->longitude,
+                    'latitude' => $pharmacy->latitude ? (float) $pharmacy->latitude : null,
+                    'longitude' => $pharmacy->longitude ? (float) $pharmacy->longitude : null,
+                    'status' => $pharmacy->status,
+                    'is_open' => true, // On-duty pharmacies are always considered open
                     'is_on_duty' => true,
                     'duty_info' => $currentOnCall ? [
                          'type' => $currentOnCall->type,
-                         'end_at' => $currentOnCall->end_at,
+                         'end_at' => $currentOnCall->end_at?->toIso8601String(),
                     ] : null,
                 ];
             });

@@ -21,10 +21,16 @@ class LoginController extends Controller
             'device_name' => 'string',
         ]);
 
-        $login = $request->email;
+        // Normaliser l'email en minuscules pour éviter les problèmes de case sensitivity
+        $login = trim($request->email);
         
         // Check if login is email or phone
         $fieldType = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
+
+        // Si c'est un email, le convertir en minuscules
+        if ($fieldType === 'email') {
+            $login = strtolower($login);
+        }
 
         $user = null;
         if ($fieldType === 'phone') {
@@ -43,6 +49,48 @@ class LoginController extends Controller
             ]);
         }
 
+        // Vérifier le statut d'approbation pour les coursiers
+        if ($user->role === 'courier') {
+            $courier = $user->courier;
+            if ($courier) {
+                if ($courier->status === 'pending_approval') {
+                    throw ValidationException::withMessages([
+                        'email' => ['Votre compte est en attente d\'approbation par l\'administrateur. Vous recevrez une notification une fois approuvé.'],
+                    ]);
+                }
+                if ($courier->status === 'suspended') {
+                    throw ValidationException::withMessages([
+                        'email' => ['Votre compte a été suspendu. Veuillez contacter le support.'],
+                    ]);
+                }
+                if ($courier->status === 'rejected') {
+                    throw ValidationException::withMessages([
+                        'email' => ['Votre demande d\'inscription a été refusée. Veuillez contacter le support pour plus d\'informations.'],
+                    ]);
+                }
+            }
+        }
+
+        // Vérifier le statut d'approbation pour les pharmacies
+        if ($user->role === 'pharmacy') {
+            $pharmacy = $user->pharmacies()->first();
+            if ($pharmacy && $pharmacy->status === 'pending') {
+                throw ValidationException::withMessages([
+                    'email' => ['Votre pharmacie est en attente d\'approbation par l\'administrateur.'],
+                ]);
+            }
+            if ($pharmacy && $pharmacy->status === 'suspended') {
+                throw ValidationException::withMessages([
+                    'email' => ['Votre pharmacie a été suspendue. Veuillez contacter le support.'],
+                ]);
+            }
+            if ($pharmacy && $pharmacy->status === 'rejected') {
+                throw ValidationException::withMessages([
+                    'email' => ['Votre demande d\'inscription a été refusée.'],
+                ]);
+            }
+        }
+
         // Create token
         $token = $user->createToken($request->device_name ?? 'mobile-app')->plainTextToken;
 
@@ -58,6 +106,11 @@ class LoginController extends Controller
 
         if ($user->role === 'pharmacy') {
             $userData['pharmacies'] = $user->pharmacies;
+        }
+        
+        // Ajouter le statut du coursier dans la réponse
+        if ($user->role === 'courier' && $user->courier) {
+            $userData['courier_status'] = $user->courier->status;
         }
 
         return response()->json([

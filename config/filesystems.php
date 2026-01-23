@@ -40,12 +40,15 @@ return [
 
         /**
          * Disk privé pour documents sensibles (licences, CNI, etc.)
-         * Ces fichiers ne sont PAS accessibles publiquement via URL
+         * Ces fichiers ne sont PAS accessibles publiquement via URL directe
+         * Mais sont servis via la route admin/documents/view
          */
         'private' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
+            'url' => env('APP_URL').'/admin/documents/view',
             'visibility' => 'private',
+            'serve' => true,
             'throw' => false,
             'report' => false,
         ],
