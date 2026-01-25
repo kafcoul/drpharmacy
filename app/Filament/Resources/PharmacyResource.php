@@ -130,6 +130,9 @@ class PharmacyResource extends Resource
                             ])
                             ->default('pending')
                             ->reactive(),
+                        Forms\Components\Toggle::make('is_featured')
+                            ->label('Pharmacie en Vedette')
+                            ->helperText('Afficher dans la section "En Vedette" de l\'application'),
                         Forms\Components\Textarea::make('rejection_reason')
                             ->label('Raison du rejet')
                             ->rows(3)
@@ -187,6 +190,14 @@ class PharmacyResource extends Resource
                         default => $state,
                     })
                     ->sortable(),
+                Tables\Columns\IconColumn::make('is_featured')
+                    ->label('Vedette')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-star')
+                    ->falseIcon('heroicon-o-star')
+                    ->trueColor('warning')
+                    ->falseColor('gray')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('commission_rate_pharmacy')
                     ->label('Commission (%)')
                     ->formatStateUsing(fn ($state) => ($state * 100) . '%')
@@ -212,6 +223,11 @@ class PharmacyResource extends Resource
                         'rejected' => 'Rejetée',
                         'suspended' => 'Suspendue',
                     ]),
+                Tables\Filters\TernaryFilter::make('is_featured')
+                    ->label('En Vedette')
+                    ->placeholder('Toutes')
+                    ->trueLabel('En vedette uniquement')
+                    ->falseLabel('Non en vedette'),
                 Tables\Filters\SelectFilter::make('city')
                     ->label('Ville')
                     ->options(fn () => Pharmacy::query()->whereNotNull('city')->distinct()->pluck('city', 'city')->toArray()),
@@ -295,6 +311,34 @@ class PharmacyResource extends Resource
                             ->success()
                             ->title('Pharmacies approuvées')
                             ->body("{$count} pharmacie(s) ont été approuvée(s).")
+                            ->send();
+                    })
+                    ->deselectRecordsAfterCompletion(),
+                Tables\Actions\BulkAction::make('markFeatured')
+                    ->label('Mettre en Vedette')
+                    ->icon('heroicon-o-star')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                        $records->each->update(['is_featured' => true]);
+                        Notification::make()
+                            ->success()
+                            ->title('Pharmacies en vedette')
+                            ->body(count($records) . ' pharmacie(s) ont été mises en vedette.')
+                            ->send();
+                    })
+                    ->deselectRecordsAfterCompletion(),
+                Tables\Actions\BulkAction::make('removeFeatured')
+                    ->label('Retirer de Vedette')
+                    ->icon('heroicon-o-star')
+                    ->color('gray')
+                    ->requiresConfirmation()
+                    ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                        $records->each->update(['is_featured' => false]);
+                        Notification::make()
+                            ->success()
+                            ->title('Pharmacies retirées')
+                            ->body(count($records) . ' pharmacie(s) ont été retirées de la vedette.')
                             ->send();
                     })
                     ->deselectRecordsAfterCompletion(),

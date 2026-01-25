@@ -25,6 +25,7 @@ class Pharmacy extends Model
         'latitude',
         'longitude',
         'status',
+        'is_featured',
         'commission_rate_platform',
         'commission_rate_pharmacy',
         'commission_rate_courier',
@@ -37,12 +38,13 @@ class Pharmacy extends Model
     ];
 
     protected $casts = [
-        'latitude' => 'decimal:7',
-        'longitude' => 'decimal:7',
+        'latitude' => 'float',
+        'longitude' => 'float',
         'commission_rate_platform' => 'decimal:4',
         'commission_rate_pharmacy' => 'decimal:4',
         'commission_rate_courier' => 'decimal:4',
         'approved_at' => 'datetime',
+        'is_featured' => 'boolean',
     ];
 
     /**
@@ -142,6 +144,14 @@ class Pharmacy extends Model
               ->where('end_at', '>=', now())
               ->where('is_active', true);
         });
+    }
+
+    /**
+     * Scope: pharmacies en vedette
+     */
+    public function scopeFeatured($query)
+    {
+        return $query->where('is_featured', true);
     }
 }
 

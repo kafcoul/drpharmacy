@@ -19,24 +19,15 @@ return [
 
     'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    'allowed_origins' => array_filter([
+    'allowed_origins' => env('APP_ENV') === 'local' ? ['*'] : array_filter([
         env('FRONTEND_URL'),
         env('ADMIN_URL'),
         env('APP_URL'),
-        // Localhost pour développement uniquement - ports spécifiques
-        env('APP_ENV') === 'local' ? 'http://localhost:3000' : null,
-        env('APP_ENV') === 'local' ? 'http://localhost:8080' : null,
-        env('APP_ENV') === 'local' ? 'http://127.0.0.1:8000' : null,
-        env('APP_ENV') === 'local' ? 'http://localhost:5050' : null,
-        env('APP_ENV') === 'local' ? 'http://localhost:5000' : null,
     ]),
 
-    'allowed_origins_patterns' => [
+    'allowed_origins_patterns' => env('APP_ENV') === 'local' ? [] : [
         // Pattern pour les apps mobiles et sous-domaines
         '#^https://.*\.dr-pharma\.com$#',
-        // Autoriser tous les ports localhost en développement
-        '#^http://localhost:\d+$#',
-        '#^http://127\.0\.0\.1:\d+$#',
     ],
 
     'allowed_headers' => [

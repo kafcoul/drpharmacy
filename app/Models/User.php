@@ -83,6 +83,22 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
+     * Adresses de livraison du client
+     */
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(CustomerAddress::class);
+    }
+
+    /**
+     * Adresse par défaut du client
+     */
+    public function defaultAddress(): HasOne
+    {
+        return $this->hasOne(CustomerAddress::class)->where('is_default', true);
+    }
+
+    /**
      * Vérifier si l'utilisateur est admin
      */
     public function isAdmin(): bool

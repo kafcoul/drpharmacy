@@ -19,6 +19,7 @@ class LoginController extends Controller
             'email' => 'required', // Allow email or phone
             'password' => 'required',
             'device_name' => 'string',
+            'role' => 'nullable|string|in:customer,courier,pharmacy', // Rôle attendu par l'application
         ]);
 
         // Normaliser l'email en minuscules pour éviter les problèmes de case sensitivity
@@ -47,6 +48,26 @@ class LoginController extends Controller
             throw ValidationException::withMessages([
                 'email' => ['Les identifiants fournis sont incorrects.'],
             ]);
+        }
+
+        // Vérifier que le rôle de l'utilisateur correspond à l'application
+        $expectedRole = $request->role;
+        if ($expectedRole) {
+            if ($expectedRole === 'courier' && $user->role !== 'courier') {
+                throw ValidationException::withMessages([
+                    'email' => ['Ce compte n\'est pas un compte livreur. Veuillez utiliser l\'application client.'],
+                ]);
+            }
+            if ($expectedRole === 'pharmacy' && $user->role !== 'pharmacy') {
+                throw ValidationException::withMessages([
+                    'email' => ['Ce compte n\'est pas un compte pharmacie. Veuillez utiliser l\'application appropriée.'],
+                ]);
+            }
+            if ($expectedRole === 'customer' && $user->role !== 'customer') {
+                throw ValidationException::withMessages([
+                    'email' => ['Ce compte n\'est pas un compte client. Veuillez utiliser l\'application appropriée.'],
+                ]);
+            }
         }
 
         // Vérifier le statut d'approbation pour les coursiers

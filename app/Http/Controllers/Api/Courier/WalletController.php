@@ -26,8 +26,9 @@ class WalletController extends Controller
         if (!$courier) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Profil coursier non trouvé'
-            ], 404);
+                'message' => 'Profil coursier non trouvé. Veuillez vous connecter avec un compte livreur.',
+                'error_code' => 'COURIER_PROFILE_NOT_FOUND'
+            ], 403);
         }
         
         $balance = $this->walletService->getBalance($courier);

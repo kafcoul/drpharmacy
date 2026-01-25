@@ -97,4 +97,39 @@ class PasswordResetController extends Controller
 
         return response()->json(['message' => 'Mot de passe réinitialisé avec succès']);
     }
+
+    /**
+     * Update Password (for authenticated users)
+     */
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => ['required', 'confirmed', Password::defaults()],
+        ]);
+
+        $user = $request->user();
+
+        // Verify current password
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'message' => 'Le mot de passe actuel est incorrect',
+                'errors' => ['current_password' => ['Le mot de passe actuel est incorrect']]
+            ], 422);
+        }
+
+        // Check new password is different from current
+        if (Hash::check($request->new_password, $user->password)) {
+            return response()->json([
+                'message' => 'Le nouveau mot de passe doit être différent de l\'ancien',
+                'errors' => ['new_password' => ['Le nouveau mot de passe doit être différent de l\'ancien']]
+            ], 422);
+        }
+
+        $user->forceFill([
+            'password' => Hash::make($request->new_password),
+        ])->save();
+
+        return response()->json(['message' => 'Mot de passe modifié avec succès']);
+    }
 }

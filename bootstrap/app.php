@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'production.safe' => \App\Http\Middleware\EnsureProductionSafe::class,
             'verified.phone' => \App\Http\Middleware\EnsurePhoneIsVerified::class,
             'csp' => \App\Http\Middleware\ContentSecurityPolicy::class, // R-003
+            'courier' => \App\Http\Middleware\EnsureCourierProfile::class, // Vérifier profil coursier
         ]);
         
         // Appliquer le rate limiting par défaut sur l'API

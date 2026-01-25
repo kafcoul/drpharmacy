@@ -13,6 +13,8 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\HtmlString;
 use App\Models\User;
 
 class CourierResource extends Resource
@@ -26,6 +28,28 @@ class CourierResource extends Resource
     protected static ?string $navigationGroup = 'Gestion';
     
     protected static ?int $navigationSort = 3;
+    
+    /**
+     * Génère le HTML pour afficher un document KYC
+     */
+    private static function renderDocumentPreview(?string $documentPath, string $fallbackText = 'Aucun document'): HtmlString|string
+    {
+        if (empty($documentPath)) {
+            return $fallbackText;
+        }
+        
+        try {
+            $url = route('admin.documents.view', ['path' => $documentPath]);
+            return new HtmlString(
+                '<a href="'.$url.'" target="_blank" class="text-primary-600 hover:underline">
+                    <img src="'.$url.'" class="max-h-32 rounded border" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'"/>
+                    <span style="display:none">📄 Voir le document</span>
+                </a>'
+            );
+        } catch (\Exception $e) {
+            return $fallbackText;
+        }
+    }
 
     public static function form(Form $form): Form
     {
@@ -69,88 +93,22 @@ class CourierResource extends Resource
                     ->schema([
                         Forms\Components\Placeholder::make('id_card_front_preview')
                             ->label('CNI (Recto)')
-                            ->content(function ($record) {
-                                if (!$record || !$record->id_card_front_document) {
-                                    return 'Aucun document';
-                                }
-                                $url = route('admin.documents.view', ['path' => $record->id_card_front_document]);
-                                return new \Illuminate\Support\HtmlString(
-                                    '<a href="'.$url.'" target="_blank" class="text-primary-600 hover:underline">
-                                        <img src="'.$url.'" class="max-h-32 rounded border" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'"/>
-                                        <span style="display:none">📄 Voir le document</span>
-                                    </a>'
-                                );
-                            }),
+                            ->content(fn ($record) => self::renderDocumentPreview($record?->id_card_front_document)),
                         Forms\Components\Placeholder::make('id_card_back_preview')
                             ->label('CNI (Verso)')
-                            ->content(function ($record) {
-                                if (!$record || !$record->id_card_back_document) {
-                                    return 'Aucun document';
-                                }
-                                $url = route('admin.documents.view', ['path' => $record->id_card_back_document]);
-                                return new \Illuminate\Support\HtmlString(
-                                    '<a href="'.$url.'" target="_blank" class="text-primary-600 hover:underline">
-                                        <img src="'.$url.'" class="max-h-32 rounded border" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'"/>
-                                        <span style="display:none">📄 Voir le document</span>
-                                    </a>'
-                                );
-                            }),
+                            ->content(fn ($record) => self::renderDocumentPreview($record?->id_card_back_document)),
                         Forms\Components\Placeholder::make('selfie_preview')
                             ->label('Selfie de vérification')
-                            ->content(function ($record) {
-                                if (!$record || !$record->selfie_document) {
-                                    return 'Aucun document';
-                                }
-                                $url = route('admin.documents.view', ['path' => $record->selfie_document]);
-                                return new \Illuminate\Support\HtmlString(
-                                    '<a href="'.$url.'" target="_blank" class="text-primary-600 hover:underline">
-                                        <img src="'.$url.'" class="max-h-32 rounded border" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'"/>
-                                        <span style="display:none">📄 Voir le document</span>
-                                    </a>'
-                                );
-                            }),
+                            ->content(fn ($record) => self::renderDocumentPreview($record?->selfie_document)),
                         Forms\Components\Placeholder::make('driving_license_front_preview')
                             ->label('Permis de Conduire (Recto)')
-                            ->content(function ($record) {
-                                if (!$record || !$record->driving_license_front_document) {
-                                    return 'Aucun document';
-                                }
-                                $url = route('admin.documents.view', ['path' => $record->driving_license_front_document]);
-                                return new \Illuminate\Support\HtmlString(
-                                    '<a href="'.$url.'" target="_blank" class="text-primary-600 hover:underline">
-                                        <img src="'.$url.'" class="max-h-32 rounded border" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'"/>
-                                        <span style="display:none">📄 Voir le document</span>
-                                    </a>'
-                                );
-                            }),
+                            ->content(fn ($record) => self::renderDocumentPreview($record?->driving_license_front_document)),
                         Forms\Components\Placeholder::make('driving_license_back_preview')
                             ->label('Permis de Conduire (Verso)')
-                            ->content(function ($record) {
-                                if (!$record || !$record->driving_license_back_document) {
-                                    return 'Aucun document';
-                                }
-                                $url = route('admin.documents.view', ['path' => $record->driving_license_back_document]);
-                                return new \Illuminate\Support\HtmlString(
-                                    '<a href="'.$url.'" target="_blank" class="text-primary-600 hover:underline">
-                                        <img src="'.$url.'" class="max-h-32 rounded border" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'"/>
-                                        <span style="display:none">📄 Voir le document</span>
-                                    </a>'
-                                );
-                            }),
+                            ->content(fn ($record) => self::renderDocumentPreview($record?->driving_license_back_document)),
                         Forms\Components\Placeholder::make('vehicle_registration_preview')
                             ->label('Carte Grise')
-                            ->content(function ($record) {
-                                if (!$record || !$record->vehicle_registration_document) {
-                                    return 'Aucun document';
-                                }
-                                $url = route('admin.documents.view', ['path' => $record->vehicle_registration_document]);
-                                return new \Illuminate\Support\HtmlString(
-                                    '<a href="'.$url.'" target="_blank" class="text-primary-600 hover:underline">
-                                        <img src="'.$url.'" class="max-h-32 rounded border" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'"/>
-                                        <span style="display:none">📄 Voir le document</span>
-                                    </a>'
-                                );
-                            }),
+                            ->content(fn ($record) => self::renderDocumentPreview($record?->vehicle_registration_document)),
                     ])->columns(3)
                     ->visible(fn ($record) => $record !== null),
                 Forms\Components\Section::make('Télécharger des documents')

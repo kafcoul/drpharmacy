@@ -43,6 +43,15 @@ Route::middleware('throttle:public')->group(function () {
     Route::get('/duty-zones/{id}', [\App\Http\Controllers\Api\Pharmacy\DutyZoneController::class, 'show']);
 });
 
+// Public Pharmacies routes (no auth required - customers can browse)
+Route::prefix('customer/pharmacies')->middleware('throttle:search')->group(function () {
+    Route::get('/', [PharmacyController::class, 'index']);
+    Route::get('/nearby', [PharmacyController::class, 'nearby']);
+    Route::get('/on-duty', [PharmacyController::class, 'onDuty']);
+    Route::get('/featured', [PharmacyController::class, 'featured']);
+    Route::get('/{id}', [PharmacyController::class, 'show'])->where('id', '[0-9]+');
+});
+
 // Public Product routes (no auth required - customers can browse)
 // Rate limited for search operations
 Route::prefix('products')->middleware('throttle:search')->group(function () {
@@ -86,6 +95,7 @@ Route::prefix('auth')->group(function () {
         Route::post('/logout', [LoginController::class, 'logout']);
         Route::get('/me', [LoginController::class, 'me']);
         Route::post('/me/update', [LoginController::class, 'updateProfile']);
+        Route::post('/password', [\App\Http\Controllers\Api\Auth\PasswordResetController::class, 'updatePassword']);
     });
 });
 
@@ -115,12 +125,16 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Customer routes - Nécessite téléphone vérifié pour les actions sensibles
     Route::prefix('customer')->group(function () {
-        // Pharmacies - Lecture seule, pas de vérification requise
-        Route::middleware('throttle:search')->group(function () {
-            Route::get('/pharmacies', [PharmacyController::class, 'index']);
-            Route::get('/pharmacies/nearby', [PharmacyController::class, 'nearby']);
-            Route::get('/pharmacies/on-duty', [PharmacyController::class, 'onDuty']);
-            Route::get('/pharmacies/{id}', [PharmacyController::class, 'show']);
+        // Addresses - Gestion des adresses de livraison
+        Route::prefix('addresses')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\Customer\AddressController::class, 'index']);
+            Route::get('/labels', [\App\Http\Controllers\Api\Customer\AddressController::class, 'getLabels']);
+            Route::get('/default', [\App\Http\Controllers\Api\Customer\AddressController::class, 'getDefault']);
+            Route::get('/{id}', [\App\Http\Controllers\Api\Customer\AddressController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\Customer\AddressController::class, 'store']);
+            Route::put('/{id}', [\App\Http\Controllers\Api\Customer\AddressController::class, 'update']);
+            Route::delete('/{id}', [\App\Http\Controllers\Api\Customer\AddressController::class, 'destroy']);
+            Route::post('/{id}/default', [\App\Http\Controllers\Api\Customer\AddressController::class, 'setDefault']);
         });
         
         // Orders - Lecture seule
@@ -197,8 +211,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/on-calls/{id}', [\App\Http\Controllers\Api\Pharmacy\OnCallController::class, 'destroy']);
     });
     
-    // Courier routes
-    Route::prefix('courier')->group(function () {
+    // Courier routes - Middleware 'courier' vérifie le profil coursier
+    Route::prefix('courier')->middleware('courier')->group(function () {
         Route::get('/profile', [DeliveryController::class, 'profile']);
         
         // Wallet

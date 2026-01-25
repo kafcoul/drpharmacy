@@ -243,5 +243,55 @@ class PharmacyController extends Controller
             'data' => $pharmacies,
         ]);
     }
+
+    /**
+     * Get featured pharmacies
+     */
+    public function featured()
+    {
+        $pharmacies = Pharmacy::approved()
+            ->featured()
+            ->orderBy('name')
+            ->limit(10)
+            ->get()
+            ->map(function ($pharmacy) {
+                // Check if pharmacy is currently on duty
+                $isOnDuty = $pharmacy->onCalls()
+                    ->where('start_at', '<=', now())
+                    ->where('end_at', '>=', now())
+                    ->where('is_active', true)
+                    ->exists();
+                
+                $currentOnCall = $isOnDuty ? $pharmacy->onCalls()
+                    ->where('start_at', '<=', now())
+                    ->where('end_at', '>=', now())
+                    ->where('is_active', true)
+                    ->first() : null;
+
+                return [
+                    'id' => $pharmacy->id,
+                    'name' => $pharmacy->name,
+                    'phone' => $pharmacy->phone,
+                    'email' => $pharmacy->email,
+                    'address' => $pharmacy->address,
+                    'city' => $pharmacy->city,
+                    'latitude' => $pharmacy->latitude ? (float) $pharmacy->latitude : null,
+                    'longitude' => $pharmacy->longitude ? (float) $pharmacy->longitude : null,
+                    'status' => $pharmacy->status,
+                    'is_open' => $pharmacy->is_open ?? true,
+                    'is_on_duty' => $isOnDuty,
+                    'is_featured' => true,
+                    'duty_info' => $currentOnCall ? [
+                        'type' => $currentOnCall->type,
+                        'end_at' => $currentOnCall->end_at?->toIso8601String(),
+                    ] : null,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $pharmacies,
+        ]);
+    }
 }
 

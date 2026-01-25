@@ -8,7 +8,8 @@ Route::get('/', function () {
 });
 
 // Routes pour servir les documents privés (admin uniquement)
-Route::middleware(['web', 'auth'])->prefix('admin/documents')->group(function () {
+// Ces routes doivent être APRÈS le middleware web mais AVANT les routes Filament
+Route::middleware(['web'])->prefix('admin/documents')->group(function () {
     Route::get('/view/{path}', [PrivateDocumentController::class, 'show'])
         ->where('path', '.*')
         ->name('admin.documents.view');

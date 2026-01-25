@@ -39,8 +39,10 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 \App\Filament\Widgets\StatsOverview::class,
+                \App\Filament\Widgets\OnDutyStatsWidget::class,
                 \App\Filament\Widgets\OrdersChart::class,
                 \App\Filament\Widgets\RevenueChart::class,
+                \App\Filament\Widgets\CurrentOnDutyPharmaciesWidget::class,
                 \App\Filament\Widgets\LatestOrdersWidget::class,
             ])
             ->middleware([

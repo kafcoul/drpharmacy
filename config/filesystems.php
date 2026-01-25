@@ -48,7 +48,7 @@ return [
             'root' => storage_path('app/private'),
             'url' => env('APP_URL').'/admin/documents/view',
             'visibility' => 'private',
-            'serve' => true,
+            'serve' => false, // Désactivé car on utilise notre propre route avec auth
             'throw' => false,
             'report' => false,
         ],

@@ -555,6 +555,9 @@ class DeliveryController extends Controller
 
     /**
      * Toggle courier availability
+     * 
+     * Si 'status' est fourni dans la requête, définit ce statut explicitement.
+     * Sinon, fait un toggle entre 'available' et 'offline'.
      */
     public function toggleAvailability(Request $request)
     {
@@ -567,7 +570,13 @@ class DeliveryController extends Controller
             ], 403);
         }
 
-        $newStatus = $courier->status === 'available' ? 'offline' : 'available';
+        // Si un statut explicite est fourni, l'utiliser
+        // Sinon, faire un toggle classique
+        if ($request->has('status') && in_array($request->status, ['available', 'offline'])) {
+            $newStatus = $request->status;
+        } else {
+            $newStatus = $courier->status === 'available' ? 'offline' : 'available';
+        }
 
         $courier->update(['status' => $newStatus]);
 
@@ -576,6 +585,7 @@ class DeliveryController extends Controller
             'message' => $newStatus === 'available' ? 'Vous êtes maintenant disponible' : 'Vous êtes maintenant hors ligne',
             'data' => [
                 'status' => $newStatus,
+                'is_online' => $newStatus === 'available',
             ],
         ]);
     }
