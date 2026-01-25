@@ -43,16 +43,23 @@ class RegisterController extends Controller
             'role' => 'customer',
         ]);
 
-        // Send OTP
+        // Send OTP with email as fallback
         $otp = $this->otpService->generateOtp($user->phone); // Prefer phone for mobile apps
-        $this->otpService->sendOtp($user->phone, $otp);
+        $channel = $this->otpService->sendOtp($user->phone, $otp, 'verification', $user->email);
 
         // Create token
         $token = $user->createToken($request->device_name ?? 'mobile-app')->plainTextToken;
 
+        // Determine verification message
+        $verificationMessage = match($channel) {
+            'sms' => 'Un code de vérification a été envoyé par SMS.',
+            'sms_fallback_email' => 'SMS indisponible, un code a été envoyé à votre email.',
+            default => 'Un code de vérification vous a été envoyé.',
+        };
+
         return response()->json([
             'success' => true,
-            'message' => 'Inscription réussie. Veuillez vérifier votre compte.',
+            'message' => 'Inscription réussie. ' . $verificationMessage,
             'data' => [
                 'user' => [
                     'id' => $user->id,
@@ -63,6 +70,7 @@ class RegisterController extends Controller
                     'phone_verified_at' => $user->phone_verified_at,
                 ],
                 'token' => $token,
+                'otp_channel' => $channel,
             ],
         ], 201);
     }
@@ -151,9 +159,9 @@ class RegisterController extends Controller
                 'kyc_status' => ($idCardFrontPath && $idCardBackPath && $selfiePath) ? 'pending_review' : 'incomplete',
             ]);
 
-            // Send OTP for phone verification
+            // Send OTP for phone verification with email fallback
             $otp = $this->otpService->generateOtp($user->phone);
-            $this->otpService->sendOtp($user->phone, $otp);
+            $channel = $this->otpService->sendOtp($user->phone, $otp, 'verification', $user->email);
 
             // NE PAS créer de token pour les coursiers en attente d'approbation
             // Le token sera créé uniquement lors de la connexion après approbation admin
@@ -240,9 +248,9 @@ class RegisterController extends Controller
             // Attach user to pharmacy
             $pharmacy->users()->attach($user->id, ['role' => 'owner']);
 
-            // Send OTP
+            // Send OTP with email fallback
             $otp = $this->otpService->generateOtp($user->phone);
-            $this->otpService->sendOtp($user->phone, $otp);
+            $channel = $this->otpService->sendOtp($user->phone, $otp, 'verification', $user->email);
 
             $token = $user->createToken($request->device_name ?? 'mobile-app')->plainTextToken;
 

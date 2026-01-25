@@ -78,8 +78,37 @@ class VerificationController extends Controller
         }
 
         $otp = $this->otpService->generateOtp($identifier);
-        $this->otpService->sendOtp($identifier, $otp);
+        
+        // Send OTP with email as fallback if identifier is phone
+        $fallbackEmail = filter_var($identifier, FILTER_VALIDATE_EMAIL) ? null : $user->email;
+        $channel = $this->otpService->sendOtp($identifier, $otp, 'verification', $fallbackEmail);
 
-        return response()->json(['message' => 'Nouveau code envoyé']);
+        // Determine message based on channel used
+        $message = match($channel) {
+            'email' => 'Code envoyé par email',
+            'sms' => 'Code envoyé par SMS',
+            'sms_fallback_email' => 'SMS indisponible, code envoyé par email à ' . $this->maskEmail($user->email),
+            default => 'Nouveau code envoyé',
+        };
+
+        return response()->json([
+            'message' => $message,
+            'channel' => $channel,
+        ]);
+    }
+
+    /**
+     * Mask email for privacy (show first 2 chars and domain)
+     */
+    private function maskEmail(string $email): string
+    {
+        $parts = explode('@', $email);
+        if (count($parts) !== 2) return '***@***';
+        
+        $name = $parts[0];
+        $domain = $parts[1];
+        
+        $maskedName = substr($name, 0, 2) . str_repeat('*', max(0, strlen($name) - 2));
+        return $maskedName . '@' . $domain;
     }
 }
