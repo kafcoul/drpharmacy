@@ -123,8 +123,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id}', [NotificationController::class, 'destroy']);
     });
     
-    // Customer routes - Nécessite téléphone vérifié pour les actions sensibles
-    Route::prefix('customer')->group(function () {
+    // Customer routes - Nécessite rôle customer, téléphone vérifié pour les actions sensibles
+    Route::prefix('customer')->middleware('role:customer')->group(function () {
         // Addresses - Gestion des adresses de livraison
         Route::prefix('addresses')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\Customer\AddressController::class, 'index']);
@@ -168,8 +168,8 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
     
-    // Pharmacy routes
-    Route::prefix('pharmacy')->group(function () {
+    // Pharmacy routes - Nécessite rôle pharmacy
+    Route::prefix('pharmacy')->middleware('role:pharmacy')->group(function () {
         // Pharmacy Profile
         Route::get('/profile', [\App\Http\Controllers\Api\Pharmacy\PharmacyProfileController::class, 'index']);
         Route::post('/profile/{id}', [\App\Http\Controllers\Api\Pharmacy\PharmacyProfileController::class, 'update']);
