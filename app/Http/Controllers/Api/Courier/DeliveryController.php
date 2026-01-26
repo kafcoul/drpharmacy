@@ -367,10 +367,11 @@ class DeliveryController extends Controller
 
         $delivery = $courier->deliveries()->findOrFail($id);
 
-        if ($delivery->status !== 'assigned') {
+        // Allow pickup from both 'assigned' and 'accepted' statuses
+        if (!in_array($delivery->status, ['assigned', 'accepted'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cette livraison ne peut pas être récupérée',
+                'message' => 'Cette livraison ne peut pas être récupérée. Statut actuel: ' . $delivery->status,
             ], 400);
         }
 
