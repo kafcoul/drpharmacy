@@ -197,15 +197,28 @@ class LoginController extends Controller
     public function updateProfile(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'required|string|max:20',
+            'name' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:20|unique:users,phone,' . $request->user()->id,
         ]);
 
         $user = $request->user();
-        $user->update([
-            'name' => $request->name,
-            'phone' => $request->phone,
-        ]);
+        
+        $data = [];
+        if ($request->has('name') && $request->name) {
+            $data['name'] = $request->name;
+        }
+        if ($request->has('phone') && $request->phone) {
+            $data['phone'] = $request->phone;
+        }
+        
+        if (empty($data)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Aucune donnée à mettre à jour',
+            ], 400);
+        }
+        
+        $user->update($data);
 
         return response()->json([
             'success' => true,
