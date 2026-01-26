@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Pharmacy\InventoryController;
 use App\Http\Controllers\Api\Courier\DeliveryController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\SupportController;
 use App\Http\Controllers\Api\WebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -121,6 +122,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/fcm-token', [NotificationController::class, 'updateFcmToken']);
         Route::delete('/fcm-token', [NotificationController::class, 'removeFcmToken']);
         Route::delete('/{id}', [NotificationController::class, 'destroy']);
+    });
+    
+    // Support Tickets (for all authenticated users)
+    Route::prefix('support')->group(function () {
+        Route::get('/tickets', [SupportController::class, 'index']);
+        Route::post('/tickets', [SupportController::class, 'store']);
+        Route::get('/tickets/stats', [SupportController::class, 'stats']);
+        Route::get('/tickets/{ticket}', [SupportController::class, 'show']);
+        Route::post('/tickets/{ticket}/messages', [SupportController::class, 'sendMessage']);
+        Route::post('/tickets/{ticket}/resolve', [SupportController::class, 'resolve']);
+        Route::post('/tickets/{ticket}/close', [SupportController::class, 'close']);
     });
     
     // Customer routes - Nécessite rôle customer, téléphone vérifié pour les actions sensibles
