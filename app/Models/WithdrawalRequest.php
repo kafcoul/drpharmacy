@@ -15,15 +15,23 @@ class WithdrawalRequest extends Model
         'amount',
         'payment_method',
         'account_details',
+        'phone',
+        'bank_details',
         'reference',
+        'jeko_reference',
+        'jeko_payment_id',
         'status',
         'processed_at',
+        'completed_at',
+        'error_message',
         'admin_notes',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'bank_details' => 'array',
         'processed_at' => 'datetime',
+        'completed_at' => 'datetime',
     ];
 
     /**
@@ -43,11 +51,27 @@ class WithdrawalRequest extends Model
     }
 
     /**
+     * Get the Jeko payment associated with this withdrawal
+     */
+    public function jekoPayment()
+    {
+        return $this->belongsTo(JekoPayment::class, 'jeko_payment_id');
+    }
+
+    /**
      * Scope for pending requests
      */
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
+    }
+
+    /**
+     * Scope for processing requests
+     */
+    public function scopeProcessing($query)
+    {
+        return $query->where('status', 'processing');
     }
 
     /**
