@@ -66,6 +66,11 @@ class AddressController extends Controller
 
         $user = Auth::user();
         
+        // Utiliser le téléphone du profil si non fourni
+        if (empty($validated['phone']) && $user->phone) {
+            $validated['phone'] = $user->phone;
+        }
+        
         // Si c'est la première adresse ou si elle doit être par défaut
         $isDefault = $validated['is_default'] ?? false;
         $isFirstAddress = $user->addresses()->count() === 0;
@@ -213,9 +218,15 @@ class AddressController extends Controller
      */
     public function getLabels(): JsonResponse
     {
+        $user = Auth::user();
+        
         return response()->json([
             'status' => 'success',
-            'data' => CustomerAddress::LABELS,
+            'data' => [
+                'labels' => CustomerAddress::LABELS,
+                'default_phone' => $user->phone,
+                'user_name' => $user->name,
+            ],
         ]);
     }
 

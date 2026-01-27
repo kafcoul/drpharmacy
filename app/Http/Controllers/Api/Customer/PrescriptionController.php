@@ -66,12 +66,10 @@ class PrescriptionController extends Controller
 
         // Notify all pharmacies (or relevant ones based on geolocation in future)
         // For MVP: Notify all users with role 'pharmacy'
-        $pharmacies = \App\Models\User::whereHas('roles', function($q) {
-            $q->where('name', 'pharmacy');
-        })->get();
+        $pharmacyUsers = \App\Models\User::where('role', 'pharmacy')->get();
 
-        foreach($pharmacies as $pharmacy) {
-             $pharmacy->notify(new \App\Notifications\NewPrescriptionNotification($prescription));
+        foreach($pharmacyUsers as $pharmacyUser) {
+             $pharmacyUser->notify(new \App\Notifications\NewPrescriptionNotification($prescription));
         }
 
         return response()->json([

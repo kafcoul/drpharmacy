@@ -246,15 +246,35 @@ class PharmacyController extends Controller
 
     /**
      * Get featured pharmacies
+     * Falls back to recently active pharmacies if no featured ones exist
      */
     public function featured()
     {
+        // First try to get featured pharmacies
         $pharmacies = Pharmacy::approved()
             ->featured()
             ->orderBy('name')
             ->limit(10)
-            ->get()
-            ->map(function ($pharmacy) {
+            ->get();
+
+        // Fallback: if no featured pharmacies, get recently active or any approved pharmacies
+        if ($pharmacies->isEmpty()) {
+            $pharmacies = Pharmacy::approved()
+                ->where('is_open', true)
+                ->orderByDesc('updated_at')
+                ->limit(10)
+                ->get();
+        }
+
+        // Second fallback: if still empty, get any approved pharmacies
+        if ($pharmacies->isEmpty()) {
+            $pharmacies = Pharmacy::approved()
+                ->orderByDesc('created_at')
+                ->limit(10)
+                ->get();
+        }
+
+        $pharmacies = $pharmacies->map(function ($pharmacy) {
                 // Check if pharmacy is currently on duty
                 $isOnDuty = $pharmacy->onCalls()
                     ->where('start_at', '<=', now())

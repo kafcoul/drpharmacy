@@ -215,12 +215,28 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Wallet
         Route::get('/wallet', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'index']);
+        Route::get('/wallet/stats', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'stats']);
+        Route::post('/wallet/withdraw', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'withdraw']);
+        Route::post('/wallet/bank-info', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'saveBankInfo']);
+        Route::post('/wallet/mobile-money', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'saveMobileMoneyInfo']);
+        Route::post('/wallet/threshold', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'setWithdrawalThreshold']);
+        Route::get('/wallet/export', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'exportTransactions']);
 
         // On-Call Management
         Route::get('/on-calls', [\App\Http\Controllers\Api\Pharmacy\OnCallController::class, 'index']);
         Route::post('/on-calls', [\App\Http\Controllers\Api\Pharmacy\OnCallController::class, 'store']);
         Route::put('/on-calls/{id}', [\App\Http\Controllers\Api\Pharmacy\OnCallController::class, 'update']);
         Route::delete('/on-calls/{id}', [\App\Http\Controllers\Api\Pharmacy\OnCallController::class, 'destroy']);
+
+        // Reports & Analytics
+        Route::prefix('reports')->group(function () {
+            Route::get('/overview', [\App\Http\Controllers\Api\Pharmacy\ReportsController::class, 'overview']);
+            Route::get('/sales', [\App\Http\Controllers\Api\Pharmacy\ReportsController::class, 'sales']);
+            Route::get('/orders', [\App\Http\Controllers\Api\Pharmacy\ReportsController::class, 'orders']);
+            Route::get('/inventory', [\App\Http\Controllers\Api\Pharmacy\ReportsController::class, 'inventory']);
+            Route::get('/stock-alerts', [\App\Http\Controllers\Api\Pharmacy\ReportsController::class, 'stockAlerts']);
+            Route::get('/export', [\App\Http\Controllers\Api\Pharmacy\ReportsController::class, 'export']);
+        });
     });
     
     // Courier routes - Middleware 'courier' vérifie le profil coursier

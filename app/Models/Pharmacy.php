@@ -153,5 +153,21 @@ class Pharmacy extends Model
     {
         return $query->where('is_featured', true);
     }
+
+    /**
+     * Informations de paiement de la pharmacie
+     */
+    public function paymentInfo(): HasMany
+    {
+        return $this->hasMany(PaymentInfo::class);
+    }
+
+    /**
+     * Demandes de retrait de la pharmacie
+     */
+    public function withdrawalRequests(): HasMany
+    {
+        return $this->hasMany(WithdrawalRequest::class);
+    }
 }
 

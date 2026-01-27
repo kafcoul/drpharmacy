@@ -174,7 +174,11 @@ class LoginController extends Controller
         ];
 
         if ($user->role === 'customer') {
-            // Customer specific data if any
+            // Include default address for customers
+            $defaultAddress = $user->defaultAddress;
+            $data['default_address'] = $defaultAddress ? $defaultAddress->address : null;
+            $data['default_address_id'] = $defaultAddress?->id;
+            $data['addresses_count'] = $user->addresses()->count();
         } elseif ($user->role === 'pharmacy') {
             $data['pharmacies'] = $user->pharmacies;
             // Wallet is usually attached to Pharmacy, not User in this case, or maybe User has wallet?
