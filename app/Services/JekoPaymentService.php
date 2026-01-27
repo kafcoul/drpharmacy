@@ -586,4 +586,369 @@ class JekoPaymentService
 
         return $payment->fresh();
     }
+
+    /**
+     * ======================================================================
+     * PAYOUT / DISBURSEMENT - Décaissement vers Mobile Money ou Bank
+     * ======================================================================
+     */
+
+    /**
+     * Créer une demande de décaissement (payout) via JEKO
+     *
+     * @param Model $payable Entité source (Wallet, WithdrawalRequest, etc.)
+     * @param int $amountCents Montant en centimes
+     * @param string $recipientPhone Numéro de téléphone du bénéficiaire (Mobile Money)
+     * @param JekoPaymentMethod $method Méthode de paiement (MOOV_BJ, MTN_BJ, etc.)
+     * @param User|null $user Utilisateur bénéficiaire
+     * @param string|null $description Description du décaissement
+     * @return JekoPayment
+     * @throws \Exception
+     */
+    public function createPayout(
+        Model $payable,
+        int $amountCents,
+        string $recipientPhone,
+        JekoPaymentMethod $method,
+        ?User $user = null,
+        ?string $description = null
+    ): JekoPayment {
+        // Validation du montant minimum
+        if ($amountCents < 100) {
+            throw new \InvalidArgumentException('Le montant minimum est de 100 centimes (1 XOF)');
+        }
+
+        // Nettoyer le numéro de téléphone
+        $recipientPhone = $this->normalizePhoneNumber($recipientPhone);
+
+        // Créer l'enregistrement local
+        $payment = JekoPayment::create([
+            'payable_type' => get_class($payable),
+            'payable_id' => $payable->id,
+            'user_id' => $user?->id,
+            'amount_cents' => $amountCents,
+            'currency' => 'XOF',
+            'payment_method' => $method,
+            'status' => JekoPaymentStatus::PENDING,
+            'is_payout' => true,
+            'recipient_phone' => $recipientPhone,
+            'description' => $description ?? 'Retrait DR-PHARMA',
+            'initiated_at' => now(),
+        ]);
+
+        // MODE SANDBOX: Simuler le décaissement
+        if ($this->isSandboxMode()) {
+            return $this->handleSandboxPayout($payment);
+        }
+
+        try {
+            // Appel API JEKO pour le décaissement
+            $response = Http::withHeaders([
+                'X-API-KEY' => $this->apiKey,
+                'X-API-KEY-ID' => $this->apiKeyId,
+                'Content-Type' => 'application/json',
+            ])->post("{$this->apiUrl}/partner_api/disbursements", [
+                'storeId' => $this->storeId,
+                'amountCents' => $amountCents,
+                'currency' => 'XOF',
+                'reference' => $payment->reference,
+                'recipientPhone' => $recipientPhone,
+                'paymentMethod' => $method->value,
+                'description' => $description ?? 'Retrait DR-PHARMA',
+            ]);
+
+            if (!$response->successful()) {
+                $errorBody = $response->json();
+                Log::error('JEKO Payout API Error', [
+                    'reference' => $payment->reference,
+                    'status' => $response->status(),
+                    'body' => $errorBody,
+                ]);
+
+                $payment->markAsFailed($errorBody['message'] ?? 'Erreur API JEKO Payout');
+                throw new \Exception($errorBody['message'] ?? 'Erreur lors du décaissement JEKO');
+            }
+
+            $data = $response->json();
+
+            // Mettre à jour avec les données JEKO
+            $payment->update([
+                'jeko_payment_request_id' => $data['id'] ?? $data['disbursementId'] ?? null,
+                'status' => JekoPaymentStatus::PROCESSING,
+            ]);
+
+            Log::info('JEKO Payout Created', [
+                'reference' => $payment->reference,
+                'jeko_id' => $data['id'] ?? $data['disbursementId'] ?? null,
+                'amount' => $amountCents / 100,
+                'recipient' => $recipientPhone,
+            ]);
+
+            return $payment->fresh();
+
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            Log::error('JEKO Payout API Request Exception', [
+                'reference' => $payment->reference,
+                'message' => $e->getMessage(),
+            ]);
+
+            $payment->markAsFailed('Erreur de connexion à JEKO: ' . $e->getMessage());
+            throw new \Exception('Impossible de contacter le service de paiement');
+        }
+    }
+
+    /**
+     * Créer un décaissement vers un compte bancaire
+     *
+     * @param Model $payable Entité source
+     * @param int $amountCents Montant en centimes
+     * @param array $bankDetails Détails bancaires (bank_code, account_number, holder_name)
+     * @param User|null $user Utilisateur bénéficiaire
+     * @param string|null $description Description
+     * @return JekoPayment
+     */
+    public function createBankPayout(
+        Model $payable,
+        int $amountCents,
+        array $bankDetails,
+        ?User $user = null,
+        ?string $description = null
+    ): JekoPayment {
+        // Validation des détails bancaires
+        $required = ['bank_code', 'account_number', 'holder_name'];
+        foreach ($required as $field) {
+            if (empty($bankDetails[$field])) {
+                throw new \InvalidArgumentException("Le champ {$field} est requis pour un virement bancaire");
+            }
+        }
+
+        // Créer l'enregistrement local
+        $payment = JekoPayment::create([
+            'payable_type' => get_class($payable),
+            'payable_id' => $payable->id,
+            'user_id' => $user?->id,
+            'amount_cents' => $amountCents,
+            'currency' => 'XOF',
+            'payment_method' => JekoPaymentMethod::BANK_TRANSFER,
+            'status' => JekoPaymentStatus::PENDING,
+            'is_payout' => true,
+            'bank_details' => $bankDetails,
+            'description' => $description ?? 'Virement DR-PHARMA',
+            'initiated_at' => now(),
+        ]);
+
+        // MODE SANDBOX
+        if ($this->isSandboxMode()) {
+            return $this->handleSandboxPayout($payment);
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'X-API-KEY' => $this->apiKey,
+                'X-API-KEY-ID' => $this->apiKeyId,
+                'Content-Type' => 'application/json',
+            ])->post("{$this->apiUrl}/partner_api/bank_transfers", [
+                'storeId' => $this->storeId,
+                'amountCents' => $amountCents,
+                'currency' => 'XOF',
+                'reference' => $payment->reference,
+                'bankCode' => $bankDetails['bank_code'],
+                'accountNumber' => $bankDetails['account_number'],
+                'holderName' => $bankDetails['holder_name'],
+                'description' => $description ?? 'Virement DR-PHARMA',
+            ]);
+
+            if (!$response->successful()) {
+                $errorBody = $response->json();
+                $payment->markAsFailed($errorBody['message'] ?? 'Erreur virement bancaire');
+                throw new \Exception($errorBody['message'] ?? 'Erreur lors du virement');
+            }
+
+            $data = $response->json();
+            $payment->update([
+                'jeko_payment_request_id' => $data['id'] ?? null,
+                'status' => JekoPaymentStatus::PROCESSING,
+            ]);
+
+            return $payment->fresh();
+
+        } catch (\Exception $e) {
+            Log::error('JEKO Bank Payout Error', [
+                'reference' => $payment->reference,
+                'message' => $e->getMessage(),
+            ]);
+            $payment->markAsFailed($e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Gérer un décaissement en mode sandbox
+     */
+    private function handleSandboxPayout(JekoPayment $payment): JekoPayment
+    {
+        Log::info('JEKO SANDBOX: Simulation décaissement', [
+            'reference' => $payment->reference,
+            'amount' => $payment->amount,
+            'recipient' => $payment->recipient_phone ?? 'bank',
+        ]);
+
+        // Simuler un ID de transaction
+        $fakeId = 'SANDBOX_PAYOUT_' . strtoupper(\Illuminate\Support\Str::random(8));
+
+        $payment->update([
+            'jeko_payment_request_id' => $fakeId,
+            'status' => JekoPaymentStatus::PROCESSING,
+        ]);
+
+        // En sandbox, on peut auto-confirmer après un court délai
+        // ou laisser en processing pour simulation manuelle
+        
+        return $payment->fresh();
+    }
+
+    /**
+     * Confirmer un décaissement sandbox
+     */
+    public function confirmSandboxPayout(string $reference): JekoPayment
+    {
+        $payment = JekoPayment::byReference($reference)->first();
+        
+        if (!$payment) {
+            throw new \Exception('Décaissement non trouvé');
+        }
+
+        if (!$payment->is_payout) {
+            throw new \Exception('Ce paiement n\'est pas un décaissement');
+        }
+
+        if ($payment->isFinal()) {
+            return $payment;
+        }
+
+        // Marquer comme succès
+        $payment->update([
+            'status' => JekoPaymentStatus::SUCCESS,
+            'completed_at' => now(),
+            'webhook_processed' => true,
+            'webhook_received_at' => now(),
+        ]);
+
+        // Exécuter la logique métier
+        $this->handleSuccessfulPayout($payment);
+
+        Log::info('JEKO SANDBOX: Décaissement confirmé', [
+            'reference' => $payment->reference,
+            'amount' => $payment->amount,
+        ]);
+
+        return $payment->fresh();
+    }
+
+    /**
+     * Traiter un décaissement réussi
+     */
+    protected function handleSuccessfulPayout(JekoPayment $payment): void
+    {
+        $payable = $payment->payable;
+
+        if (!$payable) {
+            Log::warning('Payout success but no payable found', ['reference' => $payment->reference]);
+            return;
+        }
+
+        // Si c'est un WithdrawalRequest, marquer comme complété
+        if ($payable instanceof \App\Models\WithdrawalRequest) {
+            $payable->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+                'jeko_reference' => $payment->reference,
+            ]);
+
+            // Débiter le wallet
+            $wallet = $payable->wallet;
+            if ($wallet) {
+                $wallet->debit($payable->amount, 'withdrawal', "Retrait {$payment->reference}");
+            }
+
+            Log::info('Withdrawal completed via Jeko', [
+                'withdrawal_id' => $payable->id,
+                'amount' => $payable->amount,
+                'reference' => $payment->reference,
+            ]);
+        }
+
+        // Notifier l'utilisateur
+        if ($payment->user) {
+            // TODO: Envoyer notification de décaissement réussi
+        }
+    }
+
+    /**
+     * Vérifier le statut d'un décaissement
+     */
+    public function checkPayoutStatus(JekoPayment $payment): JekoPayment
+    {
+        if (!$payment->is_payout || !$payment->jeko_payment_request_id) {
+            return $payment;
+        }
+
+        if ($payment->isFinal()) {
+            return $payment;
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'X-API-KEY' => $this->apiKey,
+                'X-API-KEY-ID' => $this->apiKeyId,
+            ])->get("{$this->apiUrl}/partner_api/disbursements/{$payment->jeko_payment_request_id}");
+
+            if (!$response->successful()) {
+                return $payment;
+            }
+
+            $data = $response->json();
+            $status = $data['status'] ?? null;
+
+            if ($status === 'SUCCESS' || $status === 'COMPLETED') {
+                $payment->update([
+                    'status' => JekoPaymentStatus::SUCCESS,
+                    'completed_at' => now(),
+                ]);
+                $this->handleSuccessfulPayout($payment);
+            } elseif ($status === 'FAILED' || $status === 'REJECTED') {
+                $payment->markAsFailed($data['message'] ?? 'Décaissement échoué');
+            }
+
+            return $payment->fresh();
+
+        } catch (\Exception $e) {
+            Log::error('JEKO Payout Status Check Error', [
+                'reference' => $payment->reference,
+                'message' => $e->getMessage(),
+            ]);
+            return $payment;
+        }
+    }
+
+    /**
+     * Normaliser un numéro de téléphone pour JEKO
+     */
+    private function normalizePhoneNumber(string $phone): string
+    {
+        // Supprimer les espaces et caractères spéciaux
+        $phone = preg_replace('/[^0-9+]/', '', $phone);
+        
+        // Si le numéro commence par 0, ajouter l'indicatif Bénin
+        if (str_starts_with($phone, '0')) {
+            $phone = '+229' . substr($phone, 1);
+        }
+        
+        // S'assurer qu'il commence par +
+        if (!str_starts_with($phone, '+')) {
+            $phone = '+' . $phone;
+        }
+        
+        return $phone;
+    }
 }

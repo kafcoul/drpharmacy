@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Api\Pharmacy;
 
+use App\Enums\JekoPaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Models\Pharmacy;
 use App\Models\WithdrawalRequest;
+use App\Services\JekoPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -12,6 +14,13 @@ use Illuminate\Support\Str;
 
 class WalletController extends Controller
 {
+    protected JekoPaymentService $jekoService;
+
+    public function __construct(JekoPaymentService $jekoService)
+    {
+        $this->jekoService = $jekoService;
+    }
+
     /**
      * Get wallet balance and transaction history
      */
@@ -115,14 +124,18 @@ class WalletController extends Controller
     }
 
     /**
-     * Request a withdrawal
+     * Request a withdrawal via JEKO Payment
      */
     public function withdraw(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'amount' => 'required|numeric|min:1000',
-            'payment_method' => 'required|in:bank,mobile_money',
-            'account_details' => 'nullable|string',
+            'payment_method' => 'required|in:bank,mobile_money,mtn_bj,moov_bj,wave',
+            'phone' => 'required_if:payment_method,mobile_money,mtn_bj,moov_bj,wave|string',
+            'bank_details' => 'required_if:payment_method,bank|array',
+            'bank_details.bank_code' => 'required_if:payment_method,bank|string',
+            'bank_details.account_number' => 'required_if:payment_method,bank|string',
+            'bank_details.holder_name' => 'required_if:payment_method,bank|string',
         ]);
         
         if ($validator->fails()) {
@@ -144,29 +157,89 @@ class WalletController extends Controller
             ], 400);
         }
         
-        // Create withdrawal request
+        // Create withdrawal request record
         $reference = 'WD-' . strtoupper(Str::random(8));
         
-        // Create the withdrawal request record (or transaction with pending status)
         $withdrawal = WithdrawalRequest::create([
             'wallet_id' => $wallet->id,
             'pharmacy_id' => $pharmacy->id,
             'amount' => $request->amount,
             'payment_method' => $request->payment_method,
-            'account_details' => $request->account_details,
+            'phone' => $request->phone,
+            'bank_details' => $request->bank_details,
             'reference' => $reference,
             'status' => 'pending',
         ]);
-        
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Demande de retrait enregistree. Traitement sous 24-48h.',
-            'data' => [
-                'reference' => $reference,
-                'status' => 'pending',
-                'amount' => $request->amount,
-            ]
-        ]);
+
+        try {
+            // Determine Jeko payment method
+            $jekoMethod = $this->mapPaymentMethod($request->payment_method);
+            $amountCents = (int) ($request->amount * 100);
+
+            if ($request->payment_method === 'bank') {
+                // Bank transfer payout
+                $jekoPayment = $this->jekoService->createBankPayout(
+                    $withdrawal,
+                    $amountCents,
+                    $request->bank_details,
+                    $user,
+                    "Retrait pharmacie {$pharmacy->name}"
+                );
+            } else {
+                // Mobile Money payout
+                $jekoPayment = $this->jekoService->createPayout(
+                    $withdrawal,
+                    $amountCents,
+                    $request->phone,
+                    $jekoMethod,
+                    $user,
+                    "Retrait pharmacie {$pharmacy->name}"
+                );
+            }
+
+            // Update withdrawal with Jeko reference
+            $withdrawal->update([
+                'jeko_reference' => $jekoPayment->reference,
+                'jeko_payment_id' => $jekoPayment->id,
+                'status' => 'processing',
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Retrait en cours de traitement via JEKO Pay',
+                'data' => [
+                    'reference' => $reference,
+                    'jeko_reference' => $jekoPayment->reference,
+                    'status' => 'processing',
+                    'amount' => $request->amount,
+                    'payment_method' => $request->payment_method,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            // Mark withdrawal as failed
+            $withdrawal->update(['status' => 'failed', 'error_message' => $e->getMessage()]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Erreur lors du retrait: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Map payment method string to JekoPaymentMethod enum
+     */
+    private function mapPaymentMethod(string $method): JekoPaymentMethod
+    {
+        return match ($method) {
+            'mtn_bj', 'mtn' => JekoPaymentMethod::MTN_BJ,
+            'moov_bj', 'moov' => JekoPaymentMethod::MOOV_BJ,
+            'wave' => JekoPaymentMethod::WAVE,
+            'mobile_money' => JekoPaymentMethod::MTN_BJ, // Default to MTN
+            'bank' => JekoPaymentMethod::BANK_TRANSFER,
+            default => JekoPaymentMethod::MTN_BJ,
+        };
     }
 
     /**

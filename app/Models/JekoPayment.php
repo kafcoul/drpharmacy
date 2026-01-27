@@ -35,14 +35,21 @@ class JekoPayment extends Model
         'completed_at',
         'webhook_received_at',
         'webhook_processed',
+        // Payout fields
+        'is_payout',
+        'recipient_phone',
+        'bank_details',
+        'description',
     ];
 
     protected $casts = [
         'status' => JekoPaymentStatus::class,
         'payment_method' => JekoPaymentMethod::class,
         'transaction_data' => 'array',
+        'bank_details' => 'array',
         'amount_cents' => 'integer',
         'webhook_processed' => 'boolean',
+        'is_payout' => 'boolean',
         'initiated_at' => 'datetime',
         'completed_at' => 'datetime',
         'webhook_received_at' => 'datetime',
@@ -50,6 +57,7 @@ class JekoPayment extends Model
 
     protected $hidden = [
         'transaction_data',
+        'bank_details',
     ];
 
     /**
