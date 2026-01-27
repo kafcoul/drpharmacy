@@ -169,5 +169,112 @@ class Pharmacy extends Model
     {
         return $this->hasMany(WithdrawalRequest::class);
     }
+
+    // ========================================================================
+    // PIN SECURITY METHODS
+    // ========================================================================
+
+    /**
+     * Vérifie si un PIN de retrait est configuré
+     */
+    public function hasPinConfigured(): bool
+    {
+        return !empty($this->withdrawal_pin);
+    }
+
+    /**
+     * Définir le PIN de retrait
+     */
+    public function setWithdrawalPin(string $pin): void
+    {
+        $this->update([
+            'withdrawal_pin' => \Illuminate\Support\Facades\Hash::make($pin),
+            'pin_set_at' => now(),
+            'pin_attempts' => 0,
+            'pin_locked_until' => null,
+        ]);
+    }
+
+    /**
+     * Vérifier le PIN de retrait
+     */
+    public function verifyWithdrawalPin(string $pin): bool
+    {
+        // Vérifier si le compte est verrouillé
+        if ($this->isPinLocked()) {
+            return false;
+        }
+
+        $isValid = \Illuminate\Support\Facades\Hash::check($pin, $this->withdrawal_pin);
+
+        if (!$isValid) {
+            $this->incrementPinAttempts();
+        } else {
+            $this->resetPinAttempts();
+        }
+
+        return $isValid;
+    }
+
+    /**
+     * Vérifier si le PIN est verrouillé (trop de tentatives)
+     */
+    public function isPinLocked(): bool
+    {
+        if ($this->pin_locked_until && $this->pin_locked_until->isFuture()) {
+            return true;
+        }
+
+        // Si le verrou a expiré, le réinitialiser
+        if ($this->pin_locked_until && $this->pin_locked_until->isPast()) {
+            $this->update([
+                'pin_attempts' => 0,
+                'pin_locked_until' => null,
+            ]);
+        }
+
+        return false;
+    }
+
+    /**
+     * Incrémenter les tentatives de PIN échouées
+     */
+    protected function incrementPinAttempts(): void
+    {
+        $attempts = $this->pin_attempts + 1;
+        $data = ['pin_attempts' => $attempts];
+
+        // Après 5 tentatives, verrouiller pendant 30 minutes
+        if ($attempts >= 5) {
+            $data['pin_locked_until'] = now()->addMinutes(30);
+        }
+
+        $this->update($data);
+    }
+
+    /**
+     * Réinitialiser les tentatives de PIN
+     */
+    protected function resetPinAttempts(): void
+    {
+        if ($this->pin_attempts > 0) {
+            $this->update([
+                'pin_attempts' => 0,
+                'pin_locked_until' => null,
+            ]);
+        }
+    }
+
+    /**
+     * Temps restant avant déverrouillage du PIN
+     */
+    public function pinLockRemainingMinutes(): ?int
+    {
+        if (!$this->isPinLocked()) {
+            return null;
+        }
+
+        return (int) now()->diffInMinutes($this->pin_locked_until, false);
+    }
 }
 

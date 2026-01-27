@@ -125,6 +125,7 @@ class WalletController extends Controller
 
     /**
      * Request a withdrawal via JEKO Payment
+     * REQUIRES: PIN configured + PIN confirmation
      */
     public function withdraw(Request $request)
     {
@@ -136,6 +137,7 @@ class WalletController extends Controller
             'bank_details.bank_code' => 'required_if:payment_method,bank|string',
             'bank_details.account_number' => 'required_if:payment_method,bank|string',
             'bank_details.holder_name' => 'required_if:payment_method,bank|string',
+            'pin' => 'required|string|digits:4', // PIN de confirmation requis
         ]);
         
         if ($validator->fails()) {
@@ -148,6 +150,38 @@ class WalletController extends Controller
         
         $user = Auth::user();
         $pharmacy = $user->pharmacies()->firstOrFail();
+        
+        // Vérifier si un PIN est configuré
+        if (!$pharmacy->hasPinConfigured()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Vous devez configurer un code PIN avant de faire un retrait',
+                'code' => 'PIN_NOT_CONFIGURED'
+            ], 400);
+        }
+
+        // Vérifier si le PIN est verrouillé
+        if ($pharmacy->isPinLocked()) {
+            $minutes = $pharmacy->pinLockRemainingMinutes();
+            return response()->json([
+                'status' => 'error',
+                'message' => "Code PIN verrouillé. Réessayez dans {$minutes} minutes.",
+                'code' => 'PIN_LOCKED',
+                'locked_until' => $pharmacy->pin_locked_until,
+            ], 423);
+        }
+
+        // Vérifier le PIN
+        if (!$pharmacy->verifyWithdrawalPin($request->pin)) {
+            $remaining = 5 - $pharmacy->fresh()->pin_attempts;
+            return response()->json([
+                'status' => 'error',
+                'message' => "Code PIN incorrect. {$remaining} tentative(s) restante(s).",
+                'code' => 'PIN_INVALID',
+                'attempts_remaining' => $remaining,
+            ], 401);
+        }
+        
         $wallet = $pharmacy->wallet;
         
         if (!$wallet || $wallet->balance < $request->amount) {
@@ -404,5 +438,380 @@ class WalletController extends Controller
             'download_url' => url('/exports/' . $filename),
             'transaction_count' => $transactions->count(),
         ]);
+    }
+
+    // ========================================================================
+    // PIN MANAGEMENT
+    // ========================================================================
+
+    /**
+     * Get PIN status
+     */
+    public function getPinStatus()
+    {
+        $user = Auth::user();
+        $pharmacy = $user->pharmacies()->firstOrFail();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'has_pin' => $pharmacy->hasPinConfigured(),
+                'pin_set_at' => $pharmacy->pin_set_at,
+                'is_locked' => $pharmacy->isPinLocked(),
+                'locked_until' => $pharmacy->pin_locked_until,
+                'lock_remaining_minutes' => $pharmacy->pinLockRemainingMinutes(),
+            ]
+        ]);
+    }
+
+    /**
+     * Set/Configure withdrawal PIN (first time)
+     */
+    public function setPin(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'pin' => 'required|string|digits:4',
+            'pin_confirmation' => 'required|string|same:pin',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Donnees invalides',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        
+        $user = Auth::user();
+        $pharmacy = $user->pharmacies()->firstOrFail();
+
+        // Si PIN déjà configuré, utiliser changePin
+        if ($pharmacy->hasPinConfigured()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Un code PIN est déjà configuré. Utilisez la modification de PIN.',
+                'code' => 'PIN_ALREADY_SET'
+            ], 400);
+        }
+
+        $pharmacy->setWithdrawalPin($request->pin);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Code PIN configuré avec succès'
+        ]);
+    }
+
+    /**
+     * Change withdrawal PIN (requires current PIN)
+     */
+    public function changePin(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'current_pin' => 'required|string|digits:4',
+            'new_pin' => 'required|string|digits:4|different:current_pin',
+            'new_pin_confirmation' => 'required|string|same:new_pin',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Donnees invalides',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        
+        $user = Auth::user();
+        $pharmacy = $user->pharmacies()->firstOrFail();
+
+        if (!$pharmacy->hasPinConfigured()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Aucun code PIN configuré',
+                'code' => 'PIN_NOT_SET'
+            ], 400);
+        }
+
+        // Vérifier si verrouillé
+        if ($pharmacy->isPinLocked()) {
+            $minutes = $pharmacy->pinLockRemainingMinutes();
+            return response()->json([
+                'status' => 'error',
+                'message' => "Code PIN verrouillé. Réessayez dans {$minutes} minutes.",
+                'code' => 'PIN_LOCKED',
+            ], 423);
+        }
+
+        // Vérifier le PIN actuel
+        if (!$pharmacy->verifyWithdrawalPin($request->current_pin)) {
+            $remaining = 5 - $pharmacy->fresh()->pin_attempts;
+            return response()->json([
+                'status' => 'error',
+                'message' => "Code PIN actuel incorrect. {$remaining} tentative(s) restante(s).",
+                'code' => 'PIN_INVALID',
+            ], 401);
+        }
+
+        // Définir le nouveau PIN
+        $pharmacy->setWithdrawalPin($request->new_pin);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Code PIN modifié avec succès'
+        ]);
+    }
+
+    /**
+     * Verify PIN (for client-side confirmation dialogs)
+     */
+    public function verifyPin(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'pin' => 'required|string|digits:4',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Code PIN requis',
+            ], 422);
+        }
+        
+        $user = Auth::user();
+        $pharmacy = $user->pharmacies()->firstOrFail();
+
+        if (!$pharmacy->hasPinConfigured()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Aucun code PIN configuré',
+                'code' => 'PIN_NOT_SET'
+            ], 400);
+        }
+
+        if ($pharmacy->isPinLocked()) {
+            $minutes = $pharmacy->pinLockRemainingMinutes();
+            return response()->json([
+                'status' => 'error',
+                'message' => "Code PIN verrouillé. Réessayez dans {$minutes} minutes.",
+                'code' => 'PIN_LOCKED',
+            ], 423);
+        }
+
+        if (!$pharmacy->verifyWithdrawalPin($request->pin)) {
+            $remaining = 5 - $pharmacy->fresh()->pin_attempts;
+            return response()->json([
+                'status' => 'error',
+                'message' => "Code PIN incorrect. {$remaining} tentative(s) restante(s).",
+                'code' => 'PIN_INVALID',
+                'is_valid' => false,
+            ], 401);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Code PIN valide',
+            'is_valid' => true,
+        ]);
+    }
+
+    // ========================================================================
+    // PAYMENT INFO WITH PIN PROTECTION
+    // ========================================================================
+
+    /**
+     * Update bank information (requires PIN)
+     */
+    public function updateBankInfo(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'pin' => 'required|string|digits:4',
+            'bank_name' => 'required|string|max:100',
+            'holder_name' => 'required|string|max:100',
+            'account_number' => 'required|string|max:50',
+            'iban' => 'nullable|string|max:50',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Donnees invalides',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        
+        $user = Auth::user();
+        $pharmacy = $user->pharmacies()->firstOrFail();
+
+        // Vérifier le PIN
+        if (!$pharmacy->hasPinConfigured()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Configurez un code PIN avant de modifier les informations bancaires',
+                'code' => 'PIN_NOT_CONFIGURED'
+            ], 400);
+        }
+
+        if ($pharmacy->isPinLocked()) {
+            $minutes = $pharmacy->pinLockRemainingMinutes();
+            return response()->json([
+                'status' => 'error',
+                'message' => "Code PIN verrouillé. Réessayez dans {$minutes} minutes.",
+                'code' => 'PIN_LOCKED',
+            ], 423);
+        }
+
+        if (!$pharmacy->verifyWithdrawalPin($request->pin)) {
+            $remaining = 5 - $pharmacy->fresh()->pin_attempts;
+            return response()->json([
+                'status' => 'error',
+                'message' => "Code PIN incorrect. {$remaining} tentative(s) restante(s).",
+                'code' => 'PIN_INVALID',
+            ], 401);
+        }
+        
+        // Mise à jour des infos bancaires
+        $pharmacy->paymentInfo()->updateOrCreate(
+            ['type' => 'bank'],
+            [
+                'bank_name' => $request->bank_name,
+                'holder_name' => $request->holder_name,
+                'account_number' => $request->account_number,
+                'iban' => $request->iban,
+                'is_primary' => true,
+            ]
+        );
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Informations bancaires mises à jour'
+        ]);
+    }
+
+    /**
+     * Update Mobile Money information (requires PIN)
+     */
+    public function updateMobileMoneyInfo(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'pin' => 'required|string|digits:4',
+            'operator' => 'required|string|max:50',
+            'phone_number' => 'required|string|max:20',
+            'account_name' => 'required|string|max:100',
+            'is_primary' => 'boolean',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Donnees invalides',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        
+        $user = Auth::user();
+        $pharmacy = $user->pharmacies()->firstOrFail();
+
+        // Vérifier le PIN
+        if (!$pharmacy->hasPinConfigured()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Configurez un code PIN avant de modifier les informations Mobile Money',
+                'code' => 'PIN_NOT_CONFIGURED'
+            ], 400);
+        }
+
+        if ($pharmacy->isPinLocked()) {
+            $minutes = $pharmacy->pinLockRemainingMinutes();
+            return response()->json([
+                'status' => 'error',
+                'message' => "Code PIN verrouillé. Réessayez dans {$minutes} minutes.",
+                'code' => 'PIN_LOCKED',
+            ], 423);
+        }
+
+        if (!$pharmacy->verifyWithdrawalPin($request->pin)) {
+            $remaining = 5 - $pharmacy->fresh()->pin_attempts;
+            return response()->json([
+                'status' => 'error',
+                'message' => "Code PIN incorrect. {$remaining} tentative(s) restante(s).",
+                'code' => 'PIN_INVALID',
+            ], 401);
+        }
+        
+        // If this is primary, unset others
+        if ($request->get('is_primary', true)) {
+            $pharmacy->paymentInfo()->where('type', 'mobile_money')->update(['is_primary' => false]);
+        }
+        
+        // Update payment info
+        $pharmacy->paymentInfo()->updateOrCreate(
+            ['type' => 'mobile_money', 'phone_number' => $request->phone_number],
+            [
+                'operator' => $request->operator,
+                'holder_name' => $request->account_name,
+                'is_primary' => $request->get('is_primary', true),
+            ]
+        );
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Informations Mobile Money mises à jour'
+        ]);
+    }
+
+    /**
+     * Get payment information
+     */
+    public function getPaymentInfo()
+    {
+        $user = Auth::user();
+        $pharmacy = $user->pharmacies()->firstOrFail();
+
+        $bankInfo = $pharmacy->paymentInfo()->where('type', 'bank')->first();
+        $mobileInfo = $pharmacy->paymentInfo()->where('type', 'mobile_money')->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'has_pin' => $pharmacy->hasPinConfigured(),
+                'bank' => $bankInfo ? [
+                    'bank_name' => $bankInfo->bank_name,
+                    'holder_name' => $bankInfo->holder_name,
+                    'account_number' => $this->maskAccountNumber($bankInfo->account_number),
+                    'iban' => $bankInfo->iban ? $this->maskAccountNumber($bankInfo->iban) : null,
+                ] : null,
+                'mobile_money' => $mobileInfo->map(function ($info) {
+                    return [
+                        'id' => $info->id,
+                        'operator' => $info->operator,
+                        'phone_number' => $this->maskPhoneNumber($info->phone_number),
+                        'holder_name' => $info->holder_name,
+                        'is_primary' => $info->is_primary,
+                    ];
+                }),
+            ]
+        ]);
+    }
+
+    /**
+     * Masquer un numéro de compte (afficher seulement les 4 derniers chiffres)
+     */
+    private function maskAccountNumber(?string $number): ?string
+    {
+        if (!$number || strlen($number) < 4) {
+            return $number;
+        }
+        return str_repeat('*', strlen($number) - 4) . substr($number, -4);
+    }
+
+    /**
+     * Masquer un numéro de téléphone
+     */
+    private function maskPhoneNumber(?string $phone): ?string
+    {
+        if (!$phone || strlen($phone) < 4) {
+            return $phone;
+        }
+        return substr($phone, 0, 4) . str_repeat('*', strlen($phone) - 6) . substr($phone, -2);
     }
 }

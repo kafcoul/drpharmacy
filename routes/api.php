@@ -221,6 +221,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/wallet/mobile-money', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'saveMobileMoneyInfo']);
         Route::post('/wallet/threshold', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'setWithdrawalThreshold']);
         Route::get('/wallet/export', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'exportTransactions']);
+        
+        // PIN Security & Payment Info
+        Route::get('/wallet/pin-status', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'getPinStatus']);
+        Route::post('/wallet/pin/set', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'setPin']);
+        Route::post('/wallet/pin/change', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'changePin']);
+        Route::post('/wallet/pin/verify', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'verifyPin']);
+        Route::get('/wallet/payment-info', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'getPaymentInfo']);
+        Route::put('/wallet/bank-info', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'updateBankInfo']);
+        Route::put('/wallet/mobile-money', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'updateMobileMoneyInfo']);
 
         // On-Call Management
         Route::get('/on-calls', [\App\Http\Controllers\Api\Pharmacy\OnCallController::class, 'index']);
