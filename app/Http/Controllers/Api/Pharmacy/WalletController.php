@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Pharmacy;
 use App\Enums\JekoPaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Models\Pharmacy;
+use App\Models\Setting;
 use App\Models\WithdrawalRequest;
 use App\Services\JekoPaymentService;
 use Illuminate\Http\Request;
@@ -362,12 +363,56 @@ class WalletController extends Controller
     }
 
     /**
+     * Get withdrawal settings
+     */
+    public function getWithdrawalSettings()
+    {
+        $user = Auth::user();
+        $pharmacy = $user->pharmacies()->firstOrFail();
+        
+        // Get global settings from Filament Settings
+        $minThreshold = (int) Setting::get('withdrawal_threshold_min', 10000);
+        $maxThreshold = (int) Setting::get('withdrawal_threshold_max', 500000);
+        $defaultThreshold = (int) Setting::get('withdrawal_threshold_default', 50000);
+        $stepThreshold = (int) Setting::get('withdrawal_threshold_step', 5000);
+        $autoWithdrawGlobalEnabled = (bool) Setting::get('auto_withdraw_enabled_global', true);
+        $requirePin = (bool) Setting::get('withdrawal_require_pin', true);
+        $requireMobileMoney = (bool) Setting::get('withdrawal_require_mobile_money', true);
+        
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'threshold' => $pharmacy->withdrawal_threshold ?? $defaultThreshold,
+                'auto_withdraw' => $pharmacy->auto_withdraw_enabled ?? false,
+                'has_pin' => !empty($pharmacy->withdrawal_pin),
+                'has_mobile_money' => $pharmacy->paymentInfo()->where('type', 'mobile_money')->exists(),
+                'has_bank_info' => $pharmacy->paymentInfo()->where('type', 'bank')->exists(),
+                // Global settings from Filament admin
+                'config' => [
+                    'min_threshold' => $minThreshold,
+                    'max_threshold' => $maxThreshold,
+                    'default_threshold' => $defaultThreshold,
+                    'step' => $stepThreshold,
+                    'auto_withdraw_allowed' => $autoWithdrawGlobalEnabled,
+                    'require_pin' => $requirePin,
+                    'require_mobile_money' => $requireMobileMoney,
+                ],
+            ]
+        ]);
+    }
+
+    /**
      * Set withdrawal threshold
      */
     public function setWithdrawalThreshold(Request $request)
     {
+        // Get global limits from Filament Settings
+        $minThreshold = (int) Setting::get('withdrawal_threshold_min', 10000);
+        $maxThreshold = (int) Setting::get('withdrawal_threshold_max', 500000);
+        $autoWithdrawGlobalEnabled = (bool) Setting::get('auto_withdraw_enabled_global', true);
+        
         $validator = Validator::make($request->all(), [
-            'threshold' => 'required|numeric|min:10000',
+            'threshold' => "required|numeric|min:{$minThreshold}|max:{$maxThreshold}",
             'auto_withdraw' => 'required|boolean',
         ]);
         
@@ -377,6 +422,14 @@ class WalletController extends Controller
                 'message' => 'Donnees invalides',
                 'errors' => $validator->errors()
             ], 422);
+        }
+        
+        // Check if auto-withdraw is globally allowed
+        if ($request->auto_withdraw && !$autoWithdrawGlobalEnabled) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Le retrait automatique est desactive par l\'administrateur',
+            ], 403);
         }
         
         $user = Auth::user();
@@ -389,7 +442,11 @@ class WalletController extends Controller
         
         return response()->json([
             'status' => 'success',
-            'message' => 'Seuil de retrait configure'
+            'message' => 'Seuil de retrait configure',
+            'data' => [
+                'threshold' => $pharmacy->withdrawal_threshold,
+                'auto_withdraw' => $pharmacy->auto_withdraw_enabled,
+            ]
         ]);
     }
 

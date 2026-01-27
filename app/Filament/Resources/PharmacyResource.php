@@ -117,6 +117,37 @@ class PharmacyResource extends Resource
                             ->helperText('Par défaut: 5%'),
                     ])->columns(3),
                 
+                Forms\Components\Section::make('Seuil de Retrait')
+                    ->description('Paramètres de retrait automatique pour cette pharmacie')
+                    ->icon('heroicon-o-banknotes')
+                    ->collapsible()
+                    ->schema([
+                        Forms\Components\TextInput::make('withdrawal_threshold')
+                            ->label('Seuil de retrait (FCFA)')
+                            ->numeric()
+                            ->suffix('FCFA')
+                            ->default(50000)
+                            ->helperText('Montant à partir duquel le retrait automatique se déclenche.'),
+                        Forms\Components\Toggle::make('auto_withdraw_enabled')
+                            ->label('Retrait automatique activé')
+                            ->helperText('Si activé, le retrait se fait automatiquement quand le solde atteint le seuil.')
+                            ->default(false),
+                        Forms\Components\Placeholder::make('withdrawal_pin_status')
+                            ->label('Code PIN de retrait')
+                            ->content(fn ($record) => $record && !empty($record->withdrawal_pin) 
+                                ? '✅ Configuré' 
+                                : '❌ Non configuré'),
+                        Forms\Components\Placeholder::make('mobile_money_status')
+                            ->label('Mobile Money')
+                            ->content(function ($record) {
+                                if (!$record) return '❌ Non configuré';
+                                $hasMobileMoney = $record->mobile_money_operator && $record->mobile_money_number;
+                                return $hasMobileMoney 
+                                    ? "✅ {$record->mobile_money_operator}: {$record->mobile_money_number}"
+                                    : '❌ Non configuré';
+                            }),
+                    ])->columns(2),
+                
                 Forms\Components\Section::make('Statut')
                     ->schema([
                         Forms\Components\Select::make('status')
@@ -201,6 +232,20 @@ class PharmacyResource extends Resource
                 Tables\Columns\TextColumn::make('commission_rate_pharmacy')
                     ->label('Commission (%)')
                     ->formatStateUsing(fn ($state) => ($state * 100) . '%')
+                    ->sortable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('withdrawal_threshold')
+                    ->label('Seuil retrait')
+                    ->formatStateUsing(fn ($state) => number_format($state ?? 50000, 0, ',', ' ') . ' FCFA')
+                    ->sortable()
+                    ->toggleable(),
+                Tables\Columns\IconColumn::make('auto_withdraw_enabled')
+                    ->label('Auto-retrait')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-arrow-path')
+                    ->falseIcon('heroicon-o-x-mark')
+                    ->trueColor('success')
+                    ->falseColor('gray')
                     ->sortable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('approved_at')
@@ -339,6 +384,57 @@ class PharmacyResource extends Resource
                             ->success()
                             ->title('Pharmacies retirées')
                             ->body(count($records) . ' pharmacie(s) ont été retirées de la vedette.')
+                            ->send();
+                    })
+                    ->deselectRecordsAfterCompletion(),
+                Tables\Actions\BulkAction::make('enableAutoWithdraw')
+                    ->label('Activer Auto-Retrait')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                        $records->each->update(['auto_withdraw_enabled' => true]);
+                        Notification::make()
+                            ->success()
+                            ->title('Auto-retrait activé')
+                            ->body(count($records) . ' pharmacie(s) ont maintenant l\'auto-retrait activé.')
+                            ->send();
+                    })
+                    ->deselectRecordsAfterCompletion(),
+                Tables\Actions\BulkAction::make('disableAutoWithdraw')
+                    ->label('Désactiver Auto-Retrait')
+                    ->icon('heroicon-o-x-mark')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                        $records->each->update(['auto_withdraw_enabled' => false]);
+                        Notification::make()
+                            ->success()
+                            ->title('Auto-retrait désactivé')
+                            ->body(count($records) . ' pharmacie(s) ont l\'auto-retrait désactivé.')
+                            ->send();
+                    })
+                    ->deselectRecordsAfterCompletion(),
+                Tables\Actions\BulkAction::make('setWithdrawalThreshold')
+                    ->label('Définir Seuil de Retrait')
+                    ->icon('heroicon-o-banknotes')
+                    ->color('info')
+                    ->form([
+                        Forms\Components\TextInput::make('threshold')
+                            ->label('Nouveau seuil (FCFA)')
+                            ->numeric()
+                            ->required()
+                            ->minValue(10000)
+                            ->maxValue(500000)
+                            ->default(50000)
+                            ->suffix('FCFA'),
+                    ])
+                    ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data) {
+                        $records->each->update(['withdrawal_threshold' => $data['threshold']]);
+                        Notification::make()
+                            ->success()
+                            ->title('Seuil mis à jour')
+                            ->body(count($records) . ' pharmacie(s) ont maintenant un seuil de ' . number_format($data['threshold'], 0, ',', ' ') . ' FCFA.')
                             ->send();
                     })
                     ->deselectRecordsAfterCompletion(),

@@ -62,6 +62,14 @@ class Settings extends Page implements HasForms
             'notification_vibrate_enabled' => Setting::get('notification_vibrate_enabled', true),
             'notification_led_enabled' => Setting::get('notification_led_enabled', true),
             'notification_led_color' => Setting::get('notification_led_color', '#FF6B00'),
+            // Paramètres seuil de retrait
+            'withdrawal_threshold_min' => Setting::get('withdrawal_threshold_min', 10000),
+            'withdrawal_threshold_max' => Setting::get('withdrawal_threshold_max', 500000),
+            'withdrawal_threshold_default' => Setting::get('withdrawal_threshold_default', 50000),
+            'withdrawal_threshold_step' => Setting::get('withdrawal_threshold_step', 5000),
+            'auto_withdraw_enabled_global' => Setting::get('auto_withdraw_enabled_global', true),
+            'withdrawal_require_pin' => Setting::get('withdrawal_require_pin', true),
+            'withdrawal_require_mobile_money' => Setting::get('withdrawal_require_mobile_money', true),
         ]);
     }
 
@@ -198,6 +206,52 @@ class Settings extends Page implements HasForms
                             ->default('#FF6B00')
                             ->helperText('Couleur du clignotement LED pour les notifications.'),
                     ])->columns(3),
+
+                Section::make('Seuil de Retrait Automatique')
+                    ->description('Configurez les limites et paramètres globaux du seuil de retrait pour les pharmacies')
+                    ->icon('heroicon-o-banknotes')
+                    ->collapsible()
+                    ->schema([
+                        TextInput::make('withdrawal_threshold_min')
+                            ->label('Seuil minimum (FCFA)')
+                            ->numeric()
+                            ->minValue(1000)
+                            ->suffix('FCFA')
+                            ->required()
+                            ->helperText('Montant minimum que les pharmacies peuvent définir comme seuil.'),
+                        TextInput::make('withdrawal_threshold_max')
+                            ->label('Seuil maximum (FCFA)')
+                            ->numeric()
+                            ->maxValue(5000000)
+                            ->suffix('FCFA')
+                            ->required()
+                            ->helperText('Montant maximum autorisé pour le seuil de retrait.'),
+                        TextInput::make('withdrawal_threshold_default')
+                            ->label('Seuil par défaut (FCFA)')
+                            ->numeric()
+                            ->suffix('FCFA')
+                            ->required()
+                            ->helperText('Valeur par défaut pour les nouvelles pharmacies.'),
+                        TextInput::make('withdrawal_threshold_step')
+                            ->label('Pas d\'incrémentation (FCFA)')
+                            ->numeric()
+                            ->minValue(1000)
+                            ->suffix('FCFA')
+                            ->required()
+                            ->helperText('Intervalle de sélection du slider dans l\'app mobile.'),
+                        Toggle::make('auto_withdraw_enabled_global')
+                            ->label('Autoriser le retrait automatique')
+                            ->helperText('Permettre aux pharmacies d\'activer le retrait automatique.')
+                            ->default(true),
+                        Toggle::make('withdrawal_require_pin')
+                            ->label('Exiger un code PIN')
+                            ->helperText('Les pharmacies doivent configurer un code PIN pour les retraits.')
+                            ->default(true),
+                        Toggle::make('withdrawal_require_mobile_money')
+                            ->label('Exiger Mobile Money configuré')
+                            ->helperText('Le retrait automatique nécessite un compte Mobile Money enregistré.')
+                            ->default(true),
+                    ])->columns(2),
             ])
             ->statePath('data');
     }
@@ -226,6 +280,14 @@ class Settings extends Page implements HasForms
         Setting::set('notification_vibrate_enabled', $data['notification_vibrate_enabled'], 'boolean');
         Setting::set('notification_led_enabled', $data['notification_led_enabled'], 'boolean');
         Setting::set('notification_led_color', $data['notification_led_color'], 'string');
+        // Paramètres seuil de retrait
+        Setting::set('withdrawal_threshold_min', $data['withdrawal_threshold_min'], 'integer');
+        Setting::set('withdrawal_threshold_max', $data['withdrawal_threshold_max'], 'integer');
+        Setting::set('withdrawal_threshold_default', $data['withdrawal_threshold_default'], 'integer');
+        Setting::set('withdrawal_threshold_step', $data['withdrawal_threshold_step'], 'integer');
+        Setting::set('auto_withdraw_enabled_global', $data['auto_withdraw_enabled_global'], 'boolean');
+        Setting::set('withdrawal_require_pin', $data['withdrawal_require_pin'], 'boolean');
+        Setting::set('withdrawal_require_mobile_money', $data['withdrawal_require_mobile_money'], 'boolean');
 
         Notification::make() 
             ->success()

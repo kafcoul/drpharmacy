@@ -219,6 +219,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/wallet/withdraw', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'withdraw']);
         Route::post('/wallet/bank-info', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'saveBankInfo']);
         Route::post('/wallet/mobile-money', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'saveMobileMoneyInfo']);
+        Route::get('/wallet/threshold', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'getWithdrawalSettings']);
         Route::post('/wallet/threshold', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'setWithdrawalThreshold']);
         Route::get('/wallet/export', [\App\Http\Controllers\Api\Pharmacy\WalletController::class, 'exportTransactions']);
         

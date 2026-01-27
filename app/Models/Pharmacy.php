@@ -35,6 +35,10 @@ class Pharmacy extends Model
         'owner_name',
         'rejection_reason',
         'approved_at',
+        // Withdrawal settings
+        'withdrawal_threshold',
+        'auto_withdraw_enabled',
+        'withdrawal_pin',
     ];
 
     protected $casts = [
@@ -45,6 +49,8 @@ class Pharmacy extends Model
         'commission_rate_courier' => 'decimal:4',
         'approved_at' => 'datetime',
         'is_featured' => 'boolean',
+        'withdrawal_threshold' => 'integer',
+        'auto_withdraw_enabled' => 'boolean',
     ];
 
     /**
