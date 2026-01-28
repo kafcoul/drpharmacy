@@ -45,9 +45,12 @@ class LoginController extends Controller
         }
 
         if (!$user || !Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['Les identifiants fournis sont incorrects.'],
-            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Les identifiants fournis sont incorrects.',
+                'error_code' => 'INVALID_CREDENTIALS',
+                'details' => 'Vérifiez votre email et votre mot de passe, puis réessayez.'
+            ], 401);
         }
 
         // Vérifier que le rôle de l'utilisateur correspond à l'application
@@ -96,19 +99,28 @@ class LoginController extends Controller
         if ($user->role === 'pharmacy') {
             $pharmacy = $user->pharmacies()->first();
             if ($pharmacy && $pharmacy->status === 'pending') {
-                throw ValidationException::withMessages([
-                    'email' => ['Votre pharmacie est en attente d\'approbation par l\'administrateur.'],
-                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Votre pharmacie est en attente d\'approbation par l\'administrateur.',
+                    'error_code' => 'PHARMACY_PENDING_APPROVAL',
+                    'details' => 'Votre demande a été reçue et est en cours d\'examen. Vous serez notifié par email une fois approuvé. Délai habituel : 24-48h.'
+                ], 403);
             }
             if ($pharmacy && $pharmacy->status === 'suspended') {
-                throw ValidationException::withMessages([
-                    'email' => ['Votre pharmacie a été suspendue. Veuillez contacter le support.'],
-                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Votre pharmacie a été suspendue.',
+                    'error_code' => 'PHARMACY_SUSPENDED',
+                    'details' => 'Veuillez contacter le support pour plus d\'informations.'
+                ], 403);
             }
             if ($pharmacy && $pharmacy->status === 'rejected') {
-                throw ValidationException::withMessages([
-                    'email' => ['Votre demande d\'inscription a été refusée.'],
-                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Votre demande d\'inscription a été refusée.',
+                    'error_code' => 'PHARMACY_REJECTED',
+                    'details' => 'Veuillez contacter le support pour connaître les raisons du refus.'
+                ], 403);
             }
         }
 
