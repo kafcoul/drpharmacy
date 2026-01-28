@@ -55,7 +55,7 @@ class PharmacyController extends Controller
                     'is_on_duty' => $isOnDuty,
                     'duty_info' => $currentOnCall ? [
                         'type' => $currentOnCall->type,
-                        'end_at' => $currentOnCall->end_at?->toIso8601String(),
+                        'end_at' => ($currentOnCall && $currentOnCall->end_at) ? $currentOnCall->end_at->toIso8601String() : null,
                     ] : null,
                 ];
             });
@@ -106,7 +106,7 @@ class PharmacyController extends Controller
                     'is_on_duty' => $isOnDuty,
                     'duty_info' => $currentOnCall ? [
                         'type' => $currentOnCall->type,
-                        'end_at' => $currentOnCall->end_at?->toIso8601String(),
+                        'end_at' => ($currentOnCall && $currentOnCall->end_at) ? $currentOnCall->end_at->toIso8601String() : null,
                     ] : null,
                 ];
             });
@@ -206,7 +206,7 @@ class PharmacyController extends Controller
                     'is_on_duty' => true,
                     'duty_info' => $currentOnCall ? [
                          'type' => $currentOnCall->type,
-                         'end_at' => $currentOnCall->end_at?->toIso8601String(),
+                         'end_at' => ($currentOnCall && $currentOnCall->end_at) ? $currentOnCall->end_at->toIso8601String() : null,
                     ] : null,
                 ];
             });

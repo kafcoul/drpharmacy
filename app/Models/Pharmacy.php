@@ -113,23 +113,25 @@ class Pharmacy extends Model
 
     /**
      * Scope: pharmacies proches d'une position
+     * Compatible SQLite et MySQL
      */
     public function scopeNearLocation($query, $latitude, $longitude, $radiusKm = 10)
     {
         $earthRadius = 6371; // km
 
-        return $query->selectRaw("
-                *,
-                (
-                    {$earthRadius} * acos(
-                        cos(radians(?)) * cos(radians(latitude)) *
-                        cos(radians(longitude) - radians(?)) +
-                        sin(radians(?)) * sin(radians(latitude))
-                    )
-                ) AS distance
-            ", [$latitude, $longitude, $latitude])
-            ->having('distance', '<=', $radiusKm)
-            ->orderBy('distance');
+        // Formule de distance Haversine
+        $distanceFormula = "
+            {$earthRadius} * acos(
+                cos(radians({$latitude})) * cos(radians(latitude)) *
+                cos(radians(longitude) - radians({$longitude})) +
+                sin(radians({$latitude})) * sin(radians(latitude))
+            )
+        ";
+
+        return $query->selectRaw("*, ({$distanceFormula}) AS distance")
+            ->whereRaw("latitude IS NOT NULL AND longitude IS NOT NULL")
+            ->whereRaw("({$distanceFormula}) <= ?", [$radiusKm])
+            ->orderByRaw("({$distanceFormula})");
     }
 
     /**

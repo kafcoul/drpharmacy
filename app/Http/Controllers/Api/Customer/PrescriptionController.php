@@ -42,19 +42,35 @@ class PrescriptionController extends Controller
      */
     public function upload(Request $request)
     {
-        $request->validate([
-            'images' => 'required|array|min:1',
-            'images.*' => 'required|image|mimes:jpeg,png,jpg|max:5120', // 5MB max per image
-            'notes' => 'nullable|string|max:500',
-        ]);
+        try {
+            $request->validate([
+                'images' => 'required|array|min:1',
+                'images.*' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240', // 10MB max per image
+                'notes' => 'nullable|string|max:500',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation échouée',
+                'errors' => $e->errors(),
+            ], 422);
+        }
 
         $imagePaths = [];
 
-        foreach ($request->file('images') as $image) {
-            $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
-            // Store prescriptions in private storage for security
-            $path = $image->storeAs('prescriptions/' . $request->user()->id, $filename, 'private');
-            $imagePaths[] = $path;
+        try {
+            foreach ($request->file('images') as $image) {
+                $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+                // Store prescriptions in private storage for security
+                $path = $image->storeAs('prescriptions/' . $request->user()->id, $filename, 'private');
+                $imagePaths[] = $path;
+            }
+        } catch (\Exception $e) {
+            \Log::error('Prescription upload error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'enregistrement des images',
+            ], 500);
         }
 
         $prescription = Prescription::create([
@@ -66,10 +82,15 @@ class PrescriptionController extends Controller
 
         // Notify all pharmacies (or relevant ones based on geolocation in future)
         // For MVP: Notify all users with role 'pharmacy'
-        $pharmacyUsers = \App\Models\User::where('role', 'pharmacy')->get();
+        try {
+            $pharmacyUsers = \App\Models\User::where('role', 'pharmacy')->get();
 
-        foreach($pharmacyUsers as $pharmacyUser) {
-             $pharmacyUser->notify(new \App\Notifications\NewPrescriptionNotification($prescription));
+            foreach($pharmacyUsers as $pharmacyUser) {
+                 $pharmacyUser->notify(new \App\Notifications\NewPrescriptionNotification($prescription));
+            }
+        } catch (\Exception $e) {
+            // Notification failure shouldn't block the upload
+            \Log::warning('Prescription notification error: ' . $e->getMessage());
         }
 
         return response()->json([

@@ -88,8 +88,16 @@ class OrderController extends Controller
             'delivery_latitude' => 'nullable|numeric',
             'delivery_longitude' => 'nullable|numeric',
             'customer_phone' => 'required|string',
-            'payment_mode' => 'required|in:cash,mobile_money,card',
+            'payment_mode' => 'required|in:cash,mobile_money,card,platform,on_delivery',
         ]);
+
+        // Normaliser le payment_mode pour la compatibilité avec l'ancien format
+        $paymentMode = match($validated['payment_mode']) {
+            'platform' => 'mobile_money',
+            'on_delivery' => 'cash',
+            default => $validated['payment_mode'],
+        };
+        $validated['payment_mode'] = $paymentMode;
 
         try {
             DB::beginTransaction();
