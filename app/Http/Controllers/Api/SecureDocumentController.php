@@ -109,26 +109,39 @@ class SecureDocumentController extends Controller
      */
     protected function canAccessPrescription($user, string $filename): bool
     {
+        // Extract user ID from path if present (format: {user_id}/filename.ext)
+        $pathParts = explode('/', $filename);
+        $ownerId = count($pathParts) > 1 ? $pathParts[0] : null;
+
         // Customers can access their own prescriptions
         if ($user->role === 'customer') {
-            // Check if prescription belongs to user's orders
-            $hasAccess = $user->orders()
-                ->where('prescription_path', 'LIKE', "%{$filename}%")
+            // Check if the prescription belongs to this customer (by path user_id)
+            if ($ownerId && $ownerId == $user->id) {
+                return true;
+            }
+
+            // Also check via prescriptions table
+            $hasAccess = \App\Models\Prescription::where('customer_id', $user->id)
+                ->where('images', 'LIKE', "%{$filename}%")
                 ->exists();
             
             if ($hasAccess) {
                 return true;
             }
+
+            // Fallback: check if prescription belongs to user's orders
+            $hasOrderAccess = $user->orders()
+                ->where('prescription_path', 'LIKE', "%{$filename}%")
+                ->exists();
+            
+            if ($hasOrderAccess) {
+                return true;
+            }
         }
 
-        // Pharmacies can access prescriptions from their orders
+        // Pharmacies can access all prescriptions (they need to view/process them)
         if ($user->role === 'pharmacy') {
-            $pharmacy = $user->pharmacy;
-            if ($pharmacy) {
-                return $pharmacy->orders()
-                    ->where('prescription_path', 'LIKE', "%{$filename}%")
-                    ->exists();
-            }
+            return true;
         }
 
         return false;
