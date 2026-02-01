@@ -52,6 +52,11 @@ class AddressController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        // Normaliser le label (première lettre majuscule) pour accepter "maison", "MAISON", "Maison"
+        if ($request->has('label')) {
+            $request->merge(['label' => ucfirst(strtolower($request->input('label')))]);
+        }
+
         $validated = $request->validate([
             'label' => ['required', 'string', 'max:50', Rule::in(CustomerAddress::LABELS)],
             'address' => 'required|string|max:255',
@@ -108,6 +113,11 @@ class AddressController extends Controller
                 'status' => 'error',
                 'message' => 'Adresse non trouvée',
             ], 404);
+        }
+
+        // Normaliser le label (première lettre majuscule) pour accepter "maison", "MAISON", "Maison"
+        if ($request->has('label')) {
+            $request->merge(['label' => ucfirst(strtolower($request->input('label')))]);
         }
 
         $validated = $request->validate([

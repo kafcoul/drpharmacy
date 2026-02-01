@@ -46,6 +46,7 @@ class OrderController extends Controller
                     'phone' => $order->pharmacy->phone,
                 ],
                 'status' => $order->status,
+                'payment_status' => $order->payment_status ?? 'pending',
                 'delivery_code' => $order->delivery_code,
                 'payment_mode' => $order->payment_mode,
                 'total_amount' => $order->total_amount,
@@ -243,6 +244,7 @@ class OrderController extends Controller
                 'id' => $order->id,
                 'reference' => $order->reference,
                 'status' => $order->status,
+                'payment_status' => $order->payment_status ?? 'pending',
                 'delivery_code' => $order->delivery_code,
                 'payment_mode' => $order->payment_mode,
                 'pharmacy' => [

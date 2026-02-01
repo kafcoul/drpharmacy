@@ -132,17 +132,39 @@
         <h1>Paiement Confirmé !</h1>
         
         <div class="amount">
-            {{ number_format($payment->amount, 0, ',', ' ') }} <small>{{ $payment->currency }}</small>
+            @if(is_array($payment))
+                {{ number_format($payment['amount'] ?? 0, 0, ',', ' ') }} <small>XOF</small>
+            @else
+                {{ number_format($payment->amount, 0, ',', ' ') }} <small>{{ $payment->currency ?? 'XOF' }}</small>
+            @endif
         </div>
         
         <div class="details">
             <div class="detail-row">
                 <span class="detail-label">Référence</span>
-                <span class="detail-value">{{ $payment->reference }}</span>
+                <span class="detail-value">
+                    @if(is_array($payment))
+                        {{ $payment['reference'] ?? $payment['order_reference'] ?? 'N/A' }}
+                    @else
+                        {{ $payment->reference }}
+                    @endif
+                </span>
             </div>
+            @if(is_array($payment) && isset($payment['order_reference']))
+            <div class="detail-row">
+                <span class="detail-label">Commande</span>
+                <span class="detail-value">{{ $payment['order_reference'] }}</span>
+            </div>
+            @endif
             <div class="detail-row">
                 <span class="detail-label">Méthode</span>
-                <span class="detail-value">{{ $payment->payment_method->label() }}</span>
+                <span class="detail-value">
+                    @if(is_array($payment))
+                        Jèko (Sandbox)
+                    @else
+                        {{ $payment->payment_method->label() ?? 'Mobile Money' }}
+                    @endif
+                </span>
             </div>
             <div class="detail-row">
                 <span class="detail-label">Statut</span>
@@ -150,13 +172,23 @@
             </div>
             <div class="detail-row">
                 <span class="detail-label">Date</span>
-                <span class="detail-value">{{ $payment->completed_at->format('d/m/Y H:i') }}</span>
+                <span class="detail-value">
+                    @if(is_array($payment))
+                        {{ now()->format('d/m/Y H:i') }}
+                    @else
+                        {{ $payment->completed_at->format('d/m/Y H:i') }}
+                    @endif
+                </span>
             </div>
         </div>
         
         <p class="message">
             {{ $message }}<br>
-            Votre wallet a été crédité instantanément.
+            @if(is_array($payment))
+                Votre commande a été marquée comme payée.
+            @else
+                Votre wallet a été crédité instantanément.
+            @endif
         </p>
         
         <p style="color: #9ca3af; font-size: 12px; margin-top: 20px;">

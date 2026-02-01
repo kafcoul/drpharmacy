@@ -385,11 +385,12 @@ class JekoPaymentController extends Controller
      * GET /api/payments/sandbox/confirm
      * 
      * Cette route est utilisée uniquement en développement quand les clés JEKO ne sont pas configurées.
-     * Elle simule un paiement réussi et crédite le wallet instantanément.
+     * Elle simule un paiement réussi et met à jour la commande.
      */
     public function sandboxConfirm(Request $request)
     {
         $reference = $request->query('reference');
+        $orderId = $request->query('order_id');
         
         if (!$reference) {
             return response()->json([
@@ -399,15 +400,54 @@ class JekoPaymentController extends Controller
         }
 
         try {
+            // Essayer d'abord avec PaymentIntent (nouveau système)
+            $paymentIntent = \App\Models\PaymentIntent::where('reference', $reference)->first();
+            
+            if ($paymentIntent) {
+                // Marquer le paiement comme réussi
+                $paymentIntent->update([
+                    'status' => 'SUCCESS',
+                ]);
+
+                // Mettre à jour la commande
+                $order = $paymentIntent->order;
+                if ($order) {
+                    $order->update([
+                        'payment_status' => 'paid',
+                        'paid_at' => now(),
+                    ]);
+
+                    Log::info('SANDBOX: PaymentIntent confirmed', [
+                        'reference' => $reference,
+                        'order_id' => $order->id,
+                    ]);
+
+                    // Retourner une page HTML de succès
+                    return response()->view('payments.sandbox-success', [
+                        'payment' => [
+                            'reference' => $reference,
+                            'amount' => $order->total_amount,
+                            'order_reference' => $order->reference,
+                        ],
+                        'message' => 'Paiement confirmé avec succès (mode sandbox)',
+                    ]);
+                }
+            }
+
+            // Fallback: Essayer avec JekoPayment (ancien système)
             $payment = $this->jekoService->confirmSandboxPayment($reference);
 
-            // Retourner une page HTML pour une meilleure UX
             return response()->view('payments.sandbox-success', [
                 'payment' => $payment,
                 'message' => 'Paiement confirmé avec succès (mode sandbox)',
             ]);
 
         } catch (\Exception $e) {
+            Log::error('SANDBOX: Confirmation failed', [
+                'reference' => $reference,
+                'error' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage(),

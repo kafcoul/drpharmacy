@@ -31,14 +31,23 @@ class LoginController extends Controller
         // Si c'est un email, le convertir en minuscules
         if ($fieldType === 'email') {
             $login = strtolower($login);
+        } else {
+            // Supprimer tous les espaces du numéro de téléphone
+            $login = preg_replace('/\s+/', '', $login);
         }
 
         $user = null;
         if ($fieldType === 'phone') {
-             $user = User::where(function($query) use ($login) {
-                 $query->where('phone', $login)
-                       ->orWhere('phone', '+' . ltrim($login, '+'))
-                       ->orWhere('phone', ltrim($login, '+'));
+             // Normaliser le numéro pour la recherche
+             $normalizedPhone = preg_replace('/\s+/', '', $login);
+             $user = User::where(function($query) use ($normalizedPhone) {
+                 $query->where('phone', $normalizedPhone)
+                       ->orWhere('phone', '+' . ltrim($normalizedPhone, '+'))
+                       ->orWhere('phone', ltrim($normalizedPhone, '+'))
+                       // Ajouter +225 devant le numéro tel quel (ex: 0700000000 -> +2250700000000)
+                       ->orWhere('phone', '+225' . $normalizedPhone)
+                       // Aussi chercher sans le 0 initial si le numéro commence par 0
+                       ->orWhere('phone', '+225' . ltrim($normalizedPhone, '0'));
              })->first();
         } else {
              $user = User::where('email', $login)->first();

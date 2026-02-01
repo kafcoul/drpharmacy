@@ -12,70 +12,93 @@ use Illuminate\Support\Facades\Log;
 class JekoGateway implements PaymentGatewayInterface
 {
     protected string $apiKey;
-    protected string $merchantId;
-    protected string $secretKey;
+    protected string $apiKeyId;
+    protected string $storeId;
     protected string $baseUrl;
     protected string $notifyUrl;
-    protected string $returnUrl;
+    protected ?string $returnUrl;
+    protected ?string $webhookSecret;
 
     public function __construct()
     {
-        $this->apiKey = config('services.jeko.api_key');
-        $this->merchantId = config('services.jeko.merchant_id');
-        $this->secretKey = config('services.jeko.secret_key');
-        $this->baseUrl = config('services.jeko.base_url', 'https://api.jeko.ci/v1');
+        $this->apiKey = config('services.jeko.api_key') ?? '';
+        $this->apiKeyId = config('services.jeko.api_key_id') ?? '';
+        $this->storeId = config('services.jeko.store_id') ?? '';
+        $this->baseUrl = config('services.jeko.api_url', 'https://api.jeko.africa');
         $this->notifyUrl = route('webhooks.jeko');
         $this->returnUrl = config('services.jeko.return_url');
+        $this->webhookSecret = config('services.jeko.webhook_secret');
     }
 
     public function initiate(Order $order, array $customerData): PaymentIntent
     {
+        // Vérifier que les credentials sont configurés
+        if (empty($this->apiKey) || empty($this->storeId)) {
+            throw new \Exception('Jeko payment gateway is not properly configured. Please set JEKO_API_KEY and JEKO_STORE_ID in .env');
+        }
+
         $reference = 'ORDER-' . $order->reference . '-' . time();
+        
+        // MODE SANDBOX: En développement local, simuler le paiement
+        if ($this->isSandboxMode()) {
+            return $this->handleSandboxPayment($order, $reference);
+        }
+        
+        // URLs de callback (inclure la référence pour identifier le paiement)
+        $baseSuccessUrl = config('services.jeko.return_url') ?? url('/api/payments/callback/success');
+        $baseErrorUrl = config('services.jeko.error_url') ?? url('/api/payments/callback/error');
+        
+        $successUrl = $baseSuccessUrl . '?reference=' . urlencode($reference) . '&order_id=' . $order->id;
+        $errorUrl = $baseErrorUrl . '?reference=' . urlencode($reference) . '&order_id=' . $order->id;
+
+        // Montant en centimes (JEKO attend des centimes, minimum 100)
+        $amountCents = max(100, (int) ($order->total_amount * 100));
+        
+        // Méthode de paiement par défaut (peut être passé dans customerData)
+        $paymentMethod = $customerData['payment_method'] ?? 'wave';
 
         $payload = [
-            'merchant_id' => $this->merchantId,
-            'reference' => $reference,
-            'amount' => (int) $order->total_amount,
+            'storeId' => $this->storeId,
+            'amountCents' => $amountCents,
             'currency' => 'XOF',
-            'description' => "Commande {$order->reference} - DR-PHARMA",
-            'customer' => [
-                'name' => $customerData['name'] ?? 'Client DR-PHARMA',
-                'email' => $customerData['email'] ?? 'client@drpharma.com',
-                'phone' => $customerData['phone'] ?? '',
-            ],
-            'callback_url' => $this->notifyUrl,
-            'return_url' => $this->returnUrl,
-            'metadata' => [
-                'order_id' => $order->id,
-                'order_reference' => $order->reference,
+            'reference' => $reference,
+            'paymentDetails' => [
+                'type' => 'redirect',
+                'data' => [
+                    'paymentMethod' => $paymentMethod, // wave, orange, mtn, moov, djamo
+                    'successUrl' => $successUrl,
+                    'errorUrl' => $errorUrl,
+                ],
             ],
         ];
 
         try {
             /** @var \Illuminate\Http\Client\Response $response */
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiKey,
+                'X-API-KEY' => $this->apiKey,
+                'X-API-KEY-ID' => $this->apiKeyId,
                 'Content-Type' => 'application/json',
-            ])->post("{$this->baseUrl}/payments/initialize", $payload);
+            ])->post("{$this->baseUrl}/partner_api/payment_requests", $payload);
 
             $data = $response->json();
 
-            Log::info('Jeko initiate response', ['data' => $data]);
+            Log::info('Jeko initiate response', ['data' => $data, 'payload' => $payload]);
 
-            if ($response->successful() && isset($data['status']) && $data['status'] === 'success') {
+            // Jeko retourne directement l'objet avec id et redirectUrl si succès
+            if ($response->successful() && isset($data['id'])) {
                 return PaymentIntent::create([
                     'order_id' => $order->id,
                     'provider' => 'jeko',
                     'reference' => $reference,
-                    'provider_reference' => $data['data']['payment_id'] ?? null,
+                    'provider_reference' => $data['id'],
                     'amount' => $order->total_amount,
                     'status' => 'PENDING',
-                    'provider_payment_url' => $data['data']['payment_url'] ?? null,
+                    'provider_payment_url' => $data['redirectUrl'] ?? null,
                     'raw_response' => $data,
                 ]);
             }
 
-            throw new \Exception($data['message'] ?? 'Jeko payment initiation failed');
+            throw new \Exception($data['message'] ?? $data['error'] ?? 'Jeko payment initiation failed');
         } catch (\Exception $e) {
             Log::error('Jeko initiate error', [
                 'order_id' => $order->id,
@@ -91,21 +114,21 @@ class JekoGateway implements PaymentGatewayInterface
         try {
             /** @var \Illuminate\Http\Client\Response $response */
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiKey,
+                'X-API-KEY' => $this->apiKey,
+                'X-API-KEY-ID' => $this->apiKeyId,
                 'Content-Type' => 'application/json',
-            ])->get("{$this->baseUrl}/payments/{$paymentIntent->provider_reference}");
+            ])->get("{$this->baseUrl}/partner_api/payment_requests/{$paymentIntent->provider_reference}");
 
             $data = $response->json();
 
             Log::info('Jeko verify response', ['data' => $data]);
 
-            if ($response->successful() && isset($data['status']) && $data['status'] === 'success') {
-                $paymentData = $data['data'];
-                $status = $this->mapStatus($paymentData['status'] ?? '');
+            if ($response->successful() && isset($data['status'])) {
+                $status = $this->mapStatus($data['status'] ?? '');
 
                 return [
                     'status' => $status,
-                    'data' => $paymentData,
+                    'data' => $data,
                 ];
             }
 
@@ -198,13 +221,13 @@ class JekoGateway implements PaymentGatewayInterface
 
     public function verifySignature(array $payload, ?string $signature): bool
     {
-        if (!$signature) {
+        if (!$signature || !$this->webhookSecret) {
             return false;
         }
 
         // Jeko utilise HMAC-SHA256 pour signer les webhooks
         $data = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-        $expectedSignature = hash_hmac('sha256', $data, $this->secretKey);
+        $expectedSignature = hash_hmac('sha256', $data, $this->webhookSecret);
 
         return hash_equals($expectedSignature, $signature);
     }
@@ -231,5 +254,51 @@ class JekoGateway implements PaymentGatewayInterface
             'pending', 'processing' => 'PENDING',
             default => 'PENDING',
         };
+    }
+
+    /**
+     * Vérifier si on est en mode sandbox (développement local)
+     * Le mode sandbox est activé quand APP_ENV=local ou APP_DEBUG=true
+     * et qu'aucune URL de retour HTTPS n'est configurée
+     */
+    protected function isSandboxMode(): bool
+    {
+        $appEnv = config('app.env', 'production');
+        $returnUrl = config('services.jeko.return_url');
+        
+        // Mode sandbox si on est en local et pas d'URL HTTPS configurée
+        return $appEnv === 'local' && (empty($returnUrl) || !str_starts_with($returnUrl, 'https://'));
+    }
+
+    /**
+     * Gérer le paiement en mode sandbox
+     * Crée un PaymentIntent avec une URL de confirmation sandbox
+     */
+    protected function handleSandboxPayment(Order $order, string $reference): PaymentIntent
+    {
+        $sandboxId = 'sandbox_' . uniqid();
+        
+        // URL sandbox pour confirmer le paiement manuellement
+        $sandboxUrl = url("/api/payments/sandbox/confirm?reference={$reference}&order_id={$order->id}");
+        
+        Log::info('Jeko SANDBOX mode - payment simulated', [
+            'order_id' => $order->id,
+            'reference' => $reference,
+            'sandbox_url' => $sandboxUrl,
+        ]);
+
+        return PaymentIntent::create([
+            'order_id' => $order->id,
+            'provider' => 'jeko',
+            'reference' => $reference,
+            'provider_reference' => $sandboxId,
+            'amount' => $order->total_amount,
+            'status' => 'PENDING',
+            'provider_payment_url' => $sandboxUrl,
+            'raw_response' => [
+                'sandbox' => true,
+                'message' => 'Mode sandbox - Cliquez sur le lien pour simuler le paiement',
+            ],
+        ]);
     }
 }

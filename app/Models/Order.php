@@ -18,6 +18,7 @@ class Order extends Model
         'pharmacy_id',
         'customer_id',
         'status',
+        'payment_status',
         'delivery_code',
         'payment_mode',
         'subtotal',
