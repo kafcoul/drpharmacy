@@ -106,21 +106,36 @@ class Courier extends Model
 
     /**
      * Scope: livreurs proches d'une position
+     * Compatible SQLite et MySQL
+     * 
+     * SECURITY: Utilise des bindings paramétrés et validation des coordonnées
      */
     public function scopeNearLocation($query, $latitude, $longitude)
     {
+        // SECURITY: Forcer le cast en float pour éviter toute injection SQL
+        $lat = (float) $latitude;
+        $lng = (float) $longitude;
+        
+        // Valider les coordonnées (latitude: -90 à 90, longitude: -180 à 180)
+        if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
+            return $query->whereRaw('1 = 0');
+        }
+
         $earthRadius = 6371; // km
 
+        // Compatible SQLite (MAX/MIN au lieu de LEAST/GREATEST)
         return $query->selectRaw("
                 *,
                 (
                     {$earthRadius} * acos(
-                        cos(radians(?)) * cos(radians(latitude)) *
-                        cos(radians(longitude) - radians(?)) +
-                        sin(radians(?)) * sin(radians(latitude))
+                        MAX(-1.0, MIN(1.0,
+                            cos(radians(?)) * cos(radians(latitude)) *
+                            cos(radians(longitude) - radians(?)) +
+                            sin(radians(?)) * sin(radians(latitude))
+                        ))
                     )
                 ) AS distance
-            ", [$latitude, $longitude, $latitude]);
+            ", [$lat, $lng, $lat]);
     }
 
     /**

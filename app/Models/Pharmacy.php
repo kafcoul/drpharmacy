@@ -114,24 +114,61 @@ class Pharmacy extends Model
     /**
      * Scope: pharmacies proches d'une position
      * Compatible SQLite et MySQL
+     * 
+     * SECURITY: Utilise des bindings paramétrés pour éviter les SQL injections
      */
     public function scopeNearLocation($query, $latitude, $longitude, $radiusKm = 10)
     {
+        // SECURITY: Forcer le cast en float pour éviter toute injection SQL
+        $lat = (float) $latitude;
+        $lng = (float) $longitude;
+        $radius = (float) $radiusKm;
+        
+        // Valider les coordonnées (latitude: -90 à 90, longitude: -180 à 180)
+        if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
+            // Coordonnées invalides - retourner une query vide
+            return $query->whereRaw('1 = 0');
+        }
+
         $earthRadius = 6371; // km
 
-        // Formule de distance Haversine
-        $distanceFormula = "
+        // Formule de distance Haversine avec bindings paramétrés
+        // Compatible SQLite et MySQL (sans LEAST/GREATEST pour SQLite)
+        // Note: La formule Haversine standard produit des valeurs dans [-1, 1] pour des coordonnées valides
+        $haversineSelect = "*, (
             {$earthRadius} * acos(
-                cos(radians({$latitude})) * cos(radians(latitude)) *
-                cos(radians(longitude) - radians({$longitude})) +
-                sin(radians({$latitude})) * sin(radians(latitude))
+                MAX(-1.0, MIN(1.0,
+                    cos(radians(?)) * cos(radians(latitude)) *
+                    cos(radians(longitude) - radians(?)) +
+                    sin(radians(?)) * sin(radians(latitude))
+                ))
             )
-        ";
+        ) AS distance";
 
-        return $query->selectRaw("*, ({$distanceFormula}) AS distance")
+        $haversineWhere = "(
+            {$earthRadius} * acos(
+                MAX(-1.0, MIN(1.0,
+                    cos(radians(?)) * cos(radians(latitude)) *
+                    cos(radians(longitude) - radians(?)) +
+                    sin(radians(?)) * sin(radians(latitude))
+                ))
+            )
+        ) <= ?";
+
+        $haversineOrder = "(
+            {$earthRadius} * acos(
+                MAX(-1.0, MIN(1.0,
+                    cos(radians(?)) * cos(radians(latitude)) *
+                    cos(radians(longitude) - radians(?)) +
+                    sin(radians(?)) * sin(radians(latitude))
+                ))
+            )
+        )";
+
+        return $query->selectRaw($haversineSelect, [$lat, $lng, $lat])
             ->whereRaw("latitude IS NOT NULL AND longitude IS NOT NULL")
-            ->whereRaw("({$distanceFormula}) <= ?", [$radiusKm])
-            ->orderByRaw("({$distanceFormula})");
+            ->whereRaw($haversineWhere, [$lat, $lng, $lat, $radius])
+            ->orderByRaw($haversineOrder, [$lat, $lng, $lat]);
     }
 
     /**

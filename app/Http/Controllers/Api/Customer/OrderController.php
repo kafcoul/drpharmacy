@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Pharmacy;
+use App\Models\Prescription;
 use App\Notifications\NewOrderReceivedNotification;
 use App\Services\PaymentService;
 use App\Services\WalletService;
@@ -83,6 +84,7 @@ class OrderController extends Controller
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.price' => 'required|numeric|min:0',
             'prescription_image' => 'nullable|string',
+            'prescription_id' => 'nullable|exists:prescriptions,id', // ID de la prescription uploadée via checkout
             'customer_notes' => 'nullable|string',
             'delivery_address' => 'required|string',
             'delivery_city' => 'nullable|string',
@@ -183,6 +185,32 @@ class OrderController extends Controller
                 ]);
             }
 
+            // === LIER LA PRESCRIPTION À LA COMMANDE (DANS LA TRANSACTION) ===
+            if (!empty($validated['prescription_id'])) {
+                $prescription = Prescription::where('id', $validated['prescription_id'])
+                    ->where('user_id', $request->user()->id)
+                    ->whereNull('order_id') // S'assurer qu'elle n'est pas déjà liée
+                    ->first();
+                
+                if ($prescription) {
+                    $prescription->update([
+                        'order_id' => $order->id,
+                        'status' => 'processing', // En cours de traitement avec la commande
+                    ]);
+                    
+                    Log::info('Prescription liée à la commande', [
+                        'prescription_id' => $prescription->id,
+                        'order_id' => $order->id,
+                        'order_reference' => $order->reference,
+                    ]);
+                } else {
+                    Log::warning('Prescription non trouvée ou déjà liée', [
+                        'prescription_id' => $validated['prescription_id'],
+                        'user_id' => $request->user()->id,
+                    ]);
+                }
+            }
+
             DB::commit();
 
             // === NOTIFIER LA PHARMACIE POUR PAIEMENT CASH ===
@@ -219,12 +247,14 @@ class OrderController extends Controller
             DB::rollBack();
             Log::error('Order creation failed', [
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
                 'user_id' => $request->user()->id,
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la création de la commande',
+                'debug' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }

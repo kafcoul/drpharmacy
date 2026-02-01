@@ -219,9 +219,37 @@ class JekoGateway implements PaymentGatewayInterface
         return $paymentIntent;
     }
 
+    /**
+     * Vérifier la signature du webhook Jeko
+     * 
+     * IMPORTANT: En production, le webhook_secret DOIT être configuré.
+     * En développement (APP_ENV=local), on accepte sans signature pour faciliter les tests.
+     */
     public function verifySignature(array $payload, ?string $signature): bool
     {
-        if (!$signature || !$this->webhookSecret) {
+        $isProduction = config('app.env') === 'production';
+        
+        // En production, le secret est OBLIGATOIRE
+        if ($isProduction && empty($this->webhookSecret)) {
+            Log::critical('JEKO_WEBHOOK_SECRET non configuré en production! Les webhooks seront rejetés.', [
+                'payload_reference' => $payload['apiTransactionableDetails']['reference'] ?? 'unknown',
+            ]);
+            return false;
+        }
+        
+        // En développement sans secret configuré, on accepte le webhook avec un warning
+        if (!$isProduction && empty($this->webhookSecret)) {
+            Log::warning('Webhook Jeko accepté sans vérification de signature (mode développement)', [
+                'tip' => 'Configurez JEKO_WEBHOOK_SECRET dans .env pour activer la vérification',
+            ]);
+            return true; // Accepter en dev pour faciliter les tests
+        }
+        
+        // Vérification normale avec signature
+        if (!$signature) {
+            Log::warning('Webhook Jeko reçu sans signature', [
+                'payload_reference' => $payload['apiTransactionableDetails']['reference'] ?? 'unknown',
+            ]);
             return false;
         }
 
@@ -229,7 +257,16 @@ class JekoGateway implements PaymentGatewayInterface
         $data = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         $expectedSignature = hash_hmac('sha256', $data, $this->webhookSecret);
 
-        return hash_equals($expectedSignature, $signature);
+        $isValid = hash_equals($expectedSignature, $signature);
+        
+        if (!$isValid) {
+            Log::warning('Signature webhook Jeko invalide', [
+                'received' => substr($signature, 0, 20) . '...',
+                'expected' => substr($expectedSignature, 0, 20) . '...',
+            ]);
+        }
+        
+        return $isValid;
     }
 
     public function getProviderName(): string
