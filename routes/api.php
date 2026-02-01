@@ -78,6 +78,7 @@ Route::prefix('auth')->group(function () {
     // OTP verification - very strict (3 attempts per minute)
     Route::middleware('throttle:otp')->group(function () {
         Route::post('/verify', [\App\Http\Controllers\Api\Auth\VerificationController::class, 'verify']);
+        Route::post('/verify-firebase', [\App\Http\Controllers\Api\Auth\VerificationController::class, 'verifyWithFirebase']);
         Route::post('/verify-reset-otp', [\App\Http\Controllers\Api\Auth\PasswordResetController::class, 'verifyResetOtp']);
     });
     

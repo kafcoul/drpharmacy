@@ -130,10 +130,12 @@ class JekoGateway implements PaymentGatewayInterface
     {
         Log::info('Jeko webhook received', ['payload' => $payload]);
 
-        $reference = $payload['reference'] ?? null;
+        // According to official Jeko docs, reference is in apiTransactionableDetails
+        $apiDetails = $payload['apiTransactionableDetails'] ?? [];
+        $reference = $apiDetails['reference'] ?? $payload['reference'] ?? null;
 
         if (!$reference) {
-            Log::warning('Jeko webhook missing reference');
+            Log::warning('Jeko webhook missing reference (apiTransactionableDetails.reference)');
             return null;
         }
 
@@ -152,7 +154,8 @@ class JekoGateway implements PaymentGatewayInterface
             return $paymentIntent;
         }
 
-        $paymentStatus = $payload['status'] ?? '';
+        // According to Jeko docs, status can be: 'pending', 'success', 'error'
+        $paymentStatus = strtolower($payload['status'] ?? '');
         $status = $this->mapStatus($paymentStatus);
 
         $paymentIntent->update([
@@ -168,11 +171,11 @@ class JekoGateway implements PaymentGatewayInterface
                 [
                     'order_id' => $paymentIntent->order_id,
                     'provider' => 'jeko',
-                    'provider_reference' => $payload['payment_id'] ?? null,
+                    'provider_reference' => $apiDetails['id'] ?? $payload['id'] ?? null,
                     'amount' => $paymentIntent->amount,
                     'currency' => 'XOF',
                     'status' => 'COMPLETED',
-                    'payment_method' => $payload['payment_method'] ?? 'MOBILE_MONEY',
+                    'payment_method' => $payload['paymentMethod'] ?? 'MOBILE_MONEY', // Jeko uses camelCase
                     'raw_response' => $payload,
                     'paid_at' => now(),
                 ]
@@ -213,14 +216,19 @@ class JekoGateway implements PaymentGatewayInterface
 
     /**
      * Mapper les statuts Jeko vers nos statuts internes
+     * 
+     * According to official Jeko documentation, status can be:
+     * - 'pending': Payment is being processed
+     * - 'success': Payment completed successfully
+     * - 'error': Payment failed
      */
     protected function mapStatus(string $jekoStatus): string
     {
-        return match (strtoupper($jekoStatus)) {
-            'SUCCESS', 'COMPLETED', 'SUCCESSFUL' => 'SUCCESS',
-            'FAILED', 'DECLINED', 'REJECTED' => 'FAILED',
-            'CANCELLED', 'CANCELED' => 'CANCELLED',
-            'PENDING', 'PROCESSING' => 'PENDING',
+        return match (strtolower($jekoStatus)) {
+            'success' => 'SUCCESS',
+            'error', 'failed', 'declined', 'rejected' => 'FAILED', // 'error' is official
+            'cancelled', 'canceled' => 'CANCELLED',
+            'pending', 'processing' => 'PENDING',
             default => 'PENDING',
         };
     }

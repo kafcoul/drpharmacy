@@ -98,6 +98,49 @@ class VerificationController extends Controller
     }
 
     /**
+     * Verify phone via Firebase Authentication
+     * Called after Firebase Phone Auth verification on mobile
+     */
+    public function verifyWithFirebase(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|string',
+            'firebase_uid' => 'required|string',
+        ]);
+
+        $phone = $request->phone;
+        $firebaseUid = $request->firebase_uid;
+
+        // Find user by phone number
+        $user = User::where('phone', $phone)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'Utilisateur non trouvé'], 404);
+        }
+
+        // Store Firebase UID for future use (optional - for Firebase integration)
+        if (!$user->firebase_uid) {
+            $user->firebase_uid = $firebaseUid;
+        }
+
+        // Mark phone as verified
+        if (!$user->phone_verified_at) {
+            $user->phone_verified_at = now();
+        }
+        
+        $user->save();
+
+        // Generate token for auto-login
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Compte vérifié avec succès via Firebase',
+            'user' => $user,
+            'token' => $token,
+        ]);
+    }
+
+    /**
      * Mask email for privacy (show first 2 chars and domain)
      */
     private function maskEmail(string $email): string

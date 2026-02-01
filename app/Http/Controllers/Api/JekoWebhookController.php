@@ -36,8 +36,8 @@ class JekoWebhookController extends Controller
             ], 403);
         }
 
-        // Récupérer la signature depuis l'en-tête
-        $signature = $request->header('X-Jeko-Signature', '');
+        // Récupérer la signature depuis l'en-tête (Jeko-Signature selon doc officielle)
+        $signature = $request->header('Jeko-Signature', '');
 
         $payload = $request->all();
 

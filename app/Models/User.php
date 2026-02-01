@@ -31,6 +31,7 @@ class User extends Authenticatable implements FilamentUser
         'avatar',
         'phone_verified_at',
         'fcm_token',
+        'firebase_uid',
         'last_notification_read_at',
     ];
 

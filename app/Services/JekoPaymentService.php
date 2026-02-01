@@ -90,13 +90,13 @@ class JekoPaymentService
                 'currency' => 'XOF',
                 'reference' => $payment->reference,
                 'paymentDetails' => [
-                    'type' => 'redirect',
+                    'type' => 'qr_code',
                     'data' => [
                         'paymentMethod' => $method->value,
-                        'successUrl' => $successUrl,
-                        'errorUrl' => $errorUrl,
                     ],
                 ],
+                'successUrl' => $successUrl,
+                'errorUrl' => $errorUrl,
             ]);
 
             if (!$response->successful()) {
@@ -184,6 +184,13 @@ class JekoPaymentService
      * Traiter un webhook JEKO
      * 
      * SECURITY: V-005 (anti-replay), V-006 (idempotency lock), V-008 (amount check)
+     * 
+     * Payload structure according to official Jeko documentation:
+     * - id: Unique transaction identifier
+     * - status: 'pending', 'success', 'error'
+     * - amount: { amount: string, currency: string }
+     * - apiTransactionableDetails: { id: string, reference: string } (for Partner API transactions)
+     * - executedAt: "YYYY-MM-DD HH:mm:ss"
      */
     public function handleWebhook(array $payload, string $signature): bool
     {
@@ -197,12 +204,16 @@ class JekoPaymentService
             return false;
         }
 
-        $reference = $payload['reference'] ?? null;
-        $jekoId = $payload['id'] ?? null;
+        // Extraire référence et ID selon la structure officielle Jeko
+        // apiTransactionableDetails est présent uniquement pour les transactions Partner API
+        $apiDetails = $payload['apiTransactionableDetails'] ?? [];
+        $reference = $apiDetails['reference'] ?? null;
+        $jekoId = $apiDetails['id'] ?? $payload['id'] ?? null;
 
         if (!$reference && !$jekoId) {
             Log::warning('JEKO Webhook: Référence manquante', [
                 'payload_keys' => array_keys($payload),
+                'has_apiTransactionableDetails' => isset($payload['apiTransactionableDetails']),
             ]);
             return false;
         }
@@ -257,20 +268,30 @@ class JekoPaymentService
 
     /**
      * SECURITY V-005: Valider le timestamp du webhook pour éviter replay attacks
+     * 
+     * According to Jeko docs, executedAt is in format "YYYY-MM-DD HH:mm:ss"
      */
     private function validateWebhookTimestamp(array $payload): bool
     {
-        $timestamp = $payload['timestamp'] ?? $payload['created_at'] ?? null;
+        // Jeko uses executedAt field according to official documentation
+        $timestamp = $payload['executedAt'] ?? $payload['timestamp'] ?? $payload['created_at'] ?? null;
         
         if (!$timestamp) {
-            // Si JEKO n'envoie pas de timestamp, on log mais on accepte (à adapter selon leur API)
-            Log::info('JEKO Webhook: Pas de timestamp dans le payload');
+            // Si JEKO n'envoie pas de timestamp, on log mais on accepte
+            Log::info('JEKO Webhook: Pas de timestamp (executedAt) dans le payload');
             return true;
         }
 
-        // Convertir en timestamp Unix si c'est une date string
+        // Convertir en timestamp Unix - executedAt est au format "YYYY-MM-DD HH:mm:ss"
         if (is_string($timestamp) && !is_numeric($timestamp)) {
             $timestamp = strtotime($timestamp);
+        }
+        
+        if ($timestamp === false) {
+            Log::warning('JEKO Webhook: Format de timestamp invalide', [
+                'executedAt' => $payload['executedAt'] ?? 'not set',
+            ]);
+            return true; // Accept if we can't parse the timestamp
         }
         
         $maxAgeSeconds = 300; // 5 minutes
@@ -291,17 +312,32 @@ class JekoPaymentService
 
     /**
      * SECURITY V-008: Vérifier que le montant du webhook correspond au montant attendu
+     * 
+     * According to Jeko docs:
+     * - amount: { amount: string, currency: string }
+     * - amount.amount is in smallest currency unit (e.g., 10000 = 100.00 XOF)
      */
     private function validateWebhookAmount(JekoPayment $payment, array $payload): bool
     {
-        $receivedAmountCents = $payload['amountCents'] ?? $payload['amount_cents'] ?? null;
+        // Jeko official structure: amount.amount (string in smallest unit)
+        $amountData = $payload['amount'] ?? null;
+        $receivedAmountCents = null;
+        
+        if (is_array($amountData) && isset($amountData['amount'])) {
+            // Official Jeko format: { amount: "10000", currency: "XOF" }
+            $receivedAmountCents = (int) $amountData['amount'];
+        } elseif (isset($payload['amountCents'])) {
+            // Fallback for legacy/alternative format
+            $receivedAmountCents = (int) $payload['amountCents'];
+        } elseif (isset($payload['amount_cents'])) {
+            // Fallback for snake_case format
+            $receivedAmountCents = (int) $payload['amount_cents'];
+        }
         
         if ($receivedAmountCents === null) {
             // Si pas de montant dans le webhook, on accepte (vérification via API si nécessaire)
             return true;
         }
-
-        $receivedAmountCents = (int) $receivedAmountCents;
         
         if ($receivedAmountCents !== $payment->amount_cents) {
             Log::critical('JEKO Webhook: INCOHÉRENCE MONTANT - FRAUDE POTENTIELLE', [
@@ -362,15 +398,22 @@ class JekoPaymentService
 
     /**
      * Mettre à jour un paiement depuis la réponse JEKO
+     * 
+     * According to official Jeko docs, status can be:
+     * - 'pending': Payment is being processed
+     * - 'success': Payment completed successfully
+     * - 'error': Payment failed
      */
     private function updatePaymentFromJekoResponse(JekoPayment $payment, array $data): JekoPayment
     {
-        $jekoStatus = $data['status'] ?? 'pending';
+        $jekoStatus = strtolower($data['status'] ?? 'pending');
 
+        // Map Jeko statuses to internal statuses according to official documentation
         $status = match ($jekoStatus) {
             'success' => JekoPaymentStatus::SUCCESS,
-            'failed', 'error', 'cancelled' => JekoPaymentStatus::FAILED,
+            'error', 'failed', 'cancelled' => JekoPaymentStatus::FAILED, // 'error' is official, others are fallbacks
             'expired' => JekoPaymentStatus::EXPIRED,
+            'pending' => JekoPaymentStatus::PROCESSING, // 'pending' means still processing
             default => JekoPaymentStatus::PROCESSING,
         };
 
@@ -379,8 +422,21 @@ class JekoPaymentService
             'webhook_received_at' => now(),
         ];
 
-        if (isset($data['transaction'])) {
-            $updateData['transaction_data'] = $data['transaction'];
+        // Store additional transaction data if present
+        // This could include counterpartLabel, counterpartIdentifier, paymentMethod, etc.
+        $transactionData = array_filter([
+            'counterpartLabel' => $data['counterpartLabel'] ?? null,
+            'counterpartIdentifier' => $data['counterpartIdentifier'] ?? null,
+            'paymentMethod' => $data['paymentMethod'] ?? null,
+            'transactionType' => $data['transactionType'] ?? null,
+            'executedAt' => $data['executedAt'] ?? null,
+        ]);
+        
+        if (!empty($transactionData) || isset($data['transaction'])) {
+            $updateData['transaction_data'] = array_merge(
+                $data['transaction'] ?? [],
+                $transactionData
+            );
         }
 
         if ($status->isFinal()) {
@@ -388,8 +444,10 @@ class JekoPaymentService
             $updateData['webhook_processed'] = true;
         }
 
-        if ($status === JekoPaymentStatus::FAILED && isset($data['error'])) {
-            $updateData['error_message'] = $data['error']['message'] ?? 'Paiement échoué';
+        // For 'error' status, Jeko doesn't provide detailed error message in webhook
+        // We set a generic message
+        if ($status === JekoPaymentStatus::FAILED) {
+            $updateData['error_message'] = $data['error']['message'] ?? 'Paiement échoué (error status from Jeko)';
         }
 
         $payment->update($updateData);
@@ -398,6 +456,7 @@ class JekoPaymentService
             'reference' => $payment->reference,
             'old_status' => $payment->getOriginal('status'),
             'new_status' => $status->value,
+            'jeko_status' => $jekoStatus,
         ]);
 
         return $payment->fresh();

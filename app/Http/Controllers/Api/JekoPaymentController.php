@@ -27,6 +27,11 @@ class JekoPaymentController extends Controller
      */
     public function initiate(Request $request): JsonResponse
     {
+        Log::info('=== JEKO PAYMENT INITIATE START ===', [
+            'input' => $request->all(),
+            'user_id' => Auth::id(),
+        ]);
+
         $request->validate([
             'type' => 'required|in:order,wallet_topup',
             'order_id' => 'required_if:type,order|integer|exists:orders,id',
@@ -34,26 +39,31 @@ class JekoPaymentController extends Controller
             'payment_method' => ['required', Rule::in(JekoPaymentMethod::values())],
         ]);
 
+        Log::info('=== VALIDATION PASSED ===');
+
         $user = Auth::user();
         $type = $request->type;
         $method = JekoPaymentMethod::from($request->payment_method);
 
         try {
             if ($type === 'order') {
+                Log::info('=== PROCESSING ORDER PAYMENT ===');
                 return $this->initiateOrderPayment($request->order_id, $method, $user);
             } else {
+                Log::info('=== PROCESSING WALLET TOPUP ===', ['amount' => $request->amount]);
                 return $this->initiateWalletTopup($request->amount, $method, $user);
             }
         } catch (\Exception $e) {
-            Log::error('Payment Initiation Failed', [
+            Log::error('=== PAYMENT INITIATION FAILED ===', [
                 'type' => $type,
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => $e->getMessage(),
+                'message' => 'Exception: ' . $e->getMessage(),
             ], 400);
         }
     }

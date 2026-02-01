@@ -55,6 +55,8 @@ class WebhookController extends Controller
 
     /**
      * Webhook Jeko
+     * 
+     * Note: According to official Jeko documentation, the signature header is "Jeko-Signature"
      */
     public function jeko(Request $request)
     {
@@ -66,7 +68,8 @@ class WebhookController extends Controller
         try {
             $gateway = new JekoGateway();
             $payload = $request->all();
-            $signature = $request->header('X-Jeko-Signature');
+            // Official header is "Jeko-Signature" according to Jeko documentation
+            $signature = $request->header('Jeko-Signature');
 
             // Vérifier la signature
             if (!$gateway->verifySignature($payload, $signature)) {
