@@ -149,7 +149,14 @@ class OrderController extends Controller
                 $validated['delivery_latitude'] ?? null,
                 $validated['delivery_longitude'] ?? null
             );
-            $totalAmount = $subtotal + $deliveryFee;
+            
+            // Calculer tous les frais (service + paiement)
+            // Les frais sont ajoutés au prix: la pharmacie reçoit le prix exact des médicaments
+            $allFees = WalletService::calculateAllFees($subtotal, $deliveryFee, $validated['payment_mode']);
+            
+            $serviceFee = $allFees['service_fee'];
+            $paymentFee = $allFees['payment_fee'];
+            $totalAmount = $allFees['total_amount'];
 
             // Create order
             $order = Order::create([
@@ -160,6 +167,8 @@ class OrderController extends Controller
                 'payment_mode' => $validated['payment_mode'],
                 'subtotal' => $subtotal,
                 'delivery_fee' => $deliveryFee,
+                'service_fee' => $serviceFee,
+                'payment_fee' => $paymentFee,
                 'total_amount' => $totalAmount,
                 'currency' => 'XOF',
                 'customer_notes' => $validated['customer_notes'] ?? null,

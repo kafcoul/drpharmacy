@@ -46,6 +46,11 @@ Route::middleware('throttle:public')->group(function () {
     // Delivery Fee Estimation (public - customers need to see prices before ordering)
     Route::get('/delivery/pricing', [\App\Http\Controllers\Api\DeliveryPricingController::class, 'getPricing']);
     Route::post('/delivery/estimate', [\App\Http\Controllers\Api\DeliveryPricingController::class, 'estimate']);
+    
+    // Pricing & Fees (public - customers need to see all fees before ordering)
+    Route::get('/pricing', [\App\Http\Controllers\Api\PricingController::class, 'index']);
+    Route::post('/pricing/calculate', [\App\Http\Controllers\Api\PricingController::class, 'calculate']);
+    Route::post('/pricing/delivery', [\App\Http\Controllers\Api\PricingController::class, 'estimateDelivery']);
 });
 
 // Public Pharmacies routes (no auth required - customers can browse)

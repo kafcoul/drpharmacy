@@ -50,6 +50,14 @@ class Settings extends Page implements HasForms
             'delivery_fee_per_km' => Setting::get('delivery_fee_per_km', 100),
             'delivery_fee_min' => Setting::get('delivery_fee_min', 300),
             'delivery_fee_max' => Setting::get('delivery_fee_max', 5000),
+            // Frais de service et paiement (ajoutés au prix pour que la pharmacie reçoive le prix exact)
+            'service_fee_percentage' => Setting::get('service_fee_percentage', 3),
+            'service_fee_min' => Setting::get('service_fee_min', 100),
+            'service_fee_max' => Setting::get('service_fee_max', 2000),
+            'payment_processing_fee' => Setting::get('payment_processing_fee', 50),
+            'payment_processing_percentage' => Setting::get('payment_processing_percentage', 1.5),
+            'apply_service_fee' => Setting::get('apply_service_fee', true),
+            'apply_payment_fee' => Setting::get('apply_payment_fee', true),
             'minimum_withdrawal_amount' => Setting::get('minimum_withdrawal_amount', 500),
             'support_phone' => Setting::get('support_phone', ''),
             'support_email' => Setting::get('support_email', ''),
@@ -139,6 +147,57 @@ class Settings extends Page implements HasForms
                             ->suffix('FCFA')
                             ->required()
                             ->helperText('Montant minimum pour un retrait vers Mobile Money.'),
+                    ])->columns(2),
+
+                Section::make('Frais de Service & Paiement')
+                    ->description('Ces frais sont ajoutés au prix des médicaments. La pharmacie reçoit le prix exact qu\'elle a fixé.')
+                    ->icon('heroicon-o-banknotes')
+                    ->schema([
+                        Toggle::make('apply_service_fee')
+                            ->label('Activer les frais de service')
+                            ->helperText('Appliquer les frais de service sur chaque commande.')
+                            ->default(true)
+                            ->columnSpanFull(),
+                        TextInput::make('service_fee_percentage')
+                            ->label('Frais de service (%)')
+                            ->numeric()
+                            ->suffix('%')
+                            ->minValue(0)
+                            ->maxValue(20)
+                            ->required()
+                            ->helperText('Pourcentage appliqué sur le sous-total des médicaments (ex: 3%).'),
+                        TextInput::make('service_fee_min')
+                            ->label('Frais de service minimum (FCFA)')
+                            ->numeric()
+                            ->suffix('FCFA')
+                            ->required()
+                            ->helperText('Montant minimum des frais de service quelle que soit la commande.'),
+                        TextInput::make('service_fee_max')
+                            ->label('Frais de service maximum (FCFA)')
+                            ->numeric()
+                            ->suffix('FCFA')
+                            ->required()
+                            ->helperText('Plafond maximum des frais de service.'),
+                        Toggle::make('apply_payment_fee')
+                            ->label('Activer les frais de paiement')
+                            ->helperText('Appliquer les frais de traitement de paiement en ligne.')
+                            ->default(true)
+                            ->columnSpanFull(),
+                        TextInput::make('payment_processing_fee')
+                            ->label('Frais fixes de paiement (FCFA)')
+                            ->numeric()
+                            ->suffix('FCFA')
+                            ->minValue(0)
+                            ->required()
+                            ->helperText('Montant fixe ajouté pour chaque paiement en ligne (ex: 50 FCFA).'),
+                        TextInput::make('payment_processing_percentage')
+                            ->label('Frais de paiement (%)')
+                            ->numeric()
+                            ->suffix('%')
+                            ->minValue(0)
+                            ->maxValue(10)
+                            ->required()
+                            ->helperText('Pourcentage appliqué sur le total pour les paiements en ligne (ex: 1.5%).'),
                     ])->columns(2),
 
                 Section::make('Support Technique')
@@ -289,6 +348,14 @@ class Settings extends Page implements HasForms
         Setting::set('delivery_fee_per_km', $data['delivery_fee_per_km'], 'integer');
         Setting::set('delivery_fee_min', $data['delivery_fee_min'], 'integer');
         Setting::set('delivery_fee_max', $data['delivery_fee_max'], 'integer');
+        // Frais de service et paiement
+        Setting::set('service_fee_percentage', $data['service_fee_percentage'], 'float');
+        Setting::set('service_fee_min', $data['service_fee_min'], 'integer');
+        Setting::set('service_fee_max', $data['service_fee_max'], 'integer');
+        Setting::set('payment_processing_fee', $data['payment_processing_fee'], 'integer');
+        Setting::set('payment_processing_percentage', $data['payment_processing_percentage'], 'float');
+        Setting::set('apply_service_fee', $data['apply_service_fee'], 'boolean');
+        Setting::set('apply_payment_fee', $data['apply_payment_fee'], 'boolean');
         Setting::set('minimum_withdrawal_amount', $data['minimum_withdrawal_amount'], 'integer');
         Setting::set('support_phone', $data['support_phone'], 'string');
         Setting::set('support_email', $data['support_email'], 'string');

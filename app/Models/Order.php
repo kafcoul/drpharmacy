@@ -23,6 +23,8 @@ class Order extends Model
         'payment_mode',
         'subtotal',
         'delivery_fee',
+        'service_fee',
+        'payment_fee',
         'total_amount',
         'currency',
         'customer_notes',
@@ -43,6 +45,8 @@ class Order extends Model
     protected $casts = [
         'subtotal' => 'decimal:2',
         'delivery_fee' => 'decimal:2',
+        'service_fee' => 'decimal:2',
+        'payment_fee' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'delivery_latitude' => 'decimal:7',
         'delivery_longitude' => 'decimal:7',

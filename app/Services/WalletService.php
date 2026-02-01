@@ -105,6 +105,167 @@ class WalletService
         ];
     }
 
+    // ========================
+    // FRAIS DE SERVICE & PAIEMENT
+    // ========================
+
+    /**
+     * Vérifier si les frais de service sont activés
+     */
+    public static function isServiceFeeEnabled(): bool
+    {
+        return (bool) Setting::get('apply_service_fee', true);
+    }
+
+    /**
+     * Vérifier si les frais de paiement sont activés
+     */
+    public static function isPaymentFeeEnabled(): bool
+    {
+        return (bool) Setting::get('apply_payment_fee', true);
+    }
+
+    /**
+     * Récupérer le pourcentage des frais de service
+     */
+    public static function getServiceFeePercentage(): float
+    {
+        return (float) Setting::get('service_fee_percentage', 3);
+    }
+
+    /**
+     * Récupérer le minimum des frais de service
+     */
+    public static function getServiceFeeMin(): int
+    {
+        return (int) Setting::get('service_fee_min', 100);
+    }
+
+    /**
+     * Récupérer le maximum des frais de service
+     */
+    public static function getServiceFeeMax(): int
+    {
+        return (int) Setting::get('service_fee_max', 2000);
+    }
+
+    /**
+     * Récupérer les frais fixes de paiement
+     */
+    public static function getPaymentProcessingFee(): int
+    {
+        return (int) Setting::get('payment_processing_fee', 50);
+    }
+
+    /**
+     * Récupérer le pourcentage des frais de paiement
+     */
+    public static function getPaymentProcessingPercentage(): float
+    {
+        return (float) Setting::get('payment_processing_percentage', 1.5);
+    }
+
+    /**
+     * Calculer les frais de service pour un montant donné
+     * Formule: (subtotal * percentage / 100) avec min et max appliqués
+     * 
+     * @param int $subtotal Sous-total des médicaments en FCFA
+     * @return int Frais de service en FCFA
+     */
+    public static function calculateServiceFee(int $subtotal): int
+    {
+        if (!self::isServiceFeeEnabled()) {
+            return 0;
+        }
+
+        $percentage = self::getServiceFeePercentage();
+        $min = self::getServiceFeeMin();
+        $max = self::getServiceFeeMax();
+
+        // Calcul: subtotal * percentage / 100
+        $fee = (int) ceil($subtotal * $percentage / 100);
+
+        // Appliquer min et max
+        $fee = max($min, $fee);
+        $fee = min($max, $fee);
+
+        return $fee;
+    }
+
+    /**
+     * Calculer les frais de paiement pour un montant donné
+     * Formule: frais_fixes + (amount * percentage / 100)
+     * Appliqué uniquement pour les paiements en ligne (mobile_money, card)
+     * 
+     * @param int $amount Montant total (subtotal + delivery + service_fee) en FCFA
+     * @param string $paymentMode Mode de paiement ('cash', 'mobile_money', 'card')
+     * @return int Frais de paiement en FCFA
+     */
+    public static function calculatePaymentFee(int $amount, string $paymentMode): int
+    {
+        // Pas de frais pour les paiements en espèces
+        if ($paymentMode === 'cash') {
+            return 0;
+        }
+
+        if (!self::isPaymentFeeEnabled()) {
+            return 0;
+        }
+
+        $fixedFee = self::getPaymentProcessingFee();
+        $percentage = self::getPaymentProcessingPercentage();
+
+        // Calcul: frais_fixes + (amount * percentage / 100)
+        $percentageFee = (int) ceil($amount * $percentage / 100);
+        
+        return $fixedFee + $percentageFee;
+    }
+
+    /**
+     * Récupérer tous les paramètres de tarification (service + paiement)
+     */
+    public static function getServicePricing(): array
+    {
+        return [
+            'service_fee' => [
+                'enabled' => self::isServiceFeeEnabled(),
+                'percentage' => self::getServiceFeePercentage(),
+                'min' => self::getServiceFeeMin(),
+                'max' => self::getServiceFeeMax(),
+            ],
+            'payment_fee' => [
+                'enabled' => self::isPaymentFeeEnabled(),
+                'fixed_fee' => self::getPaymentProcessingFee(),
+                'percentage' => self::getPaymentProcessingPercentage(),
+            ],
+        ];
+    }
+
+    /**
+     * Calculer tous les frais pour une commande
+     * 
+     * @param int $subtotal Sous-total des médicaments
+     * @param int $deliveryFee Frais de livraison
+     * @param string $paymentMode Mode de paiement
+     * @return array Détail de tous les frais
+     */
+    public static function calculateAllFees(int $subtotal, int $deliveryFee, string $paymentMode): array
+    {
+        $serviceFee = self::calculateServiceFee($subtotal);
+        $subtotalWithFees = $subtotal + $deliveryFee + $serviceFee;
+        $paymentFee = self::calculatePaymentFee($subtotalWithFees, $paymentMode);
+        $totalAmount = $subtotalWithFees + $paymentFee;
+
+        return [
+            'subtotal' => $subtotal,                // Prix des médicaments (pharmacie reçoit ce montant)
+            'delivery_fee' => $deliveryFee,         // Frais de livraison
+            'service_fee' => $serviceFee,           // Frais de service plateforme
+            'payment_fee' => $paymentFee,           // Frais de paiement (si paiement en ligne)
+            'total_amount' => $totalAmount,         // Total payé par le client
+            'pharmacy_amount' => $subtotal,         // Montant que la pharmacie reçoit (prix exact des médicaments)
+        ];
+    }
+
     /**
      * Récupérer le montant minimum de retrait depuis les paramètres
      */
