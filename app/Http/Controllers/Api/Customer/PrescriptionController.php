@@ -16,19 +16,33 @@ class PrescriptionController extends Controller
     public function index(Request $request)
     {
         $prescriptions = $request->user()->prescriptions()
+            ->with('order:id,reference,status') // Charger la commande associée
             ->latest()
             ->get()
             ->map(function ($prescription) {
-                return [
+                $data = [
                     'id' => $prescription->id,
                     'status' => $prescription->status,
+                    'source' => $prescription->source ?? 'upload',
                     'notes' => $prescription->notes,
                     'images' => $prescription->images,
                     'quote_amount' => $prescription->quote_amount,
                     'pharmacy_notes' => $prescription->pharmacy_notes,
                     'created_at' => $prescription->created_at,
                     'validated_at' => $prescription->validated_at,
+                    'order_id' => $prescription->order_id,
                 ];
+                
+                // Ajouter les infos de la commande si elle existe
+                if ($prescription->order) {
+                    $data['order'] = [
+                        'id' => $prescription->order->id,
+                        'reference' => $prescription->order->reference,
+                        'status' => $prescription->order->status,
+                    ];
+                }
+                
+                return $data;
             });
 
         return response()->json([
@@ -47,6 +61,7 @@ class PrescriptionController extends Controller
                 'images' => 'required|array|min:1',
                 'images.*' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240', // 10MB max per image
                 'notes' => 'nullable|string|max:500',
+                'source' => 'nullable|in:upload,checkout', // Source de l'ordonnance
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -78,19 +93,22 @@ class PrescriptionController extends Controller
             'images' => $imagePaths,
             'notes' => $request->notes,
             'status' => 'pending',
+            'source' => $request->input('source', 'upload'), // Par défaut 'upload'
         ]);
 
-        // Notify all pharmacies (or relevant ones based on geolocation in future)
-        // For MVP: Notify all users with role 'pharmacy'
-        try {
-            $pharmacyUsers = \App\Models\User::where('role', 'pharmacy')->get();
+        // Ne notifier les pharmacies que pour les uploads directs (pas checkout)
+        // Les ordonnances de checkout sont déjà liées à une commande
+        if ($prescription->source === Prescription::SOURCE_UPLOAD) {
+            try {
+                $pharmacyUsers = \App\Models\User::where('role', 'pharmacy')->get();
 
-            foreach($pharmacyUsers as $pharmacyUser) {
-                 $pharmacyUser->notify(new \App\Notifications\NewPrescriptionNotification($prescription));
+                foreach($pharmacyUsers as $pharmacyUser) {
+                     $pharmacyUser->notify(new \App\Notifications\NewPrescriptionNotification($prescription));
+                }
+            } catch (\Exception $e) {
+                // Notification failure shouldn't block the upload
+                \Log::warning('Prescription notification error: ' . $e->getMessage());
             }
-        } catch (\Exception $e) {
-            // Notification failure shouldn't block the upload
-            \Log::warning('Prescription notification error: ' . $e->getMessage());
         }
 
         return response()->json([
@@ -99,6 +117,7 @@ class PrescriptionController extends Controller
             'data' => [
                 'id' => $prescription->id,
                 'status' => $prescription->status,
+                'source' => $prescription->source,
                 'images' => $prescription->images,
                 'notes' => $prescription->notes,
                 'created_at' => $prescription->created_at,

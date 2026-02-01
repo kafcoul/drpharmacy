@@ -143,8 +143,12 @@ class OrderController extends Controller
                 $subtotal += $item['quantity'] * $price;
             }
 
-            // Récupérer les frais de livraison depuis les paramètres
-            $deliveryFee = WalletService::getDeliveryFeeBase();
+            // Récupérer les frais de livraison calculés selon la distance
+            $deliveryFee = $this->calculateDeliveryFee(
+                $validated['pharmacy_id'],
+                $validated['delivery_latitude'] ?? null,
+                $validated['delivery_longitude'] ?? null
+            );
             $totalAmount = $subtotal + $deliveryFee;
 
             // Create order
@@ -455,5 +459,63 @@ class OrderController extends Controller
                 'warning_message' => $warningMessage,
             ],
         ]);
+    }
+
+    /**
+     * Calculer les frais de livraison selon la distance pharmacie -> client
+     * 
+     * @param int $pharmacyId ID de la pharmacie
+     * @param float|null $deliveryLat Latitude de livraison
+     * @param float|null $deliveryLng Longitude de livraison
+     * @return int Frais de livraison en FCFA
+     */
+    private function calculateDeliveryFee(int $pharmacyId, ?float $deliveryLat, ?float $deliveryLng): int
+    {
+        // Si pas de coordonnées de livraison, utiliser le minimum
+        if ($deliveryLat === null || $deliveryLng === null) {
+            return WalletService::getDeliveryFeeMin();
+        }
+
+        // Récupérer les coordonnées de la pharmacie
+        $pharmacy = \App\Models\Pharmacy::find($pharmacyId);
+        if (!$pharmacy || !$pharmacy->latitude || !$pharmacy->longitude) {
+            return WalletService::getDeliveryFeeMin();
+        }
+
+        // Calculer la distance (formule Haversine)
+        $distanceKm = $this->calculateDistance(
+            $pharmacy->latitude,
+            $pharmacy->longitude,
+            $deliveryLat,
+            $deliveryLng
+        );
+
+        // Calculer les frais selon la distance
+        return WalletService::calculateDeliveryFee($distanceKm);
+    }
+
+    /**
+     * Calculer la distance entre deux points GPS (formule Haversine)
+     * 
+     * @param float $lat1 Latitude point 1
+     * @param float $lng1 Longitude point 1
+     * @param float $lat2 Latitude point 2
+     * @param float $lng2 Longitude point 2
+     * @return float Distance en kilomètres
+     */
+    private function calculateDistance(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $earthRadius = 6371; // Rayon de la Terre en km
+
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($dLng / 2) * sin($dLng / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
     }
 }

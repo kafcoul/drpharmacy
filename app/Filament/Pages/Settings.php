@@ -46,7 +46,10 @@ class Settings extends Page implements HasForms
             'default_commission_rate' => Setting::get('default_commission_rate', 10),
             'courier_commission_amount' => Setting::get('courier_commission_amount', 200),
             'minimum_wallet_balance' => Setting::get('minimum_wallet_balance', 200),
-            'delivery_fee_base' => Setting::get('delivery_fee_base', 500),
+            'delivery_fee_base' => Setting::get('delivery_fee_base', 200),
+            'delivery_fee_per_km' => Setting::get('delivery_fee_per_km', 100),
+            'delivery_fee_min' => Setting::get('delivery_fee_min', 300),
+            'delivery_fee_max' => Setting::get('delivery_fee_max', 5000),
             'minimum_withdrawal_amount' => Setting::get('minimum_withdrawal_amount', 500),
             'support_phone' => Setting::get('support_phone', ''),
             'support_email' => Setting::get('support_email', ''),
@@ -107,11 +110,29 @@ class Settings extends Page implements HasForms
                             ->required()
                             ->helperText('Solde minimum pour qu\'un livreur puisse accepter des livraisons.'),
                         TextInput::make('delivery_fee_base')
-                            ->label('Frais de livraison de base (FCFA)')
+                            ->label('Frais de départ (FCFA)')
                             ->numeric()
                             ->suffix('FCFA')
                             ->required()
-                            ->helperText('Montant de base des frais de livraison payés par le client.'),
+                            ->helperText('Montant fixe de départ pour toute livraison (ex: 200 FCFA).'),
+                        TextInput::make('delivery_fee_per_km')
+                            ->label('Frais par kilomètre (FCFA/km)')
+                            ->numeric()
+                            ->suffix('FCFA/km')
+                            ->required()
+                            ->helperText('Montant ajouté par kilomètre parcouru (ex: 100 FCFA/km).'),
+                        TextInput::make('delivery_fee_min')
+                            ->label('Frais minimum (FCFA)')
+                            ->numeric()
+                            ->suffix('FCFA')
+                            ->required()
+                            ->helperText('Montant minimum facturé quelle que soit la distance.'),
+                        TextInput::make('delivery_fee_max')
+                            ->label('Frais maximum (FCFA)')
+                            ->numeric()
+                            ->suffix('FCFA')
+                            ->required()
+                            ->helperText('Plafond maximum des frais de livraison.'),
                         TextInput::make('minimum_withdrawal_amount')
                             ->label('Retrait minimum (FCFA)')
                             ->numeric()
@@ -265,6 +286,9 @@ class Settings extends Page implements HasForms
         Setting::set('courier_commission_amount', $data['courier_commission_amount'], 'integer');
         Setting::set('minimum_wallet_balance', $data['minimum_wallet_balance'], 'integer');
         Setting::set('delivery_fee_base', $data['delivery_fee_base'], 'integer');
+        Setting::set('delivery_fee_per_km', $data['delivery_fee_per_km'], 'integer');
+        Setting::set('delivery_fee_min', $data['delivery_fee_min'], 'integer');
+        Setting::set('delivery_fee_max', $data['delivery_fee_max'], 'integer');
         Setting::set('minimum_withdrawal_amount', $data['minimum_withdrawal_amount'], 'integer');
         Setting::set('support_phone', $data['support_phone'], 'string');
         Setting::set('support_email', $data['support_email'], 'string');

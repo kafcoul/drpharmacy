@@ -36,11 +36,73 @@ class WalletService
     }
 
     /**
-     * Récupérer les frais de livraison de base depuis les paramètres
+     * Récupérer les frais de livraison de base (départ) depuis les paramètres
      */
     public static function getDeliveryFeeBase(): int
     {
-        return (int) Setting::get('delivery_fee_base', 500);
+        return (int) Setting::get('delivery_fee_base', 200);
+    }
+
+    /**
+     * Récupérer les frais par kilomètre depuis les paramètres
+     */
+    public static function getDeliveryFeePerKm(): int
+    {
+        return (int) Setting::get('delivery_fee_per_km', 100);
+    }
+
+    /**
+     * Récupérer le minimum des frais de livraison
+     */
+    public static function getDeliveryFeeMin(): int
+    {
+        return (int) Setting::get('delivery_fee_min', 300);
+    }
+
+    /**
+     * Récupérer le maximum des frais de livraison
+     */
+    public static function getDeliveryFeeMax(): int
+    {
+        return (int) Setting::get('delivery_fee_max', 5000);
+    }
+
+    /**
+     * Calculer les frais de livraison selon la distance
+     * Formule: frais_base + (distance_km * frais_par_km)
+     * Avec min et max appliqués
+     * 
+     * @param float $distanceKm Distance en kilomètres
+     * @return int Frais de livraison en FCFA
+     */
+    public static function calculateDeliveryFee(float $distanceKm): int
+    {
+        $base = self::getDeliveryFeeBase();
+        $perKm = self::getDeliveryFeePerKm();
+        $min = self::getDeliveryFeeMin();
+        $max = self::getDeliveryFeeMax();
+
+        // Calcul: base + (distance * tarif/km)
+        $fee = $base + (int) ceil($distanceKm * $perKm);
+
+        // Appliquer min et max
+        $fee = max($min, $fee);
+        $fee = min($max, $fee);
+
+        return $fee;
+    }
+
+    /**
+     * Récupérer tous les paramètres de tarification livraison
+     */
+    public static function getDeliveryPricing(): array
+    {
+        return [
+            'base_fee' => self::getDeliveryFeeBase(),
+            'fee_per_km' => self::getDeliveryFeePerKm(),
+            'min_fee' => self::getDeliveryFeeMin(),
+            'max_fee' => self::getDeliveryFeeMax(),
+        ];
     }
 
     /**

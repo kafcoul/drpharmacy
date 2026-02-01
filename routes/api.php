@@ -42,6 +42,10 @@ if (app()->environment('local', 'testing')) {
 Route::middleware('throttle:public')->group(function () {
     Route::get('/duty-zones', [\App\Http\Controllers\Api\Pharmacy\DutyZoneController::class, 'index']);
     Route::get('/duty-zones/{id}', [\App\Http\Controllers\Api\Pharmacy\DutyZoneController::class, 'show']);
+    
+    // Delivery Fee Estimation (public - customers need to see prices before ordering)
+    Route::get('/delivery/pricing', [\App\Http\Controllers\Api\DeliveryPricingController::class, 'getPricing']);
+    Route::post('/delivery/estimate', [\App\Http\Controllers\Api\DeliveryPricingController::class, 'estimate']);
 });
 
 // Public Pharmacies routes (no auth required - customers can browse)

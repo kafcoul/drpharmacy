@@ -12,9 +12,11 @@ class Prescription extends Model
 
     protected $fillable = [
         'customer_id',
+        'order_id',
         'images',
         'notes',
         'status',
+        'source',
         'admin_notes',
         'validated_at',
         'validated_by',
@@ -71,6 +73,13 @@ class Prescription extends Model
     const STATUS_PENDING = 'pending';
     const STATUS_VALIDATED = 'validated';
     const STATUS_REJECTED = 'rejected';
+    const STATUS_COMPLETED = 'completed'; // Quand la commande associée est livrée
+
+    /**
+     * Prescription sources
+     */
+    const SOURCE_UPLOAD = 'upload';       // Uploadée via "Mes Ordonnances"
+    const SOURCE_CHECKOUT = 'checkout';   // Uploadée lors du checkout
 
     /**
      * Get the customer that owns the prescription
@@ -81,11 +90,35 @@ class Prescription extends Model
     }
 
     /**
+     * Get the order associated with this prescription
+     */
+    public function order()
+    {
+        return $this->belongsTo(Order::class, 'order_id');
+    }
+
+    /**
      * Get the admin who validated the prescription
      */
     public function validator()
     {
         return $this->belongsTo(User::class, 'validated_by');
+    }
+
+    /**
+     * Check if prescription is from checkout
+     */
+    public function isFromCheckout(): bool
+    {
+        return $this->source === self::SOURCE_CHECKOUT;
+    }
+
+    /**
+     * Check if prescription has an associated order
+     */
+    public function hasOrder(): bool
+    {
+        return $this->order_id !== null;
     }
 
     /**
@@ -102,6 +135,14 @@ class Prescription extends Model
     public function scopeValidated($query)
     {
         return $query->where('status', self::STATUS_VALIDATED);
+    }
+
+    /**
+     * Scope for prescriptions from checkout
+     */
+    public function scopeFromCheckout($query)
+    {
+        return $query->where('source', self::SOURCE_CHECKOUT);
     }
 
     /**
