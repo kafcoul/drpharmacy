@@ -44,6 +44,12 @@ tags:
     description: Payment processing and commission
   - name: Pharmacies
     description: Pharmacy management
+  - name: Prescriptions
+    description: Prescription upload and management
+  - name: Addresses
+    description: User delivery addresses
+  - name: Notifications
+    description: Push notifications and FCM tokens
   - name: Admin
     description: Administrative endpoints
 
@@ -696,6 +702,315 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Pharmacy"
+
+  /customer/pharmacies/nearby:
+    get:
+      tags:
+        - Pharmacies
+      summary: Get nearby pharmacies
+      parameters:
+        - name: latitude
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: longitude
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: radius
+          in: query
+          schema:
+            type: number
+            default: 10
+          description: Search radius in km
+      responses:
+        "200":
+          description: Nearby pharmacies list
+
+  /customer/pharmacies/on-duty:
+    get:
+      tags:
+        - Pharmacies
+      summary: Get on-duty pharmacies
+      parameters:
+        - name: latitude
+          in: query
+          schema:
+            type: number
+        - name: longitude
+          in: query
+          schema:
+            type: number
+      responses:
+        "200":
+          description: On-duty pharmacies list
+
+  # ==================== PRESCRIPTIONS ====================
+  /customer/prescriptions:
+    get:
+      tags:
+        - Prescriptions
+      summary: List user prescriptions
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Prescriptions list
+    post:
+      tags:
+        - Prescriptions
+      summary: Upload a new prescription
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - images
+              properties:
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                notes:
+                  type: string
+      responses:
+        "201":
+          description: Prescription uploaded
+
+  /customer/prescriptions/{id}:
+    get:
+      tags:
+        - Prescriptions
+      summary: Get prescription details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Prescription details
+
+  # ==================== ADDRESSES ====================
+  /customer/addresses:
+    get:
+      tags:
+        - Addresses
+      summary: List user addresses
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Addresses list
+    post:
+      tags:
+        - Addresses
+      summary: Create a new address
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - address
+              properties:
+                label:
+                  type: string
+                  example: "Maison"
+                address:
+                  type: string
+                city:
+                  type: string
+                district:
+                  type: string
+                latitude:
+                  type: number
+                longitude:
+                  type: number
+                phone:
+                  type: string
+                instructions:
+                  type: string
+                is_default:
+                  type: boolean
+      responses:
+        "201":
+          description: Address created
+
+  /customer/addresses/{id}:
+    get:
+      tags:
+        - Addresses
+      summary: Get address details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Address details
+    put:
+      tags:
+        - Addresses
+      summary: Update address
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label:
+                  type: string
+                address:
+                  type: string
+                city:
+                  type: string
+                district:
+                  type: string
+                latitude:
+                  type: number
+                longitude:
+                  type: number
+                phone:
+                  type: string
+                instructions:
+                  type: string
+                is_default:
+                  type: boolean
+      responses:
+        "200":
+          description: Address updated
+    delete:
+      tags:
+        - Addresses
+      summary: Delete address
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Address deleted
+
+  /customer/addresses/{id}/default:
+    post:
+      tags:
+        - Addresses
+      summary: Set address as default
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Address set as default
+
+  # ==================== NOTIFICATIONS ====================
+  /notifications:
+    get:
+      tags:
+        - Notifications
+      summary: List user notifications
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Notifications list
+
+  /notifications/unread:
+    get:
+      tags:
+        - Notifications
+      summary: Get unread notifications count
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Unread count
+
+  /notifications/{id}/read:
+    post:
+      tags:
+        - Notifications
+      summary: Mark notification as read
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Notification marked as read
+
+  /notifications/read-all:
+    post:
+      tags:
+        - Notifications
+      summary: Mark all notifications as read
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: All notifications marked as read
+
+  /notifications/fcm-token:
+    post:
+      tags:
+        - Notifications
+      summary: Update FCM token
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+      responses:
+        "200":
+          description: Token updated
 
 security:
   - bearerAuth: []
