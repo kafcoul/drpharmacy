@@ -48,15 +48,26 @@ L'application **DR-PHARMA Pharmacy** a été complètement améliorée avec **to
   - Authentification biométrique (préparée)
   - Code PIN avec verrouillage après 5 échecs
   - Session timeout configurable (5-60 min)
-  - Stockage sécurisé des données
 
-### 7. Mode Offline ✅
+### 7. Pages Légales & Support (Mobile User) ✅
+- **Pages créées** :
+  - `TermsPage` : Conditions Générales d'Utilisation
+  - `PrivacyPolicyPage` : Politique de Confidentialité
+  - `LegalNoticesPage` : Mentions Légales
+  - `HelpSupportPage` : FAQ et Contact Support
+- **Intégration** : Menu accessible depuis le profil via BottomSheet
+
+### 8. Backend Order Workflow ✅
+- **Reject Order** : Implémentation complète de la route et du controller pour annuler une commande (Pharmacy)
+- **API Response** : Ajout du champ `cancellation_reason` pour informer le client
+
+### 9. Mode Offline ✅
 - **OfflineStorageService** : Stockage local des données
 - **SyncService** : Synchronisation automatique
 - **ConnectivityBanner** : Indicateur visuel
 - **File d'attente** : Actions en attente de sync
 
-### 8. Providers Core ✅
+### 10. Providers Core ✅
 Tous les services sont accessibles via providers :
 - `cacheServiceProvider`
 - `securityServiceProvider`

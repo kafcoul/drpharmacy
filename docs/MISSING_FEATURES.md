@@ -26,33 +26,28 @@
 
 ## 👤 PROFIL
 
-### 2. Page Paramètres Notifications
-**Fichier**: `lib/features/profile/presentation/widgets/profile_menu_section.dart:54`
-**Description**: Menu "Notifications" n'a pas de page dédiée.
-
-**Solution**: Créer `notification_settings_page.dart` avec:
+### 2. ✅ Page Paramètres Notifications
+**Statut**: IMPLÉMENTÉ
+**Fichier**: `lib/features/profile/presentation/pages/notification_settings_page.dart`
+**Description**: Page de paramètres complète avec :
 - Toggle notifications push
-- Toggle notifications email
-- Choix sons de notification
-- Heures silencieuses
+- Préférences par catégorie (Commandes, Promos, Alertes)
+- Persistance locale (SharedPrefs)
 
-### 3. Page Aide & Support
-**Fichier**: `lib/features/profile/presentation/widgets/profile_menu_section.dart:78`
-**Description**: Pas de page d'aide.
+### 3. ✅ Page Aide & Support
+**Statut**: IMPLÉMENTÉ
+**Fichier**: `lib/features/profile/presentation/pages/help_support_page.dart`
+**Description**: Page complète avec FAQ (ExpansionTile) et options de contact.
 
-**Solution**: Créer page avec FAQ, contact support, liens utiles.
+### 4. ✅ Conditions d'utilisation (CGU)
+**Statut**: IMPLÉMENTÉ
+**Fichier**: `lib/features/profile/presentation/pages/terms_page.dart`
+**Description**: Page statique affichant les conditions générales d'utilisation.
 
-### 4. Conditions d'utilisation (CGU)
-**Fichier**: `lib/features/profile/presentation/widgets/profile_menu_section.dart:121`
-**Description**: Pas d'affichage des CGU.
-
-**Solution**: Créer page ou modal affichant les CGU.
-
-### 5. Politique de confidentialité
-**Fichier**: `lib/features/profile/presentation/widgets/profile_menu_section.dart:132`
-**Description**: Pas d'affichage de la politique.
-
-**Solution**: Créer page ou modal affichant la politique.
+### 5. ✅ Politique de confidentialité
+**Statut**: IMPLÉMENTÉ
+**Fichier**: `lib/features/profile/presentation/pages/privacy_policy_page.dart`
+**Description**: Page statique affichant la politique de confidentialité et RGPD.
 
 ---
 
