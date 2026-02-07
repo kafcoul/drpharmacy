@@ -72,3 +72,9 @@ yarn-error.log
 # ====================
 !.gitkeep
 !**/.gitkeep
+
+# Generated Dart files
+*.g.dart
+*.freezed.dart
+*.gr.dart
+
