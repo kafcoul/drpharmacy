@@ -14,10 +14,11 @@ use Illuminate\Support\Facades\Log;
 class JekoPaymentService
 {
     private string $apiUrl;
-    private string $apiKey;
-    private string $apiKeyId;
-    private string $storeId;
-    private string $webhookSecret;
+    private ?string $apiKey;
+    private ?string $apiKeyId;
+    private ?string $storeId;
+    private ?string $webhookSecret;
+    private bool $isConfigured = false;
 
     public function __construct()
     {
@@ -26,6 +27,17 @@ class JekoPaymentService
         $this->apiKeyId = config('services.jeko.api_key_id');
         $this->storeId = config('services.jeko.store_id');
         $this->webhookSecret = config('services.jeko.webhook_secret');
+        
+        // Vérifier si Jeko est configuré
+        $this->isConfigured = !empty($this->apiKey) && !empty($this->apiKeyId) && !empty($this->storeId);
+    }
+    
+    /**
+     * Vérifie si Jeko est configuré
+     */
+    public function isConfigured(): bool
+    {
+        return $this->isConfigured;
     }
 
     /**

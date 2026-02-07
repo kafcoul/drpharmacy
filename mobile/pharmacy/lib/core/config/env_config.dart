@@ -1,121 +1,154 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Service de configuration d'environnement
-/// Gère automatiquement les URLs selon la plateforme et l'environnement
+/// Lit les valeurs depuis le fichier .env
 class EnvConfig {
-  // ============================================================
-  // CONFIGURATION
-  // ============================================================
-  // Pour changer l'environnement, modifier cette valeur :
-  // - true  = développement (serveur local)
-  // - false = production (serveur distant)
-  // - null  = auto-détection basée sur le mode de build Flutter
-  static const bool? _forceEnvironment = null;
-  
-  // URLs de production
-  static const String _prodBaseUrl = 'https://api.drpharma.ci';
-  
-  // IP locale pour appareil physique (remplacer par votre IP si nécessaire)
-  static const String localMachineIP = '192.168.1.100';
-  
   static bool _isInitialized = false;
   static String? _overrideBaseUrl;
-  
+
   /// Vérifie si la configuration est initialisée
   static bool get isInitialized => _isInitialized;
-  
-  /// Initialise la configuration
+
+  /// Initialise la configuration en chargeant le fichier .env
   static Future<void> init({String? environment}) async {
     if (_isInitialized) {
       debugPrint('⚠️ [EnvConfig] Déjà initialisé');
       return;
     }
+    
+    try {
+      await dotenv.load(fileName: '.env');
+      debugPrint('✅ [EnvConfig] Fichier .env chargé');
+    } catch (e) {
+      debugPrint('⚠️ [EnvConfig] Impossible de charger .env: $e');
+    }
+    
     _isInitialized = true;
     printConfig();
   }
-  
+
   /// Permet de surcharger l'URL de base manuellement (utile pour les tests)
   static void setOverrideBaseUrl(String? url) {
     _overrideBaseUrl = url;
   }
-  
-  /// Détecte automatiquement l'environnement ou utilise la valeur forcée
+
+  /// Récupère une valeur depuis .env avec une valeur par défaut
+  static String _get(String key, String defaultValue) {
+    return dotenv.env[key] ?? defaultValue;
+  }
+
+  /// Nom de l'application
+  static String get appName => _get('APP_NAME', 'DR-PHARMA');
+
+  /// Environnement (development/production)
+  static String get appEnv => _get('APP_ENV', 'development');
+
+  /// Détecte automatiquement l'environnement
   static bool get isDevelopment {
-    if (_forceEnvironment != null) {
-      return _forceEnvironment!;
+    final env = appEnv.toLowerCase();
+    if (env == 'production' || env == 'prod') {
+      return false;
     }
-    // Auto-détection : debug = dev, release = prod
     return !kReleaseMode;
   }
-  
+
   /// Est en environnement de production
   static bool get isProduction => !isDevelopment;
-  
+
   /// Nom de l'environnement actuel
   static String get environment => isDevelopment ? 'development' : 'production';
-  
+
   /// Mode debug activé
   static bool get isDebugMode => isDevelopment;
-  
+
+  /// IP locale pour appareil physique
+  static String get localMachineIP => _get('LOCAL_MACHINE_IP', '192.168.1.100');
+
+  /// URL de production
+  static String get prodApiUrl => _get('PROD_API_URL', 'https://api.drpharma.ci');
+
   /// Retourne l'URL de base de l'API
   static String get baseUrl {
     // 1. Override manuel (priorité maximale)
     if (_overrideBaseUrl != null && _overrideBaseUrl!.isNotEmpty) {
       return _overrideBaseUrl!;
     }
-    
+
     // 2. Production
     if (isProduction) {
-      return _prodBaseUrl;
+      return prodApiUrl;
     }
-    
+
     // 3. Développement - détection automatique selon la plateforme
     return _detectPlatformUrl();
   }
-  
+
   /// Détecte automatiquement l'URL selon la plateforme (dev uniquement)
   static String _detectPlatformUrl() {
+    final configuredUrl = _get('API_BASE_URL', '');
+    
     // Web
     if (kIsWeb) {
-      return 'http://127.0.0.1:8000';
+      return configuredUrl.isNotEmpty ? configuredUrl : 'http://127.0.0.1:8000';
     }
-    
+
     // Mobile
     try {
       if (Platform.isAndroid) {
-        // Émulateur Android utilise 10.0.2.2 pour accéder au localhost de l'hôte
         return 'http://10.0.2.2:8000';
       } else if (Platform.isIOS) {
-        // Simulateur iOS peut utiliser localhost directement
-        return 'http://127.0.0.1:8000';
+        return configuredUrl.isNotEmpty ? configuredUrl : 'http://127.0.0.1:8000';
       }
     } catch (e) {
       // Platform non supportée
     }
-    
-    // Fallback
-    return 'http://127.0.0.1:8000';
+
+    return configuredUrl.isNotEmpty ? configuredUrl : 'http://127.0.0.1:8000';
   }
-  
+
   /// URL de base de l'API (avec /api)
   static String get apiBaseUrl => '$baseUrl/api';
-  
+
   /// URL de base pour les fichiers storage
   static String get storageBaseUrl => '$baseUrl/storage/';
-  
+
   /// Timeout des requêtes API en millisecondes
-  static int get apiTimeout => 15000;
+  static int get apiTimeout {
+    final timeout = _get('API_TIMEOUT', '15000');
+    return int.tryParse(timeout) ?? 15000;
+  }
+
+  // ============================================================
+  // CONTACT & SUPPORT
+  // ============================================================
   
+  static String get supportPhone => _get('SUPPORT_PHONE', '+22507000000000');
+  static String get supportWhatsApp => _get('SUPPORT_WHATSAPP', '22507000000000');
+  static String get supportEmail => _get('SUPPORT_EMAIL', 'support@drpharma.ci');
+
+  // ============================================================
+  // URLS
+  // ============================================================
+  
+  static String get websiteUrl => _get('WEBSITE_URL', 'https://dr-pharma.com');
+  static String get tutorialsUrl => _get('TUTORIALS_URL', 'https://dr-pharma.com/tutoriels');
+  static String get guideUrl => _get('GUIDE_URL', 'https://dr-pharma.com/guide');
+  static String get whatsAppUrl => 'https://wa.me/$supportWhatsApp';
+  static String get phoneUrl => 'tel:$supportPhone';
+
   /// Affiche la configuration actuelle (pour debug)
   static void printConfig() {
     debugPrint('═══════════════════════════════════════');
     debugPrint('📱 [EnvConfig] Configuration actuelle:');
+    debugPrint('   App: $appName');
     debugPrint('   Environment: $environment');
     debugPrint('   Base URL: $baseUrl');
     debugPrint('   API URL: $apiBaseUrl');
     debugPrint('   Timeout: ${apiTimeout}ms');
     debugPrint('   Debug Mode: $isDebugMode');
+    debugPrint('   Support Phone: $supportPhone');
     debugPrint('═══════════════════════════════════════');
   }
 }

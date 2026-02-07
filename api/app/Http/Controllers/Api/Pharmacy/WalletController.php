@@ -15,9 +15,9 @@ use Illuminate\Support\Str;
 
 class WalletController extends Controller
 {
-    protected JekoPaymentService $jekoService;
+    protected ?JekoPaymentService $jekoService;
 
-    public function __construct(JekoPaymentService $jekoService)
+    public function __construct(?JekoPaymentService $jekoService = null)
     {
         $this->jekoService = $jekoService;
     }

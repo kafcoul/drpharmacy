@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/config/env_config.dart';
 
 class HelpSupportPage extends StatelessWidget {
   const HelpSupportPage({super.key});
@@ -25,16 +26,16 @@ class HelpSupportPage extends StatelessWidget {
                 context,
                 icon: Icons.email_outlined,
                 title: 'Email',
-                subtitle: 'support@dr-pharma.com',
-                onTap: () => _launchUrl('mailto:support@dr-pharma.com'),
+                subtitle: EnvConfig.supportEmail,
+                onTap: () => _launchUrl('mailto:${EnvConfig.supportEmail}'),
               ),
               const Divider(height: 1),
               _buildContactTile(
                 context,
                 icon: Icons.phone_outlined,
                 title: 'Téléphone',
-                subtitle: '+225 07 00 00 00 00',
-                onTap: () => _launchUrl('tel:+22507000000000'),
+                subtitle: EnvConfig.supportPhone,
+                onTap: () => _launchUrl(EnvConfig.phoneUrl),
               ),
               const Divider(height: 1),
               _buildContactTile(
@@ -42,7 +43,7 @@ class HelpSupportPage extends StatelessWidget {
                 icon: Icons.chat_outlined,
                 title: 'WhatsApp',
                 subtitle: 'Chat en direct',
-                onTap: () => _launchUrl('https://wa.me/22507000000000'),
+                onTap: () => _launchUrl(EnvConfig.whatsAppUrl),
               ),
             ],
           ),
@@ -97,14 +98,14 @@ class HelpSupportPage extends StatelessWidget {
                 context,
                 icon: Icons.play_circle_outline,
                 title: 'Tutoriels vidéo',
-                onTap: () => _launchUrl('https://dr-pharma.com/tutoriels'),
+                onTap: () => _launchUrl(EnvConfig.tutorialsUrl),
               ),
               const Divider(height: 1),
               _buildResourceTile(
                 context,
                 icon: Icons.menu_book_outlined,
                 title: 'Guide d\'utilisation',
-                onTap: () => _launchUrl('https://dr-pharma.com/guide'),
+                onTap: () => _launchUrl(EnvConfig.guideUrl),
               ),
               const Divider(height: 1),
               _buildResourceTile(
