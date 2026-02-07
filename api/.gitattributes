@@ -1,0 +1,19 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# PHP files
+*.php linguist-language=PHP
+
+# Blade templates
+*.blade.php linguist-language=Blade
+
+# JavaScript
+*.js linguist-language=JavaScript
+
+# CSS
+*.css linguist-language=CSS
+
+# Exclude from language statistics
+/vendor/** linguist-vendored
+/node_modules/** linguist-vendored
+*.lock linguist-generated
