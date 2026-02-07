@@ -47,7 +47,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:866711466162:android:0940fa76b5222ccbe859ab",
         "android_client_info": {
-          "package_name": "com.drpharma.pharmacy_flutter"
+          "package_name": "com.drpharma.pharmacy"
         }
       },
       "oauth_client": [],

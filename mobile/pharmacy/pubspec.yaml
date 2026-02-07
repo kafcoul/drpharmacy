@@ -1,5 +1,5 @@
-name: pharmacy_flutter
-description: "A new Flutter project."
+name: drpharma_pharmacy
+description: "Application pharmacie DR-PHARMA"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev

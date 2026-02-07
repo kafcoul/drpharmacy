@@ -1,4 +1,4 @@
-package com.drpharma.pharmacy_flutter
+package com.drpharma.pharmacy
 
 import io.flutter.embedding.android.FlutterActivity
 

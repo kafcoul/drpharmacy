@@ -1,11 +1,11 @@
 {
-    "name": "pharmacy_flutter",
-    "short_name": "pharmacy_flutter",
+    "name": "DR-PHARMA Pharmacie",
+    "short_name": "DR-PHARMA",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Application pharmacie DR-PHARMA",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
