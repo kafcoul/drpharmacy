@@ -2,6 +2,7 @@ import 'dart:async' show unawaited;
 import 'dart:io' show SocketException;
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart' show SchedulerPhase;
 import 'package:flutter/services.dart';
@@ -390,6 +391,9 @@ class _LoginPageState extends ConsumerState<LoginPage>
   // AUTH STATE CHANGE HANDLER
   // ══════════════════════════════════════════════════════════════════════════
   void _onAuthStateChanged(AuthState? prev, AuthState next) {
+    debugPrint('👂 [LoginPage] _onAuthStateChanged appelé: ${prev?.status} -> ${next.status}');
+    debugPrint('👂 [LoginPage] errorMessage: ${next.errorMessage}');
+    
     if (_disposed || !mounted) return;
 
     // Reset submit flag when leaving loading state
@@ -402,6 +406,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
     switch (next.status) {
       case AuthStatus.error:
+        debugPrint('🚨 [LoginPage] État ERROR détecté!');
         if (next.errorMessage != null || next.originalError != null) {
           _handleError(next.errorMessage, originalError: next.originalError);
         }
@@ -417,13 +422,20 @@ class _LoginPageState extends ConsumerState<LoginPage>
   }
 
   void _handleError(String? message, {Object? originalError}) {
-    if (_disposed || !mounted || _isShowingError) return;
+    debugPrint('🚨 [LoginPage] _handleError appelé: $message');
+    
+    if (_disposed || !mounted || _isShowingError) {
+      debugPrint('⚠️ [LoginPage] _handleError ignoré: disposed=$_disposed, mounted=$mounted, isShowingError=$_isShowingError');
+      return;
+    }
     
     _isShowingError = true;
 
     final displayMessage = originalError != null
         ? SnackBarHelper.parseNetworkError(originalError)
         : (message ?? 'Une erreur est survenue');
+
+    debugPrint('📢 [LoginPage] Message à afficher: $displayMessage');
 
     if (WidgetsBinding.instance.schedulerPhase == SchedulerPhase.idle) {
       _showErrorSnackBar(displayMessage);
@@ -614,12 +626,24 @@ class _LoginPageState extends ConsumerState<LoginPage>
   // ══════════════════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
-    // Listen to auth state changes - this is the recommended Riverpod pattern
-    // It's automatically cleaned up when the widget is disposed
-    ref.listen<AuthState>(authProvider, _onAuthStateChanged);
+    // Listen to auth state changes
+    ref.listen<AuthState>(authProvider, (prev, next) {
+      debugPrint('👂 [LoginPage] ref.listen callback: ${prev?.status} -> ${next.status}');
+      _onAuthStateChanged(prev, next);
+    });
     
     final authState = ref.watch(authProvider);
     final isLoading = authState.status == AuthStatus.loading;
+    
+    // Handle error state directly in build as backup
+    if (authState.status == AuthStatus.error && !_isShowingError) {
+      debugPrint('🔴 [LoginPage] Error detected in build: ${authState.errorMessage}');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_disposed && !_isShowingError) {
+          _handleError(authState.errorMessage, originalError: authState.originalError);
+        }
+      });
+    }
 
     return Scaffold(
       body: Stack(

@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "866711466162",
+    "project_id": "drpharma-f9213",
+    "storage_bucket": "drpharma-f9213.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:866711466162:android:b063f168009f77e5e859ab",
+        "android_client_info": {
+          "package_name": "ci.drpharma.drpharma_client"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD9KW9rmRqy2LBGOn7Ksa121BQSQqaORM4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:866711466162:android:8051b38aa7c68200e859ab",
+        "android_client_info": {
+          "package_name": "com.drpharma.courier_flutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD9KW9rmRqy2LBGOn7Ksa121BQSQqaORM4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:866711466162:android:0940fa76b5222ccbe859ab",
+        "android_client_info": {
+          "package_name": "com.drpharma.pharmacy_flutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD9KW9rmRqy2LBGOn7Ksa121BQSQqaORM4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

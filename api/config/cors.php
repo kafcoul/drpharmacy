@@ -19,25 +19,11 @@ return [
 
     'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    'allowed_origins' => env('APP_ENV') === 'local' ? ['*'] : array_filter([
-        env('FRONTEND_URL'),
-        env('ADMIN_URL'),
-        env('APP_URL'),
-    ]),
+    'allowed_origins' => ['*'],
 
-    'allowed_origins_patterns' => env('APP_ENV') === 'local' ? [] : [
-        // Pattern pour les apps mobiles et sous-domaines
-        '#^https://.*\.dr-pharma\.com$#',
-    ],
+    'allowed_origins_patterns' => [],
 
-    'allowed_headers' => [
-        'Content-Type',
-        'X-Requested-With',
-        'Authorization',
-        'Accept',
-        'Origin',
-        'X-CSRF-TOKEN',
-    ],
+    'allowed_headers' => ['*'],
 
     'exposed_headers' => ['X-RateLimit-Limit', 'X-RateLimit-Remaining'],
 
