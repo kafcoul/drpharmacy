@@ -31,12 +31,25 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isRecoveringPassword = state.uri.path == '/forgot-password';
 
       final isOnboarding = state.uri.path == '/onboarding';
+      
+      // ✅ FIX: Ne pas rediriger si l'utilisateur est en cours d'inscription ou connexion
+      // et qu'il y a une erreur ou un chargement - cela permet de rester sur la page
+      // pour afficher l'erreur sans perdre les données saisies
+      final isAuthInProgress = authState.status == AuthStatus.loading || 
+                               authState.status == AuthStatus.error ||
+                               authState.status == AuthStatus.registered;
 
       // Allow splash to run its course
       if (isSplash) return null;
       
       // Allow onboarding to run its course
       if (isOnboarding) return null;
+
+      // ✅ FIX: Si on est sur une page d'auth (login, register, forgot-password) 
+      // et qu'une action est en cours (loading, error, registered), ne pas rediriger
+      if ((isLoggingIn || isRegistering || isRecoveringPassword) && isAuthInProgress) {
+        return null;
+      }
 
       if (!isLoggedIn &&
           !isLoggingIn &&

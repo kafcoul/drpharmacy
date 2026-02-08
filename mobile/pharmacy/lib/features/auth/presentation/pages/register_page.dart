@@ -247,7 +247,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             ),
             actions: [
               FilledButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  // ✅ FIX: Réinitialiser l'état d'erreur pour permettre de réessayer
+                  // sans que le routeur ne redirige vers login
+                  ref.read(authProvider.notifier).clearError();
+                },
                 style: FilledButton.styleFrom(backgroundColor: Colors.teal),
                 child: const Text('Compris'),
               ),
@@ -256,7 +261,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               borderRadius: BorderRadius.circular(16),
             ),
           ),
-        );
+        ).then((_) {
+          // ✅ FIX: Aussi réinitialiser si le dialogue est fermé autrement (tap outside)
+          if (ref.read(authProvider).status == AuthStatus.error) {
+            ref.read(authProvider.notifier).clearError();
+          }
+        });
       } else if (next.status == AuthStatus.registered) {
         // Inscription réussie - afficher le dialogue de succès
         _showSuccessDialog(context);
