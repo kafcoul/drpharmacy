@@ -100,8 +100,6 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
               child: Column(
                 children: [
                   _buildOrderContent(currencyFormat),
-                  const SizedBox(height: 24),
-                  _buildActionButtons(context, ref),
                   const SizedBox(height: 32),
                 ],
               ),
