@@ -97,9 +97,9 @@ class OrdersListPage extends ConsumerWidget {
                          const SizedBox(width: 12),
                          _FilterChip(
                            label: 'En livraison',
-                           isActive: state.activeFilter == 'picked_up',
+                           isActive: state.activeFilter == 'in_delivery',
                            onTap: () =>
-                               ref.read(orderListProvider.notifier).setFilter('picked_up'),
+                               ref.read(orderListProvider.notifier).setFilter('in_delivery'),
                          ),
                          const SizedBox(width: 12),
                          _FilterChip(
