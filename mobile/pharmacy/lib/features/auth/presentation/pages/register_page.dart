@@ -25,6 +25,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _licenseController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  
+  // Track if the form has been submitted at least once
+  bool _hasSubmitted = false;
 
   @override
   void dispose() {
@@ -39,8 +42,23 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     _confirmPasswordController.dispose();
     super.dispose();
   }
+  
+  /// Get server error for a field if exists
+  String? _getServerError(String fieldName) {
+    final authState = ref.read(authProvider);
+    return authState.getFieldError(fieldName);
+  }
+  
+  /// Clear server error when user starts typing
+  void _onFieldChanged(String fieldName) {
+    if (_hasSubmitted) {
+      ref.read(authProvider.notifier).clearFieldError(fieldName);
+    }
+  }
 
   void _submit() {
+    setState(() => _hasSubmitted = true);
+    
     final authState = ref.read(authProvider);
     
     // Empêcher les soumissions multiples
@@ -230,6 +248,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         // Fermer tout dialogue existant d'abord
         Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst || route is! DialogRoute);
         
+        // ✅ Revalider le formulaire pour afficher les erreurs de champ serveur
+        if (next.hasFieldErrors) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _formKey.currentState?.validate();
+          });
+        }
+        
         showDialog(
           context: context,
           barrierDismissible: true,
@@ -241,9 +266,38 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 const Expanded(child: Text('Échec de l\'inscription')),
               ],
             ),
-            content: Text(
-              _getReadableErrorMessage(next.errorMessage!),
-              style: const TextStyle(fontSize: 16, height: 1.4),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _getReadableErrorMessage(next.errorMessage!),
+                  style: const TextStyle(fontSize: 16, height: 1.4),
+                ),
+                if (next.hasFieldErrors) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange[200]!),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.orange[700], size: 20),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Corrigez les champs en erreur indiqués en rouge',
+                            style: TextStyle(fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
             actions: [
               FilledButton(
@@ -330,8 +384,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           decoration: _buildInputDecoration(
                             'Nom du pharmacien titulaire',
                             Icons.person_outline,
+                            serverError: _getServerError('name'),
                           ),
+                          onChanged: (_) => _onFieldChanged('name'),
                           validator: (value) {
+                            final serverError = _getServerError('name');
+                            if (serverError != null) return serverError;
                             if (value == null || value.isEmpty) {
                               return 'Veuillez entrer votre nom complet';
                             }
@@ -346,8 +404,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           decoration: _buildInputDecoration(
                             'Nom de la pharmacie',
                             Icons.store_rounded,
+                            serverError: _getServerError('pharmacy_name'),
                           ),
+                          onChanged: (_) => _onFieldChanged('pharmacy_name'),
                           validator: (value) {
+                            final serverError = _getServerError('pharmacy_name');
+                            if (serverError != null) return serverError;
                             if (value == null || value.isEmpty) {
                               return 'Veuillez entrer le nom de la pharmacie';
                             }
@@ -362,8 +424,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           decoration: _buildInputDecoration(
                             'Numéro de licence',
                             Icons.badge_outlined,
+                            serverError: _getServerError('license'),
                           ),
+                          onChanged: (_) => _onFieldChanged('license'),
                           validator: (value) {
+                            final serverError = _getServerError('license');
+                            if (serverError != null) return serverError;
                             if (value == null || value.isEmpty) {
                               return 'Veuillez entrer le numéro de licence';
                             }
@@ -378,9 +444,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           decoration: _buildInputDecoration(
                             'Adresse Email',
                             Icons.email_outlined,
+                            serverError: _getServerError('email'),
                           ),
                           keyboardType: TextInputType.emailAddress,
+                          onChanged: (_) => _onFieldChanged('email'),
                           validator: (value) {
+                            final serverError = _getServerError('email');
+                            if (serverError != null) return serverError;
                             if (value == null || value.isEmpty) {
                               return 'Veuillez entrer un email';
                             }
@@ -398,9 +468,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           decoration: _buildInputDecoration(
                             'Numéro de téléphone',
                             Icons.phone_outlined,
+                            serverError: _getServerError('phone'),
                           ),
                           keyboardType: TextInputType.phone,
+                          onChanged: (_) => _onFieldChanged('phone'),
                           validator: (value) {
+                            final serverError = _getServerError('phone');
+                            if (serverError != null) return serverError;
                             if (value == null || value.isEmpty) {
                               return 'Veuillez entrer un numéro de téléphone';
                             }
@@ -415,8 +489,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           decoration: _buildInputDecoration(
                             'Ville',
                             Icons.location_city,
+                            serverError: _getServerError('city'),
                           ),
+                          onChanged: (_) => _onFieldChanged('city'),
                           validator: (value) {
+                            final serverError = _getServerError('city');
+                            if (serverError != null) return serverError;
                             if (value == null || value.isEmpty) {
                               return 'Veuillez entrer la ville';
                             }
@@ -431,9 +509,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           decoration: _buildInputDecoration(
                             'Adresse complète',
                             Icons.location_on_outlined,
+                            serverError: _getServerError('address'),
                           ),
                           maxLines: 2,
+                          onChanged: (_) => _onFieldChanged('address'),
                           validator: (value) {
+                            final serverError = _getServerError('address');
+                            if (serverError != null) return serverError;
                             if (value == null || value.isEmpty) {
                               return 'Veuillez entrer une adresse';
                             }
@@ -448,9 +530,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           decoration: _buildInputDecoration(
                             'Mot de passe',
                             Icons.lock_outline,
+                            serverError: _getServerError('password'),
                           ),
                           obscureText: true,
+                          onChanged: (_) => _onFieldChanged('password'),
                           validator: (value) {
+                            final serverError = _getServerError('password');
+                            if (serverError != null) return serverError;
                             if (value == null || value.isEmpty) {
                               return 'Veuillez choisir un mot de passe';
                             }
@@ -555,25 +641,54 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     );
   }
 
-  InputDecoration _buildInputDecoration(String label, IconData icon) {
+  InputDecoration _buildInputDecoration(String label, IconData icon, {String? serverError}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasError = serverError != null;
+    
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(color: isDark ? Colors.grey[400] : null),
-      prefixIcon: Icon(icon, color: isDark ? Colors.teal[300] : Colors.teal[600]),
+      labelStyle: TextStyle(
+        color: hasError 
+            ? Colors.red[700] 
+            : (isDark ? Colors.grey[400] : null),
+      ),
+      prefixIcon: Icon(
+        icon, 
+        color: hasError 
+            ? Colors.red[600] 
+            : (isDark ? Colors.teal[300] : Colors.teal[600]),
+      ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       filled: isDark,
-      fillColor: isDark ? AppColors.darkSurface : null,
+      fillColor: hasError 
+          ? Colors.red.withOpacity(0.05) 
+          : (isDark ? AppColors.darkSurface : null),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+        borderSide: BorderSide(
+          color: hasError 
+              ? Colors.red.shade400 
+              : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+          width: hasError ? 1.5 : 1,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.teal, width: 2),
+        borderSide: BorderSide(
+          color: hasError ? Colors.red : Colors.teal, 
+          width: 2,
+        ),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red, width: 2),
       ),
     );
   }
