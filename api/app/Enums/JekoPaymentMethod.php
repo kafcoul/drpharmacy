@@ -4,9 +4,9 @@ namespace App\Enums;
 
 enum JekoPaymentMethod: string
 {
-    // Côte d'Ivoire
+    // Côte d'Ivoire - Codes Jeko
     case WAVE = 'wave';
-    case ORANGE_CI = 'orange_ci';
+    case ORANGE = 'orange';
     case MTN_CI = 'mtn_ci';
     case MOOV_CI = 'moov_ci';
     
@@ -17,7 +17,7 @@ enum JekoPaymentMethod: string
     {
         return match ($this) {
             self::WAVE => 'Wave',
-            self::ORANGE_CI => 'Orange Money',
+            self::ORANGE => 'Orange Money',
             self::MTN_CI => 'MTN Mobile Money',
             self::MOOV_CI => 'Moov Money',
             self::BANK_TRANSFER => 'Virement Bancaire',
@@ -28,7 +28,7 @@ enum JekoPaymentMethod: string
     {
         return match ($this) {
             self::WAVE => 'wave',
-            self::ORANGE_CI => 'orange-money',
+            self::ORANGE => 'orange-money',
             self::MTN_CI => 'mtn-momo',
             self::MOOV_CI => 'moov-money',
             self::BANK_TRANSFER => 'bank',
@@ -46,7 +46,7 @@ enum JekoPaymentMethod: string
     public static function payoutMethods(): array
     {
         return [
-            self::ORANGE_CI,
+            self::ORANGE,
             self::MTN_CI,
             self::MOOV_CI,
             self::WAVE,
@@ -60,7 +60,7 @@ enum JekoPaymentMethod: string
     public static function paymentMethods(): array
     {
         return [
-            self::ORANGE_CI,
+            self::ORANGE,
             self::MTN_CI,
             self::MOOV_CI,
             self::WAVE,

@@ -56,11 +56,11 @@ class WalletRepository {
     }
   }
   
-  /// Mapper les méthodes de paiement vers les codes Côte d'Ivoire
+  /// Mapper les méthodes de paiement vers les codes Jeko
   String _mapPaymentMethodToCI(String method) {
     switch (method) {
       case 'orange':
-        return 'orange_ci';
+        return 'orange';
       case 'mtn':
         return 'mtn_ci';
       case 'moov':
