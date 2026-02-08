@@ -7,15 +7,21 @@ return [
     | Commission Rates Configuration
     |--------------------------------------------------------------------------
     |
-    | These values determine the commission split for each order:
-    | - Platform: 10%
-    | - Pharmacy: 85%
-    | - Courier: 5%
+    | NOUVEAU SYSTÈME:
+    | - La pharmacie reçoit 100% du prix des médicaments qu'elle a fixé
+    | - La plateforme ajoute 2% au prix pour sa commission (payé par le client)
+    | - Les frais de livraison vont au coursier (moins commission fixe)
     |
     */
 
-    'platform_rate' => (float) env('COMMISSION_RATE_PLATFORM', 10) / 100,
-    'pharmacy_rate' => (float) env('COMMISSION_RATE_PHARMACY', 85) / 100,
-    'courier_rate' => (float) env('COMMISSION_RATE_COURIER', 5) / 100,
+    // Commission plateforme: 2% ajouté au prix des médicaments
+    'platform_rate' => (float) env('COMMISSION_RATE_PLATFORM', 2) / 100,
+    
+    // Pharmacie reçoit 100% du prix des médicaments
+    'pharmacy_rate' => (float) env('COMMISSION_RATE_PHARMACY', 100) / 100,
+    
+    // Coursier: reçoit les frais de livraison (géré séparément)
+    'courier_rate' => (float) env('COMMISSION_RATE_COURIER', 0) / 100,
 
 ];
+

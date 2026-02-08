@@ -491,10 +491,10 @@ class DeliveryController extends Controller
 
                 // 7. Calculer et distribuer les commissions pour la pharmacie (paiement cash)
                 // Pour les paiements cash, le paiement est confirmé à la livraison
-                // skipCourier=true car le coursier a déjà reçu ses gains via creditDeliveryEarning
+                // La pharmacie reçoit 100% du prix des médicaments, la plateforme reçoit les frais de service
                 if (in_array($delivery->order->payment_mode, ['cash', 'on_delivery'])) {
                     try {
-                        $this->calculateCommission->execute($delivery->order, skipCourier: true);
+                        $this->calculateCommission->execute($delivery->order);
                         Log::info('Commissions calculées pour commande cash', [
                             'order_id' => $delivery->order->id,
                             'pharmacy_id' => $pharmacy?->id,

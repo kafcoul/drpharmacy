@@ -126,11 +126,12 @@ class WalletService
     }
 
     /**
-     * Récupérer le pourcentage des frais de service
+     * Récupérer le pourcentage des frais de service (commission plateforme)
+     * Par défaut: 2% ajouté au prix des médicaments
      */
     public static function getServiceFeePercentage(): float
     {
-        return (float) Setting::get('service_fee_percentage', 3);
+        return (float) Setting::get('service_fee_percentage', 2);
     }
 
     /**

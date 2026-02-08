@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Models\Commission;
 use App\Models\CommissionLine;
 use App\Models\Order;
+use App\Models\Setting;
 use App\Models\Wallet;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -13,38 +14,43 @@ class CalculateCommissionAction
 {
     /**
      * Calculer et distribuer les commissions pour une commande
-     * @param bool $skipCourier Pour les commandes cash, le coursier a déjà reçu ses gains via le système de livraison
+     * 
+     * SYSTÈME DE COMMISSION:
+     * - La pharmacie reçoit 100% du prix des médicaments
+     * - La plateforme reçoit les frais de service (2% par défaut, ajoutés au prix)
+     * - Le coursier reçoit les frais de livraison (géré séparément dans DeliveryController)
      */
-    public function execute(Order $order, bool $skipCourier = false): Commission
+    public function execute(Order $order): Commission
     {
-        return DB::transaction(function () use ($order, $skipCourier) {
+        return DB::transaction(function () use ($order) {
             // Vérifier si la commande a déjà des commissions
             if ($order->commission) {
                 Log::info('Commission already calculated', ['order_id' => $order->id]);
                 return $order->commission;
             }
 
-            // Obtenir les taux de commission
-            $platformRate = config('commission.platform_rate', 0.10); // 10%
-            $pharmacyRate = $order->pharmacy->commission_rate_pharmacy ?? config('commission.pharmacy_rate', 0.85); // 85%
-            $courierRate = config('commission.courier_rate', 0.05); // 5%
-
-            // Calculer les montants
-            $totalAmount = $order->total_amount;
-            $platformAmount = $totalAmount * $platformRate;
-            $pharmacyAmount = $totalAmount * $pharmacyRate;
-            $courierAmount = $skipCourier ? 0 : ($totalAmount * $courierRate);
+            // Obtenir le taux de commission depuis les paramètres (service_fee_percentage)
+            $platformRate = (float) Setting::get('service_fee_percentage', 2) / 100;
+            
+            // subtotal = prix des médicaments uniquement
+            $subtotal = $order->subtotal ?? $order->total_amount;
+            
+            // La pharmacie reçoit 100% du prix des médicaments
+            $pharmacyAmount = $subtotal;
+            
+            // La plateforme reçoit le pourcentage configuré (2% par défaut)
+            $platformAmount = round($subtotal * $platformRate, 0);
 
             // Créer le record Commission
             $commission = Commission::create([
                 'order_id' => $order->id,
-                'total_amount' => $totalAmount,
+                'total_amount' => $subtotal,
                 'calculated_at' => now(),
             ]);
 
             // Créer les lignes de commission
             $commissionLines = [
-                // Platform
+                // Platform - 2% du prix des médicaments
                 [
                     'commission_id' => $commission->id,
                     'actor_type' => 'platform',
@@ -52,26 +58,15 @@ class CalculateCommissionAction
                     'rate' => $platformRate,
                     'amount' => $platformAmount,
                 ],
-                // Pharmacy
+                // Pharmacy - 100% du prix des médicaments
                 [
                     'commission_id' => $commission->id,
                     'actor_type' => 'App\Models\Pharmacy',
                     'actor_id' => $order->pharmacy_id,
-                    'rate' => $pharmacyRate,
+                    'rate' => 1.0, // 100%
                     'amount' => $pharmacyAmount,
                 ],
             ];
-
-            // Ajouter la ligne coursier seulement si pas skipCourier
-            if (!$skipCourier) {
-                $commissionLines[] = [
-                    'commission_id' => $commission->id,
-                    'actor_type' => 'App\Models\Courier',
-                    'actor_id' => $order->delivery?->courier_id,
-                    'rate' => $courierRate,
-                    'amount' => $courierAmount,
-                ];
-            }
 
             foreach ($commissionLines as $lineData) {
                 CommissionLine::create($lineData);
@@ -83,9 +78,9 @@ class CalculateCommissionAction
             Log::info('Commission calculated and distributed', [
                 'order_id' => $order->id,
                 'commission_id' => $commission->id,
+                'subtotal' => $subtotal,
                 'platform_amount' => $platformAmount,
                 'pharmacy_amount' => $pharmacyAmount,
-                'courier_amount' => $courierAmount,
             ]);
 
             return $commission;

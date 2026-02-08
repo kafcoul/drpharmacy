@@ -45,7 +45,7 @@ class Settings extends Page implements HasForms
         
         $this->form->fill([
             'search_radius_km' => Setting::get('search_radius_km', 20),
-            'default_commission_rate' => Setting::get('default_commission_rate', 10),
+            'default_commission_rate' => Setting::get('default_commission_rate', 2),
             'courier_commission_amount' => Setting::get('courier_commission_amount', 200),
             'minimum_wallet_balance' => Setting::get('minimum_wallet_balance', 200),
             'delivery_fee_base' => Setting::get('delivery_fee_base', 200),
@@ -53,7 +53,7 @@ class Settings extends Page implements HasForms
             'delivery_fee_min' => Setting::get('delivery_fee_min', 300),
             'delivery_fee_max' => Setting::get('delivery_fee_max', 5000),
             // Frais de service et paiement (ajoutés au prix pour que la pharmacie reçoive le prix exact)
-            'service_fee_percentage' => Setting::get('service_fee_percentage', 3),
+            'service_fee_percentage' => Setting::get('service_fee_percentage', 2),
             'service_fee_min' => Setting::get('service_fee_min', 100),
             'service_fee_max' => Setting::get('service_fee_max', 2000),
             'payment_processing_fee' => Setting::get('payment_processing_fee', 50),
@@ -106,10 +106,11 @@ class Settings extends Page implements HasForms
                             ->required()
                             ->helperText('Distance maximale pour rechercher un livreur autour de la pharmacie.'),
                         TextInput::make('default_commission_rate')
-                            ->label('Taux de commission par défaut (%)')
+                            ->label('Commission plateforme (%)')
                             ->numeric()
                             ->suffix('%')
-                            ->required(),
+                            ->required()
+                            ->helperText('Commission ajoutée au prix des médicaments (payée par le client). La pharmacie reçoit 100% du prix fixé.'),
                     ])->columns(2),
 
                 Section::make('Commissions Livreurs')
