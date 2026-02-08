@@ -193,10 +193,16 @@ class AuthRepositoryImpl implements AuthRepository {
         return const Right(false);
       }
 
+      // Récupérer et définir le token sur l'ApiClient
+      final token = await localDataSource.getToken();
+      if (token != null) {
+        apiClient.setToken(token);
+        debugPrint('🔑 [AuthRepository] Token restauré sur ApiClient');
+      }
+
       // Optional: Verify token validity with server if online
       if (await networkInfo.isConnected) {
          try {
-           final token = await localDataSource.getToken();
            if(token != null){
               await remoteDataSource.getCurrentUser(token);
               return const Right(true);
@@ -204,6 +210,7 @@ class AuthRepositoryImpl implements AuthRepository {
          } catch(e) {
            // Token invalid
            await localDataSource.clearAuthData();
+           apiClient.clearToken();
            return const Right(false);
          }
       }

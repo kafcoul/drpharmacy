@@ -11,7 +11,10 @@ final orderDetailsProvider = FutureProvider.family<OrderEntity?, int>((ref, orde
   final repository = ref.watch(orderRepositoryProvider);
   final result = await repository.getOrderDetails(orderId);
   return result.fold(
-    (failure) => null,
+    (failure) {
+      debugPrint('❌ [OrderDetails] Erreur lors du chargement de la commande #$orderId: ${failure.message}');
+      throw Exception(failure.message);
+    },
     (order) => order,
   );
 });
