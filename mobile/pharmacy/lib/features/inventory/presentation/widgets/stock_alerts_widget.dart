@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/widgets.dart';
 
 /// Types d'alertes de stock
@@ -233,11 +234,12 @@ class _StockAlertsWidgetState extends ConsumerState<StockAlertsWidget> {
         children: [
           Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 24),
           const SizedBox(width: 8),
-          const Text(
+          Text(
             'Alertes de Stock',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
+              color: AppColors.textColor(context),
             ),
           ),
           const SizedBox(width: 8),
@@ -259,7 +261,7 @@ class _StockAlertsWidgetState extends ConsumerState<StockAlertsWidget> {
             ),
           const Spacer(),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.grey),
+            icon: Icon(Icons.more_vert, color: AppColors.textColor(context).withOpacity(0.6)),
             onSelected: (value) {
               switch (value) {
                 case 'mark_all_read':
@@ -404,18 +406,19 @@ class _StockAlertsWidgetState extends ConsumerState<StockAlertsWidget> {
             color: Colors.green,
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Aucune alerte',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
+              color: AppColors.textColor(context),
             ),
           ),
           const SizedBox(height: 4),
           Text(
             'Tous vos stocks sont en ordre !',
             style: TextStyle(
-              color: Colors.grey.shade600,
+              color: AppColors.textColor(context).withOpacity(0.6),
             ),
           ),
         ],
@@ -1128,16 +1131,17 @@ class _StockAlertCard extends StatelessWidget {
     }
   }
 
-  Color get _alertBgColor {
+  Color _alertBgColor(BuildContext context) {
+    final isDark = AppColors.isDark(context);
     switch (alert.type) {
       case StockAlertType.critical:
-        return Colors.red.withOpacity(0.1);
+        return isDark ? Colors.red.withOpacity(0.2) : Colors.red.withOpacity(0.1);
       case StockAlertType.low:
-        return Colors.orange.withOpacity(0.1);
+        return isDark ? Colors.orange.withOpacity(0.2) : Colors.orange.withOpacity(0.1);
       case StockAlertType.expiring:
-        return Colors.orange.shade50;
+        return isDark ? Colors.orange.withOpacity(0.15) : Colors.orange.shade50;
       case StockAlertType.expired:
-        return Colors.red.shade50;
+        return isDark ? Colors.red.withOpacity(0.15) : Colors.red.shade50;
     }
   }
 
@@ -1184,6 +1188,8 @@ class _StockAlertCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    
     return Dismissible(
       key: Key(alert.id),
       direction: DismissDirection.endToStart,
@@ -1203,10 +1209,12 @@ class _StockAlertCard extends StatelessWidget {
         child: Container(
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.cardColor(context),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: alert.isRead ? Colors.grey.shade200 : _alertColor.withOpacity(0.3),
+              color: alert.isRead 
+                  ? (isDark ? Colors.grey.shade700 : Colors.grey.shade200) 
+                  : _alertColor.withOpacity(0.3),
               width: alert.isRead ? 1 : 2,
             ),
             boxShadow: alert.isRead ? null : [
@@ -1225,7 +1233,7 @@ class _StockAlertCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: _alertBgColor,
+                    color: _alertBgColor(context),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(_alertIcon, color: _alertColor, size: 24),
@@ -1266,9 +1274,10 @@ class _StockAlertCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         alert.productName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
+                          color: AppColors.textColor(context),
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -1277,7 +1286,7 @@ class _StockAlertCard extends StatelessWidget {
                       Text(
                         _alertSubtitle,
                         style: TextStyle(
-                          color: Colors.grey.shade600,
+                          color: AppColors.textColor(context).withOpacity(0.6),
                           fontSize: 13,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -1289,7 +1298,7 @@ class _StockAlertCard extends StatelessWidget {
                 
                 // Action button
                 IconButton(
-                  icon: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
+                  icon: Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textColor(context).withOpacity(0.4)),
                   onPressed: onAction,
                 ),
               ],
@@ -1319,13 +1328,17 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? (color ?? Theme.of(context).colorScheme.primary) : Colors.grey.shade100,
+          color: isSelected 
+              ? (color ?? Theme.of(context).colorScheme.primary) 
+              : (isDark ? Colors.grey.shade800 : Colors.grey.shade100),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -1334,7 +1347,7 @@ class _FilterChip extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey.shade700,
+                color: isSelected ? Colors.white : AppColors.textColor(context).withOpacity(0.8),
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 fontSize: 13,
               ),
@@ -1344,13 +1357,15 @@ class _FilterChip extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.white.withOpacity(0.3) : Colors.grey.shade300,
+                  color: isSelected 
+                      ? Colors.white.withOpacity(0.3) 
+                      : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   '$count',
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.grey.shade700,
+                    color: isSelected ? Colors.white : AppColors.textColor(context).withOpacity(0.8),
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1466,10 +1481,12 @@ class _AlertSettingsSheetState extends State<_AlertSettingsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: AppColors.cardColor(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1479,38 +1496,42 @@ class _AlertSettingsSheetState extends State<_AlertSettingsSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
+              color: isDark ? Colors.grey.shade600 : Colors.grey.shade300,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.all(16),
+          Padding(
+            padding: const EdgeInsets.all(16),
             child: Text(
               'Paramètres d\'alerte',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 18, 
+                fontWeight: FontWeight.bold,
+                color: AppColors.textColor(context),
+              ),
             ),
           ),
-          const Divider(),
+          Divider(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
           
           // Default threshold
           ListTile(
             leading: Icon(Icons.inventory_2, color: Theme.of(context).colorScheme.primary),
-            title: const Text('Seuil d\'alerte par défaut'),
-            subtitle: Text('$_defaultThreshold unités'),
+            title: Text('Seuil d\'alerte par défaut', style: TextStyle(color: AppColors.textColor(context))),
+            subtitle: Text('$_defaultThreshold unités', style: TextStyle(color: AppColors.textColor(context).withOpacity(0.6))),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.remove_circle_outline),
+                  icon: Icon(Icons.remove_circle_outline, color: AppColors.textColor(context)),
                   onPressed: () {
                     if (_defaultThreshold > 5) {
                       setState(() => _defaultThreshold -= 5);
                     }
                   },
                 ),
-                Text('$_defaultThreshold', style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text('$_defaultThreshold', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textColor(context))),
                 IconButton(
-                  icon: const Icon(Icons.add_circle_outline),
+                  icon: Icon(Icons.add_circle_outline, color: AppColors.textColor(context)),
                   onPressed: () {
                     setState(() => _defaultThreshold += 5);
                   },
@@ -1522,22 +1543,22 @@ class _AlertSettingsSheetState extends State<_AlertSettingsSheet> {
           // Expiration warning
           ListTile(
             leading: Icon(Icons.event, color: Colors.orange),
-            title: const Text('Alerte d\'expiration'),
-            subtitle: Text('$_expirationWarningDays jours avant'),
+            title: Text('Alerte d\'expiration', style: TextStyle(color: AppColors.textColor(context))),
+            subtitle: Text('$_expirationWarningDays jours avant', style: TextStyle(color: AppColors.textColor(context).withOpacity(0.6))),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.remove_circle_outline),
+                  icon: Icon(Icons.remove_circle_outline, color: AppColors.textColor(context)),
                   onPressed: () {
                     if (_expirationWarningDays > 7) {
                       setState(() => _expirationWarningDays -= 7);
                     }
                   },
                 ),
-                Text('$_expirationWarningDays', style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text('$_expirationWarningDays', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textColor(context))),
                 IconButton(
-                  icon: const Icon(Icons.add_circle_outline),
+                  icon: Icon(Icons.add_circle_outline, color: AppColors.textColor(context)),
                   onPressed: () {
                     setState(() => _expirationWarningDays += 7);
                   },
@@ -1546,33 +1567,33 @@ class _AlertSettingsSheetState extends State<_AlertSettingsSheet> {
             ),
           ),
           
-          const Divider(),
+          Divider(color: AppColors.isDark(context) ? Colors.grey.shade700 : Colors.grey.shade300),
           
           // Push notifications
           SwitchListTile(
             value: _pushNotifications,
             onChanged: (value) => setState(() => _pushNotifications = value),
-            title: const Text('Notifications push'),
-            subtitle: const Text('Recevoir des alertes sur votre téléphone'),
-            secondary: const Icon(Icons.notifications),
+            title: Text('Notifications push', style: TextStyle(color: AppColors.textColor(context))),
+            subtitle: Text('Recevoir des alertes sur votre téléphone', style: TextStyle(color: AppColors.textColor(context).withOpacity(0.6))),
+            secondary: Icon(Icons.notifications, color: AppColors.textColor(context).withOpacity(0.7)),
           ),
           
           // Email notifications
           SwitchListTile(
             value: _emailNotifications,
             onChanged: (value) => setState(() => _emailNotifications = value),
-            title: const Text('Notifications email'),
-            subtitle: const Text('Recevoir un résumé quotidien par email'),
-            secondary: const Icon(Icons.email),
+            title: Text('Notifications email', style: TextStyle(color: AppColors.textColor(context))),
+            subtitle: Text('Recevoir un résumé quotidien par email', style: TextStyle(color: AppColors.textColor(context).withOpacity(0.6))),
+            secondary: Icon(Icons.email, color: AppColors.textColor(context).withOpacity(0.7)),
           ),
           
           // Sound
           SwitchListTile(
             value: _soundEnabled,
             onChanged: (value) => setState(() => _soundEnabled = value),
-            title: const Text('Son d\'alerte'),
-            subtitle: const Text('Jouer un son lors d\'une alerte critique'),
-            secondary: const Icon(Icons.volume_up),
+            title: Text('Son d\'alerte', style: TextStyle(color: AppColors.textColor(context))),
+            subtitle: Text('Jouer un son lors d\'une alerte critique', style: TextStyle(color: AppColors.textColor(context).withOpacity(0.6))),
+            secondary: Icon(Icons.volume_up, color: AppColors.textColor(context).withOpacity(0.7)),
           ),
           
           // Save button
