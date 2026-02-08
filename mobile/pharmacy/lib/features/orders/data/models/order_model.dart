@@ -3,6 +3,40 @@ import '../../domain/entities/order_entity.dart';
 
 part 'order_model.g.dart';
 
+/// Convertit une valeur dynamique (String ou num) en double
+double _toDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0.0;
+  return 0.0;
+}
+
+/// Convertit une valeur dynamique nullable en double nullable
+double? _toDoubleNullable(dynamic value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value);
+  return null;
+}
+
+/// Convertit une valeur dynamique en int
+int _toInt(dynamic value) {
+  if (value == null) return 0;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value) ?? 0;
+  return 0;
+}
+
+/// Convertit une valeur dynamique nullable en int nullable
+int? _toIntNullable(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value);
+  return null;
+}
+
 @JsonSerializable()
 class OrderModel {
   final int id;
@@ -10,7 +44,7 @@ class OrderModel {
   final String status;
   @JsonKey(name: 'payment_mode')
   final String paymentMode;
-  @JsonKey(name: 'total_amount')
+  @JsonKey(name: 'total_amount', fromJson: _toDouble)
   final double totalAmount;
   @JsonKey(name: 'delivery_address')
   final String? deliveryAddress;
@@ -23,11 +57,12 @@ class OrderModel {
   @JsonKey(name: 'created_at')
   final String createdAt;
   final Map<String, dynamic> customer;
-  @JsonKey(name: 'items_count')
+  @JsonKey(name: 'items_count', fromJson: _toIntNullable)
   final int? itemsCount;
   final List<OrderItemModel>? items;
-  @JsonKey(name: 'delivery_fee')
+  @JsonKey(name: 'delivery_fee', fromJson: _toDoubleNullable)
   final double? deliveryFee;
+  @JsonKey(fromJson: _toDoubleNullable)
   final double? subtotal;
 
   const OrderModel({
@@ -78,10 +113,11 @@ class OrderModel {
 @JsonSerializable()
 class OrderItemModel {
   final String name;
+  @JsonKey(fromJson: _toInt)
   final int quantity;
-  @JsonKey(name: 'unit_price')
+  @JsonKey(name: 'unit_price', fromJson: _toDouble)
   final double unitPrice;
-  @JsonKey(name: 'total_price')
+  @JsonKey(name: 'total_price', fromJson: _toDouble)
   final double totalPrice;
 
   const OrderItemModel({
