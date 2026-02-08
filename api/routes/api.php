@@ -267,6 +267,11 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/stock-alerts', [\App\Http\Controllers\Api\Pharmacy\ReportsController::class, 'stockAlerts']);
             Route::get('/export', [\App\Http\Controllers\Api\Pharmacy\ReportsController::class, 'export']);
         });
+
+        // Statement Preferences (Relevés automatiques)
+        Route::get('/statement-preferences', [\App\Http\Controllers\Api\Pharmacy\StatementPreferenceController::class, 'show']);
+        Route::post('/statement-preferences', [\App\Http\Controllers\Api\Pharmacy\StatementPreferenceController::class, 'store']);
+        Route::delete('/statement-preferences', [\App\Http\Controllers\Api\Pharmacy\StatementPreferenceController::class, 'disable']);
         
         // Chat V2 (via delivery)
         Route::get('/deliveries/{delivery}/chat', [\App\Http\Controllers\Api\ChatController::class, 'getMessages']);

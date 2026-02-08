@@ -217,6 +217,14 @@ class Pharmacy extends Model
         return $this->hasMany(WithdrawalRequest::class);
     }
 
+    /**
+     * Préférences de relevés automatiques
+     */
+    public function statementPreference(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(PharmacyStatementPreference::class);
+    }
+
     // ========================================================================
     // PIN SECURITY METHODS
     // ========================================================================

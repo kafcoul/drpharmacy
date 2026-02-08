@@ -40,3 +40,18 @@ Artisan::command('deliveries:check-timeouts', function () {
 // ========================================
 // Exécuter l'auto-assignation toutes les minutes (sans intervention humaine)
 Schedule::command('deliveries:auto-assign')->everyMinute();
+
+// ========================================
+// RELEVÉS AUTOMATIQUES PHARMACIES
+// ========================================
+// Envoyer les relevés programmés tous les jours à 8h
+Schedule::job(new \App\Jobs\SendScheduledStatements())->dailyAt('08:00');
+
+// Commande manuelle pour envoyer les relevés en attente
+Artisan::command('statements:send', function () {
+    $this->info("Envoi des relevés automatiques programmés...");
+    
+    dispatch(new \App\Jobs\SendScheduledStatements());
+    
+    $this->info('Job dispatched.');
+})->purpose('Envoyer les relevés automatiques des pharmacies');
