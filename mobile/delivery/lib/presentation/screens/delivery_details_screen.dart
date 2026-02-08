@@ -136,6 +136,61 @@ class _DeliveryDetailsScreenState extends ConsumerState<DeliveryDetailsScreen> {
     }
   }
 
+  /// Ouvrir WhatsApp avec un message pré-rempli
+  Future<void> _openWhatsApp(String? phoneNumber, {String? recipientName, bool isPharmacy = true}) async {
+    if (phoneNumber == null || phoneNumber.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Numéro WhatsApp non disponible')),
+        );
+      }
+      return;
+    }
+    
+    // Nettoyer le numéro (enlever espaces, tirets, etc.)
+    String cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    
+    // Si le numéro ne commence pas par +, ajouter le code pays Côte d'Ivoire
+    if (!cleanPhone.startsWith('+')) {
+      if (cleanPhone.startsWith('0')) {
+        cleanPhone = '+225${cleanPhone.substring(1)}';
+      } else {
+        cleanPhone = '+225$cleanPhone';
+      }
+    }
+    
+    // Message pré-rempli selon le destinataire
+    final orderRef = widget.delivery.reference;
+    String message;
+    if (isPharmacy) {
+      message = 'Bonjour, je suis le livreur pour la commande $orderRef. ';
+    } else {
+      message = 'Bonjour ${recipientName ?? ''}, je suis votre livreur pour la commande $orderRef. ';
+    }
+    
+    // Encoder le message pour l'URL
+    final encodedMessage = Uri.encodeComponent(message);
+    
+    // Essayer d'abord wa.me (fonctionne sur tous les appareils)
+    final waUrl = Uri.parse('https://wa.me/$cleanPhone?text=$encodedMessage');
+    
+    if (await canLaunchUrl(waUrl)) {
+      await launchUrl(waUrl, mode: LaunchMode.externalApplication);
+    } else {
+      // Fallback: essayer le schéma whatsapp://
+      final whatsappUrl = Uri.parse('whatsapp://send?phone=$cleanPhone&text=$encodedMessage');
+      if (await canLaunchUrl(whatsappUrl)) {
+        await launchUrl(whatsappUrl);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('WhatsApp n\'est pas installé sur cet appareil')),
+          );
+        }
+      }
+    }
+  }
+
   /// Vérifier le solde avant de permettre la livraison
   Future<bool> _checkBalanceForDelivery() async {
     try {
@@ -668,6 +723,7 @@ class _DeliveryDetailsScreenState extends ConsumerState<DeliveryDetailsScreen> {
           phone: widget.delivery.pharmacyPhone,
           lat: widget.delivery.pharmacyLat,
           lng: widget.delivery.pharmacyLng,
+          isPharmacy: true,
         ),
         // Connector Line
         Container(
@@ -688,6 +744,7 @@ class _DeliveryDetailsScreenState extends ConsumerState<DeliveryDetailsScreen> {
           phone: widget.delivery.customerPhone,
           lat: widget.delivery.deliveryLat,
           lng: widget.delivery.deliveryLng,
+          isPharmacy: false,
         ),
       ],
     );
@@ -704,6 +761,7 @@ class _DeliveryDetailsScreenState extends ConsumerState<DeliveryDetailsScreen> {
     String? phone,
     bool isFirst = false,
     bool isLast = false,
+    bool isPharmacy = false,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -732,7 +790,9 @@ class _DeliveryDetailsScreenState extends ConsumerState<DeliveryDetailsScreen> {
               const SizedBox(height: 4),
               Text(address, style: TextStyle(color: Colors.grey.shade700, fontSize: 14)),
               const SizedBox(height: 12),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                    if (lat != null && lng != null)
                   _SmallActionButton(
@@ -741,13 +801,19 @@ class _DeliveryDetailsScreenState extends ConsumerState<DeliveryDetailsScreen> {
                     color: Colors.blue.shade700,
                     onTap: () => _launchMaps(lat, lng),
                   ),
-                  const SizedBox(width: 8),
                   if (phone != null && phone.isNotEmpty)
                   _SmallActionButton(
                     icon: Icons.phone_outlined,
                     label: 'Appeler',
                     color: Colors.green.shade700,
                     onTap: () => _makePhoneCall(phone),
+                  ),
+                  if (phone != null && phone.isNotEmpty)
+                  _SmallActionButton(
+                    icon: Icons.chat_outlined,
+                    label: 'WhatsApp',
+                    color: const Color(0xFF25D366), // Couleur WhatsApp
+                    onTap: () => _openWhatsApp(phone, recipientName: name, isPharmacy: isPharmacy),
                   ),
                 ],
               )
