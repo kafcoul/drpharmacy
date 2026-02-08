@@ -57,7 +57,7 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
     try {
       await ref.read(orderListProvider.notifier).markOrderReady(_order.id);
       setState(() {
-        _order = _order.copyWith(status: 'ready_for_pickup');
+        _order = _order.copyWith(status: 'ready');
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -376,6 +376,7 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
         return 'Confirmée';
       case 'preparing':
         return 'En préparation';
+      case 'ready':
       case 'ready_for_pickup':
         return 'Prête pour ramassage';
       case 'on_the_way':
@@ -396,6 +397,7 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
       case 'confirmed':
       case 'preparing':
         return Colors.blue;
+      case 'ready':
       case 'ready_for_pickup':
         return Colors.purple;
       case 'on_the_way':
@@ -417,6 +419,7 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
         return Icons.check;
       case 'preparing':
         return Icons.inventory;
+      case 'ready':
       case 'ready_for_pickup':
         return Icons.local_shipping;
       case 'on_the_way':

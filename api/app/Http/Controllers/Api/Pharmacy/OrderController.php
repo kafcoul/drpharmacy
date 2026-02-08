@@ -168,7 +168,7 @@ class OrderController extends Controller
         }
 
         $order->update([
-            'status' => 'ready_for_pickup',
+            'status' => 'ready',
         ]);
 
         return response()->json([
