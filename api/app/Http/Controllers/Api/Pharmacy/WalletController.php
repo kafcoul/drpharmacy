@@ -132,8 +132,8 @@ class WalletController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'amount' => 'required|numeric|min:1000',
-            'payment_method' => 'required|in:bank,orange,mtn,moov,wave',
-            'phone' => 'required_if:payment_method,orange,mtn,moov,wave|string',
+            'payment_method' => 'required|in:bank,orange,mtn,moov,wave,djamo',
+            'phone' => 'required_if:payment_method,orange,mtn,moov,wave,djamo|string',
             'bank_details' => 'required_if:payment_method,bank|array',
             'bank_details.bank_code' => 'required_if:payment_method,bank|string',
             'bank_details.account_number' => 'required_if:payment_method,bank|string',
@@ -272,6 +272,7 @@ class WalletController extends Controller
             'mtn' => JekoPaymentMethod::MTN,
             'moov' => JekoPaymentMethod::MOOV,
             'wave' => JekoPaymentMethod::WAVE,
+            'djamo' => JekoPaymentMethod::DJAMO,
             'bank' => JekoPaymentMethod::BANK_TRANSFER,
             default => JekoPaymentMethod::ORANGE, // Default to Orange
         };

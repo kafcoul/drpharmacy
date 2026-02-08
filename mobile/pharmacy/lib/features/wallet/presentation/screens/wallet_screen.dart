@@ -867,7 +867,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
                 ),
                 const SizedBox(height: 8),
                 
-                // Deuxième ligne: Moov, Virement
+                // Deuxième ligne: Moov, Djamo, Virement
                 Row(
                   children: [
                     Expanded(
@@ -881,6 +881,16 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
                     ),
                     const SizedBox(width: 8),
                     Expanded(
+                      child: _buildOperatorCard(
+                        imagePath: 'assets/images/djamo.png',
+                        label: 'Djamo',
+                        color: const Color(0xFF6B4EFF),
+                        isSelected: selectedMethod == 'djamo',
+                        onTap: () => setModalState(() => selectedMethod = 'djamo'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
                       child: _buildPaymentMethodCard(
                         icon: Icons.account_balance,
                         label: 'Virement',
@@ -888,8 +898,6 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
                         onTap: () => setModalState(() => selectedMethod = 'bank'),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    const Expanded(child: SizedBox()), // Espace vide pour équilibrer
                   ],
                 ),
                 const SizedBox(height: 24),

@@ -9,6 +9,7 @@ enum JekoPaymentMethod: string
     case ORANGE = 'orange';
     case MTN = 'mtn';
     case MOOV = 'moov';
+    case DJAMO = 'djamo';
     
     // Autres
     case BANK_TRANSFER = 'bank_transfer';
@@ -20,6 +21,7 @@ enum JekoPaymentMethod: string
             self::ORANGE => 'Orange Money',
             self::MTN => 'MTN Mobile Money',
             self::MOOV => 'Moov Money',
+            self::DJAMO => 'Djamo',
             self::BANK_TRANSFER => 'Virement Bancaire',
         };
     }
@@ -31,6 +33,7 @@ enum JekoPaymentMethod: string
             self::ORANGE => 'orange-money',
             self::MTN => 'mtn-momo',
             self::MOOV => 'moov-money',
+            self::DJAMO => 'djamo',
             self::BANK_TRANSFER => 'bank',
         };
     }
@@ -50,6 +53,7 @@ enum JekoPaymentMethod: string
             self::MTN,
             self::MOOV,
             self::WAVE,
+            self::DJAMO,
             self::BANK_TRANSFER,
         ];
     }
@@ -64,6 +68,7 @@ enum JekoPaymentMethod: string
             self::MTN,
             self::MOOV,
             self::WAVE,
+            self::DJAMO,
         ];
     }
 }

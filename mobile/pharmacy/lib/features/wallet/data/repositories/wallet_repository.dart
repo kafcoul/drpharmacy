@@ -67,6 +67,8 @@ class WalletRepository {
         return 'moov';
       case 'wave':
         return 'wave';
+      case 'djamo':
+        return 'djamo';
       case 'bank':
         return 'bank';
       default:
