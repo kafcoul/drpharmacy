@@ -19,13 +19,13 @@ class ChatMessage {
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     return ChatMessage(
-      id: json['id'] as int,
-      message: json['message'] as String,
-      senderType: json['sender_type'] as String,
-      senderId: json['sender_id'] as int,
-      isMine: json['is_mine'] as bool? ?? false,
-      readAt: json['read_at'] != null ? DateTime.parse(json['read_at']) : null,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      message: json['message']?.toString() ?? '',
+      senderType: json['sender_type']?.toString() ?? 'unknown',
+      senderId: json['sender_id'] is int ? json['sender_id'] : int.tryParse(json['sender_id']?.toString() ?? '0') ?? 0,
+      isMine: json['is_mine'] == true,
+      readAt: json['read_at'] != null ? DateTime.tryParse(json['read_at'].toString()) : null,
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
     );
   }
 }
