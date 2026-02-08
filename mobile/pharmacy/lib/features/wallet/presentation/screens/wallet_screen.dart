@@ -1309,9 +1309,9 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
   void _showStatisticsSheet(BuildContext context, WalletData wallet) {
     final currencyFormat = NumberFormat.currency(locale: 'fr_FR', symbol: 'FCFA', decimalDigits: 0);
     
-    // Calculer les statistiques
-    final totalCredits = wallet.transactions.where((t) => t.type == 'credit').fold<double>(0, (sum, t) => sum + t.amount);
-    final totalDebits = wallet.transactions.where((t) => t.type == 'debit').fold<double>(0, (sum, t) => sum + t.amount);
+    // Utiliser les totaux de l'API (calculés sur TOUTES les transactions)
+    final totalCredits = wallet.totalEarnings;
+    final totalDebits = wallet.totalCommissionPaid;
     final nbTransactions = wallet.transactions.length;
     final avgTransaction = nbTransactions > 0 ? (totalCredits + totalDebits) / nbTransactions : 0.0;
     
