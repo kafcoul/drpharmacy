@@ -561,15 +561,16 @@ class _MetricCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
             ),
           ),
           Text(
             suffix,
             style: TextStyle(
-              color: Colors.grey.shade600,
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
               fontSize: 12,
             ),
           ),
@@ -577,7 +578,7 @@ class _MetricCard extends StatelessWidget {
           Text(
             title,
             style: TextStyle(
-              color: Colors.grey.shade500,
+              color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
               fontSize: 13,
             ),
           ),
@@ -627,22 +628,23 @@ class _ChartCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Colors.grey.shade600,
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                       fontSize: 12,
                     ),
                   ),
                 ],
               ),
               IconButton(
-                icon: const Icon(Icons.more_horiz),
+                icon: Icon(Icons.more_horiz, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
                 onPressed: () {},
               ),
             ],
@@ -693,7 +695,7 @@ class _SalesChart extends StatelessWidget {
                 days[index],
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.grey.shade600,
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                 ),
               ),
             ],
@@ -780,6 +782,7 @@ class _LegendItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
         Container(
@@ -794,18 +797,18 @@ class _LegendItem extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(fontSize: 13),
+            style: TextStyle(fontSize: 13, color: isDark ? Colors.white : Colors.black87),
           ),
         ),
         Text(
           value,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
         ),
         const SizedBox(width: 4),
         Text(
           '($percentage%)',
           style: TextStyle(
-            color: Colors.grey.shade500,
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
             fontSize: 12,
           ),
         ),
@@ -880,11 +883,12 @@ class _TopProductsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Top 5 Produits',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
+              color: isDark ? Colors.white : Colors.black87,
             ),
           ),
           const SizedBox(height: 16),
@@ -919,12 +923,12 @@ class _TopProductsCard extends StatelessWidget {
                       children: [
                         Text(
                           product['name']?.toString() ?? '',
-                          style: const TextStyle(fontWeight: FontWeight.w500),
+                          style: TextStyle(fontWeight: FontWeight.w500, color: isDark ? Colors.white : Colors.black87),
                         ),
                         Text(
                           '${product['sales']} ventes',
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                             fontSize: 12,
                           ),
                         ),
@@ -1189,16 +1193,17 @@ class _DetailCard extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                     fontSize: 13,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
               ],

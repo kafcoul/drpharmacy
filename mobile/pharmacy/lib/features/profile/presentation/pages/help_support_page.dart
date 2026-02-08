@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/providers/support_settings_provider.dart';
+import '../../../../core/theme/app_colors.dart';
 
 class HelpSupportPage extends ConsumerWidget {
   const HelpSupportPage({super.key});
@@ -9,9 +10,10 @@ class HelpSupportPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final supportSettingsAsync = ref.watch(supportSettingsProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppColors.isDark(context);
 
     return Scaffold(
+      backgroundColor: isDark ? AppColors.darkBackground : null,
       appBar: AppBar(
         title: const Text('Aide & Support'),
       ),
@@ -284,6 +286,7 @@ class HelpSupportPage extends ConsumerWidget {
     required String subtitle,
     required VoidCallback onTap,
   }) {
+    final isDark = AppColors.isDark(context);
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
@@ -293,9 +296,9 @@ class HelpSupportPage extends ConsumerWidget {
         ),
         child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 22),
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+      title: Text(title, style: TextStyle(fontWeight: FontWeight.w500, color: isDark ? Colors.white : Colors.black87)),
+      subtitle: Text(subtitle, style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600])),
+      trailing: Icon(Icons.arrow_forward_ios, size: 16, color: isDark ? Colors.grey[400] : Colors.grey[600]),
       onTap: onTap,
     );
   }
@@ -305,15 +308,16 @@ class HelpSupportPage extends ConsumerWidget {
     required String question,
     required String answer,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppColors.isDark(context);
     return ExpansionTile(
       tilePadding: const EdgeInsets.symmetric(horizontal: 16),
       childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       title: Text(
         question,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w500,
           fontSize: 14,
+          color: isDark ? Colors.white : Colors.black87,
         ),
       ),
       children: [
@@ -334,10 +338,11 @@ class HelpSupportPage extends ConsumerWidget {
     required String title,
     required VoidCallback onTap,
   }) {
+    final isDark = AppColors.isDark(context);
     return ListTile(
       leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-      title: Text(title),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+      title: Text(title, style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+      trailing: Icon(Icons.arrow_forward_ios, size: 16, color: isDark ? Colors.grey[400] : Colors.grey[600]),
       onTap: onTap,
     );
   }

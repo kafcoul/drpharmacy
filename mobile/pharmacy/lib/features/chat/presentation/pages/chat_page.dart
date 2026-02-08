@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../providers/chat_provider.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
@@ -78,19 +79,20 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     final messagesAsync = ref.watch(chatMessagesProvider(_params));
     final chatState = ref.watch(chatNotifierProvider);
     final isSending = chatState.isLoading;
+    final isDark = AppColors.isDark(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 1,
+        backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+        foregroundColor: isDark ? Colors.white : Colors.black87,
+        elevation: isDark ? 0 : 1,
         title: Row(
           children: [
             CircleAvatar(
               backgroundColor: widget.participantType == 'courier' 
-                  ? Colors.orange.shade100 
-                  : Colors.blue.shade100,
+                  ? (isDark ? Colors.orange.shade900 : Colors.orange.shade100)
+                  : (isDark ? Colors.blue.shade900 : Colors.blue.shade100),
               radius: 18,
               child: Icon(
                 widget.participantType == 'courier' 
@@ -108,16 +110,17 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               children: [
                 Text(
                   widget.participantName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
                 Text(
                   widget.participantType == 'courier' ? 'Livreur' : 'Client',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                   ),
                 ),
               ],
@@ -139,13 +142,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                         Icon(
                           Icons.chat_bubble_outline,
                           size: 64,
-                          color: Colors.grey.shade300,
+                          color: isDark ? Colors.grey.shade600 : Colors.grey.shade300,
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'Aucun message',
                           style: TextStyle(
-                            color: Colors.grey.shade500,
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
                             fontSize: 16,
                           ),
                         ),
@@ -153,7 +156,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                         Text(
                           'Commencez la conversation !',
                           style: TextStyle(
-                            color: Colors.grey.shade400,
+                            color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
                             fontSize: 14,
                           ),
                         ),
@@ -180,14 +183,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                           maxWidth: MediaQuery.of(context).size.width * 0.75,
                         ),
                         decoration: BoxDecoration(
-                          color: isMe ? const Color(0xFF4CAF50) : Colors.white,
+                          color: isMe 
+                              ? const Color(0xFF4CAF50) 
+                              : (isDark ? AppColors.darkCard : Colors.white),
                           borderRadius: BorderRadius.only(
                             topLeft: const Radius.circular(16),
                             topRight: const Radius.circular(16),
                             bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
                             bottomRight: isMe ? Radius.zero : const Radius.circular(16),
                           ),
-                          boxShadow: [
+                          boxShadow: isDark ? null : [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.05),
                               blurRadius: 4,
@@ -201,7 +206,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                             Text(
                               msg.message,
                               style: TextStyle(
-                                color: isMe ? Colors.white : Colors.black87,
+                                color: isMe ? Colors.white : (isDark ? Colors.white : Colors.black87),
                                 fontSize: 15,
                               ),
                             ),
@@ -212,7 +217,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                                 Text(
                                   DateFormat('HH:mm').format(msg.createdAt),
                                   style: TextStyle(
-                                    color: isMe ? Colors.white70 : Colors.grey.shade500,
+                                    color: isMe ? Colors.white70 : (isDark ? Colors.grey.shade500 : Colors.grey.shade500),
                                     fontSize: 11,
                                   ),
                                 ),
@@ -261,8 +266,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               MediaQuery.of(context).padding.bottom + 16,
             ),
             decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
+              color: isDark ? AppColors.darkSurface : Colors.white,
+              boxShadow: isDark ? null : [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
                   blurRadius: 10,
@@ -276,11 +281,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   child: TextField(
                     controller: _controller,
                     enabled: !isSending,
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                     decoration: InputDecoration(
                       hintText: 'Votre message...',
-                      hintStyle: TextStyle(color: Colors.grey.shade400),
+                      hintStyle: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey.shade400),
                       filled: true,
-                      fillColor: Colors.grey.shade100,
+                      fillColor: isDark ? AppColors.darkCard : Colors.grey.shade100,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 12,
@@ -298,7 +304,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 FloatingActionButton.small(
                   onPressed: isSending ? null : _sendMessage,
                   backgroundColor: isSending ? Colors.grey : const Color(0xFF4CAF50),
-                  elevation: 2,
+                  elevation: isDark ? 0 : 2,
                   child: isSending
                       ? const SizedBox(
                           width: 16,

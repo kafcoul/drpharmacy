@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/order_entity.dart';
 import '../providers/order_list_provider.dart';
 import '../../../chat/presentation/pages/chat_page.dart';
@@ -89,8 +90,10 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
       symbol: 'FCFA',
       decimalDigits: 0,
     );
+    final isDark = AppColors.isDark(context);
 
     return Scaffold(
+      backgroundColor: AppColors.backgroundColor(context),
       appBar: AppBar(
         title: Text('Commande #${_order.reference}'),
       ),
@@ -100,7 +103,7 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  _buildOrderContent(currencyFormat),
+                  _buildOrderContent(currencyFormat, isDark),
                   const SizedBox(height: 32),
                 ],
               ),
@@ -108,17 +111,17 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
     );
   }
 
-  Widget _buildOrderContent(NumberFormat currencyFormat) {
+  Widget _buildOrderContent(NumberFormat currencyFormat, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Status Card
-        _buildStatusCard(),
+        _buildStatusCard(isDark),
         const SizedBox(height: 16),
 
         // Courier Info (if assigned)
         if (_order.courierId != null) ...[
-          _buildCourierCard(),
+          _buildCourierCard(isDark),
           const SizedBox(height: 16),
         ],
 
@@ -126,11 +129,12 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
         _buildSectionCard(
           title: 'Informations Client',
           icon: Icons.person,
+          isDark: isDark,
           children: [
-            _buildInfoRow('Nom', _order.customerName),
-            _buildInfoRow('Téléphone', _order.customerPhone),
+            _buildInfoRow('Nom', _order.customerName, isDark: isDark),
+            _buildInfoRow('Téléphone', _order.customerPhone, isDark: isDark),
             if (_order.deliveryAddress != null)
-              _buildInfoRow('Adresse', _order.deliveryAddress!),
+              _buildInfoRow('Adresse', _order.deliveryAddress!, isDark: isDark),
           ],
         ),
         const SizedBox(height: 16),
@@ -140,6 +144,7 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
           _buildSectionCard(
             title: 'Produits commandés',
             icon: Icons.shopping_bag,
+            isDark: isDark,
             children: [
               ..._order.items!.map((item) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -152,13 +157,14 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
                             children: [
                               Text(
                                 item.name,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w500),
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    color: isDark ? Colors.white : Colors.black87),
                               ),
                               Text(
                                 '${item.quantity} x ${currencyFormat.format(item.unitPrice)}',
                                 style: TextStyle(
-                                  color: Colors.grey[600],
+                                  color: isDark ? Colors.grey[400] : Colors.grey[600],
                                   fontSize: 13,
                                 ),
                               ),
@@ -167,8 +173,9 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
                         ),
                         Text(
                           currencyFormat.format(item.totalPrice),
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : Colors.black87),
                         ),
                       ],
                     ),
@@ -182,24 +189,28 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
         _buildSectionCard(
           title: 'Résumé',
           icon: Icons.receipt,
+          isDark: isDark,
           children: [
             if (_order.subtotal != null)
               _buildInfoRow(
                 'Sous-total',
                 currencyFormat.format(_order.subtotal),
+                isDark: isDark,
               ),
             if (_order.deliveryFee != null)
               _buildInfoRow(
                 'Frais de livraison',
                 currencyFormat.format(_order.deliveryFee),
+                isDark: isDark,
               ),
-            const Divider(),
+            Divider(color: isDark ? Colors.grey[700] : Colors.grey[300]),
             _buildInfoRow(
               'Total',
               currencyFormat.format(_order.totalAmount),
               isBold: true,
+              isDark: isDark,
             ),
-            _buildInfoRow('Mode de paiement', _getPaymentModeLabel()),
+            _buildInfoRow('Mode de paiement', _getPaymentModeLabel(), isDark: isDark),
           ],
         ),
         const SizedBox(height: 16),
@@ -210,8 +221,9 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
           _buildSectionCard(
             title: 'Notes du client',
             icon: Icons.note,
+            isDark: isDark,
             children: [
-              Text(_order.customerNotes!),
+              Text(_order.customerNotes!, style: TextStyle(color: isDark ? Colors.grey[300] : Colors.black87)),
             ],
           ),
         const SizedBox(height: 24),
@@ -223,9 +235,10 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
     );
   }
 
-  Widget _buildStatusCard() {
+  Widget _buildStatusCard(bool isDark) {
     return Card(
-      color: _getStatusColor().withOpacity(0.1),
+      color: isDark ? _getStatusColor().withOpacity(0.2) : _getStatusColor().withOpacity(0.1),
+      elevation: isDark ? 0 : 1,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -246,7 +259,7 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
                   ),
                   Text(
                     'Créée le ${DateFormat('dd/MM/yyyy à HH:mm').format(_order.createdAt)}',
-                    style: TextStyle(color: Colors.grey[600]),
+                    style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
                   ),
                 ],
               ),
@@ -257,9 +270,10 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
     );
   }
 
-  Widget _buildCourierCard() {
+  Widget _buildCourierCard(bool isDark) {
     return Card(
-      color: Colors.orange.shade50,
+      color: isDark ? Colors.orange.shade900.withOpacity(0.3) : Colors.orange.shade50,
+      elevation: isDark ? 0 : 1,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -277,21 +291,22 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Livreur assigné',
-                        style: TextStyle(fontSize: 12, color: Colors.orange),
+                        style: TextStyle(fontSize: 12, color: isDark ? Colors.orange[300] : Colors.orange),
                       ),
                       Text(
                         _order.courierName ?? 'Coursier',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
+                          color: isDark ? Colors.white : Colors.black87,
                         ),
                       ),
                       if (_order.courierPhone != null)
                         Text(
                           _order.courierPhone!,
-                          style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                          style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600], fontSize: 13),
                         ),
                     ],
                   ),
@@ -336,8 +351,11 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
     required String title,
     required IconData icon,
     required List<Widget> children,
+    bool isDark = false,
   }) {
     return Card(
+      color: isDark ? AppColors.darkCard : Colors.white,
+      elevation: isDark ? 0 : 1,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -345,18 +363,19 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
           children: [
             Row(
               children: [
-                Icon(icon, color: Colors.blue),
+                Icon(icon, color: isDark ? Colors.blue[300] : Colors.blue),
                 const SizedBox(width: 8),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
               ],
             ),
-            const Divider(),
+            Divider(color: isDark ? Colors.grey[700] : Colors.grey[300]),
             ...children,
           ],
         ),
@@ -364,17 +383,18 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, {bool isBold = false}) {
+  Widget _buildInfoRow(String label, String value, {bool isBold = false, bool isDark = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[600])),
+          Text(label, style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600])),
           Text(
             value,
             style: TextStyle(
               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              color: isDark ? Colors.white : Colors.black87,
             ),
           ),
         ],
@@ -395,6 +415,7 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
                 label: const Text('Commande Prête (Retrait)'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 onPressed: () {
@@ -410,6 +431,7 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
                 label: const Text('Demander un Coursier'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 onPressed: () {
@@ -440,6 +462,7 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
             label: Text(_isLoading ? 'Traitement...' : 'Confirmer le Retrait Client'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
             onPressed: _isLoading ? null : () async {

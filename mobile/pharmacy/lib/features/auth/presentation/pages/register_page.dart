@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/presentation/widgets/error_display.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/error_messages.dart';
 import '../providers/auth_provider.dart';
 import '../providers/state/auth_state.dart';
@@ -264,9 +265,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
     final authState = ref.watch(authProvider);
     final isLoading = authState.status == AuthStatus.loading;
+    final isDark = AppColors.isDark(context);
 
     return Scaffold(
-      backgroundColor: Colors.teal[50],
+      backgroundColor: isDark ? AppColors.darkBackground : Colors.teal[50],
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -278,13 +280,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               Icon(
                 Icons.local_pharmacy_rounded,
                 size: 60,
-                color: Colors.teal[700],
+                color: isDark ? Colors.teal[300] : Colors.teal[700],
               ),
               const SizedBox(height: 16),
               Text(
                 'Création de compte',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.teal[900],
+                      color: isDark ? Colors.white : Colors.teal[900],
                       fontWeight: FontWeight.bold,
                     ),
               ),
@@ -292,14 +294,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               Text(
                 'Rejoignez le réseau DR-PHARMA',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.teal[600],
+                      color: isDark ? Colors.grey[400] : Colors.teal[600],
                     ),
               ),
               const SizedBox(height: 32),
 
               // Form
               Card(
-                elevation: 4,
+                elevation: isDark ? 0 : 4,
+                color: isDark ? AppColors.darkCard : Colors.white,
                 shadowColor: Colors.black26,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -521,7 +524,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 children: [
                   Text(
                     "Vous avez déjà un compte ?",
-                    style: TextStyle(color: Colors.grey[600]),
+                    style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
                   ),
                   TextButton(
                     onPressed: isLoading ? null : () => context.pop(),
@@ -543,16 +546,20 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   InputDecoration _buildInputDecoration(String label, IconData icon) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon, color: Colors.teal[600]),
+      labelStyle: TextStyle(color: isDark ? Colors.grey[400] : null),
+      prefixIcon: Icon(icon, color: isDark ? Colors.teal[300] : Colors.teal[600]),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      filled: isDark,
+      fillColor: isDark ? AppColors.darkSurface : null,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

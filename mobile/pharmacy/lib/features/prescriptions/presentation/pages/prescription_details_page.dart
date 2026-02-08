@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../data/models/prescription_model.dart';
 import '../providers/prescription_provider.dart';
 import 'package:intl/intl.dart';
@@ -135,9 +136,11 @@ class _PrescriptionDetailsPageState extends ConsumerState<PrescriptionDetailsPag
   @override
   Widget build(BuildContext context) {
     // Uses centralized base URL
-    final baseUrl = AppConstants.storageBaseUrl; 
+    final baseUrl = AppConstants.storageBaseUrl;
+    final isDark = AppColors.isDark(context);
 
     return Scaffold(
+      backgroundColor: AppColors.backgroundColor(context),
       appBar: AppBar(
         title: Text('Détails Ordonnance #${widget.prescription.id}'),
       ),
@@ -146,11 +149,11 @@ class _PrescriptionDetailsPageState extends ConsumerState<PrescriptionDetailsPag
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildCustomerInfo(),
+            _buildCustomerInfo(isDark),
             const SizedBox(height: 16),
-            _buildImages(baseUrl),
+            _buildImages(baseUrl, isDark),
             const SizedBox(height: 16),
-            _buildNotes(),
+            _buildNotes(isDark),
             const SizedBox(height: 24),
             if (widget.prescription.status == 'pending') _buildActionButtons(),
           ],
@@ -159,23 +162,25 @@ class _PrescriptionDetailsPageState extends ConsumerState<PrescriptionDetailsPag
     );
   }
 
-  Widget _buildCustomerInfo() {
+  Widget _buildCustomerInfo(bool isDark) {
     final customer = widget.prescription.customer;
     return Card(
+      color: isDark ? AppColors.darkCard : Colors.white,
+      elevation: isDark ? 0 : 1,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Client', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text('Client', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
             const SizedBox(height: 8),
-            Text('Nom: ${customer?['name'] ?? 'Inconnu'}'),
-            Text('Email: ${customer?['email'] ?? 'Non spécifié'}'),
-            Text('Date: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.parse(widget.prescription.createdAt))}'),
+            Text('Nom: ${customer?['name'] ?? 'Inconnu'}', style: TextStyle(color: isDark ? Colors.grey[300] : Colors.black87)),
+            Text('Email: ${customer?['email'] ?? 'Non spécifié'}', style: TextStyle(color: isDark ? Colors.grey[300] : Colors.black87)),
+            Text('Date: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.parse(widget.prescription.createdAt))}', style: TextStyle(color: isDark ? Colors.grey[300] : Colors.black87)),
             if (widget.prescription.notes != null) ...[
               const SizedBox(height: 8),
-              const Text('Notes du client:', style: TextStyle(fontWeight: FontWeight.bold)),
-              Text(widget.prescription.notes!),
+              Text('Notes du client:', style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+              Text(widget.prescription.notes!, style: TextStyle(color: isDark ? Colors.grey[300] : Colors.black87)),
             ],
           ],
         ),
@@ -183,13 +188,15 @@ class _PrescriptionDetailsPageState extends ConsumerState<PrescriptionDetailsPag
     );
   }
 
-  Widget _buildImages(String baseUrl) {
+  Widget _buildImages(String baseUrl, bool isDark) {
     final images = widget.prescription.images;
     if (images == null || images.isEmpty) {
-      return const Card(
+      return Card(
+        color: isDark ? AppColors.darkCard : Colors.white,
+        elevation: isDark ? 0 : 1,
         child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Text('Aucune image jointe'),
+          padding: const EdgeInsets.all(16),
+          child: Text('Aucune image jointe', style: TextStyle(color: isDark ? Colors.grey[400] : Colors.black87)),
         ),
       );
     }
@@ -197,7 +204,7 @@ class _PrescriptionDetailsPageState extends ConsumerState<PrescriptionDetailsPag
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Images', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Text('Images', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
         const SizedBox(height: 8),
         SizedBox(
           height: 300,
@@ -226,18 +233,31 @@ class _PrescriptionDetailsPageState extends ConsumerState<PrescriptionDetailsPag
           ),
         ),
         if (images.length > 1)
-          Center(child: Text('${images.length} images (Swipe pour voir)')),
+          Center(child: Text('${images.length} images (Swipe pour voir)', style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]))),
       ],
     );
   }
 
-  Widget _buildNotes() {
+  Widget _buildNotes(bool isDark) {
     return TextField(
       controller: _notesController,
-      decoration: const InputDecoration(
+      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+      decoration: InputDecoration(
         labelText: 'Notes Pharmacien / Commentaire Devis',
-        border: OutlineInputBorder(),
+        labelStyle: TextStyle(color: isDark ? Colors.grey[400] : null),
+        border: OutlineInputBorder(
+          borderSide: BorderSide(color: isDark ? Colors.grey[700]! : Colors.grey[400]!),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: isDark ? Colors.grey[700]! : Colors.grey[400]!),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
+        ),
         hintText: 'Ajouter des détails sur le devis ou instructions...',
+        hintStyle: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[400]),
+        filled: isDark,
+        fillColor: isDark ? AppColors.darkCard : null,
       ),
       maxLines: 3,
       enabled: widget.prescription.status == 'pending',
