@@ -24,6 +24,16 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\EnsureProductionSafe::class, // SECURITY: Vérifier config production
         ]);
         
+        // Configuration de la redirection pour les utilisateurs non authentifiés
+        // Pour les requêtes API, retourne null pour déclencher une exception JSON
+        // Pour les requêtes web, redirige vers la page de login Filament
+        $middleware->redirectGuestsTo(function (\Illuminate\Http\Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return null; // Déclenche AuthenticationException -> JSON 401
+            }
+            return '/finance/login'; // Redirection vers Filament
+        });
+        
         // Remplacer le middleware Authenticate par notre version personnalisée
         // pour éviter l'erreur "Route [login] not defined" sur les requêtes API
         $middleware->alias([

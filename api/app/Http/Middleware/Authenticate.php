@@ -19,7 +19,7 @@ class Authenticate extends Middleware
             return null;
         }
 
-        // Pour les autres requêtes web, rediriger vers Filament login
-        return route('filament.finance.auth.login');
+        // Pour les autres requêtes web, rediriger vers Filament login (chemin direct, pas de route nommée)
+        return '/finance/login';
     }
 }
