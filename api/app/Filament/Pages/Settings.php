@@ -61,8 +61,16 @@ class Settings extends Page implements HasForms
             'apply_service_fee' => Setting::get('apply_service_fee', true),
             'apply_payment_fee' => Setting::get('apply_payment_fee', true),
             'minimum_withdrawal_amount' => Setting::get('minimum_withdrawal_amount', 500),
-            'support_phone' => Setting::get('support_phone', ''),
-            'support_email' => Setting::get('support_email', ''),
+            // Aide & Support
+            'support_phone' => Setting::get('support_phone', '+225 07 00 00 00 00'),
+            'support_email' => Setting::get('support_email', 'support@drpharma.ci'),
+            'support_whatsapp' => Setting::get('support_whatsapp', '+225 07 00 00 00 00'),
+            'website_url' => Setting::get('website_url', 'https://drpharma.ci'),
+            'tutorials_url' => Setting::get('tutorials_url', ''),
+            'guide_url' => Setting::get('guide_url', ''),
+            'faq_url' => Setting::get('faq_url', ''),
+            'terms_url' => Setting::get('terms_url', ''),
+            'privacy_url' => Setting::get('privacy_url', ''),
             // Paramètres minuterie d'attente
             'waiting_timeout_minutes' => Setting::get('waiting_timeout_minutes', 10),
             'waiting_fee_per_minute' => Setting::get('waiting_fee_per_minute', 100),
@@ -202,17 +210,60 @@ class Settings extends Page implements HasForms
                             ->helperText('Pourcentage appliqué sur le total pour les paiements en ligne (ex: 1.5%).'),
                     ])->columns(2),
 
-                Section::make('Support Technique')
+                Section::make('Aide & Support')
+                    ->description('Informations de contact et ressources affichées dans les applications mobiles')
+                    ->icon('heroicon-o-lifebuoy')
                     ->schema([
                         TextInput::make('support_phone')
                             ->label('Téléphone Support')
                             ->tel()
-                            ->required(),
+                            ->placeholder('+225 XX XX XX XX XX')
+                            ->required()
+                            ->helperText('Numéro de téléphone pour le support client.'),
                         TextInput::make('support_email')
                             ->label('Email Support')
                             ->email()
-                            ->required(),
-                    ])->columns(2),
+                            ->placeholder('support@drpharma.ci')
+                            ->required()
+                            ->helperText('Adresse email pour le support client.'),
+                        TextInput::make('support_whatsapp')
+                            ->label('WhatsApp Support')
+                            ->tel()
+                            ->placeholder('+225 XX XX XX XX XX')
+                            ->required()
+                            ->helperText('Numéro WhatsApp pour le chat en direct (format international).'),
+                        TextInput::make('website_url')
+                            ->label('Site Web')
+                            ->url()
+                            ->placeholder('https://drpharma.ci')
+                            ->required()
+                            ->helperText('URL du site web principal.'),
+                        TextInput::make('tutorials_url')
+                            ->label('URL Tutoriels Vidéo')
+                            ->url()
+                            ->placeholder('https://www.youtube.com/@drpharma')
+                            ->helperText('Lien vers les tutoriels vidéo (YouTube, etc.).'),
+                        TextInput::make('guide_url')
+                            ->label('URL Guide Utilisateur')
+                            ->url()
+                            ->placeholder('https://drpharma.ci/guide')
+                            ->helperText('Lien vers le guide utilisateur en ligne.'),
+                        TextInput::make('faq_url')
+                            ->label('URL FAQ')
+                            ->url()
+                            ->placeholder('https://drpharma.ci/faq')
+                            ->helperText('Lien vers la page FAQ.'),
+                        TextInput::make('terms_url')
+                            ->label('URL Conditions d\'utilisation')
+                            ->url()
+                            ->placeholder('https://drpharma.ci/terms')
+                            ->helperText('Lien vers les conditions générales d\'utilisation.'),
+                        TextInput::make('privacy_url')
+                            ->label('URL Politique de confidentialité')
+                            ->url()
+                            ->placeholder('https://drpharma.ci/privacy')
+                            ->helperText('Lien vers la politique de confidentialité.'),
+                    ])->columns(3),
 
                 Section::make('Minuterie d\'attente livraison')
                     ->description('Paramètres pour gérer le temps d\'attente du livreur chez le client')
@@ -359,8 +410,16 @@ class Settings extends Page implements HasForms
         Setting::set('apply_service_fee', $data['apply_service_fee'], 'boolean');
         Setting::set('apply_payment_fee', $data['apply_payment_fee'], 'boolean');
         Setting::set('minimum_withdrawal_amount', $data['minimum_withdrawal_amount'], 'integer');
+        // Aide & Support
         Setting::set('support_phone', $data['support_phone'], 'string');
         Setting::set('support_email', $data['support_email'], 'string');
+        Setting::set('support_whatsapp', $data['support_whatsapp'], 'string');
+        Setting::set('website_url', $data['website_url'], 'string');
+        Setting::set('tutorials_url', $data['tutorials_url'] ?? '', 'string');
+        Setting::set('guide_url', $data['guide_url'] ?? '', 'string');
+        Setting::set('faq_url', $data['faq_url'] ?? '', 'string');
+        Setting::set('terms_url', $data['terms_url'] ?? '', 'string');
+        Setting::set('privacy_url', $data['privacy_url'] ?? '', 'string');
         // Paramètres minuterie d'attente
         Setting::set('waiting_timeout_minutes', $data['waiting_timeout_minutes'], 'integer');
         Setting::set('waiting_fee_per_minute', $data['waiting_fee_per_minute'], 'integer');

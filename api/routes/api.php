@@ -51,6 +51,9 @@ Route::middleware('throttle:public')->group(function () {
     Route::get('/pricing', [\App\Http\Controllers\Api\PricingController::class, 'index']);
     Route::post('/pricing/calculate', [\App\Http\Controllers\Api\PricingController::class, 'calculate']);
     Route::post('/pricing/delivery', [\App\Http\Controllers\Api\PricingController::class, 'estimateDelivery']);
+    
+    // Support Settings (public - apps need contact info)
+    Route::get('/support/settings', [\App\Http\Controllers\Api\SupportSettingsController::class, 'index']);
 });
 
 // Public Pharmacies routes (no auth required - customers can browse)

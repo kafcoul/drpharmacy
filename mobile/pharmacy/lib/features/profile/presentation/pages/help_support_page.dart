@@ -1,172 +1,233 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../../core/config/env_config.dart';
+import '../../../../core/providers/support_settings_provider.dart';
 
-class HelpSupportPage extends StatelessWidget {
+class HelpSupportPage extends ConsumerWidget {
   const HelpSupportPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).colorScheme.primary;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final supportSettingsAsync = ref.watch(supportSettingsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Aide & Support'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Section Contact
-          _buildSectionCard(
-            context,
-            title: 'Nous contacter',
-            children: [
-              _buildContactTile(
-                context,
-                icon: Icons.email_outlined,
-                title: 'Email',
-                subtitle: EnvConfig.supportEmail,
-                onTap: () => _launchUrl('mailto:${EnvConfig.supportEmail}'),
-              ),
-              const Divider(height: 1),
-              _buildContactTile(
-                context,
-                icon: Icons.phone_outlined,
-                title: 'Téléphone',
-                subtitle: EnvConfig.supportPhone,
-                onTap: () => _launchUrl(EnvConfig.phoneUrl),
-              ),
-              const Divider(height: 1),
-              _buildContactTile(
-                context,
-                icon: Icons.chat_outlined,
-                title: 'WhatsApp',
-                subtitle: 'Chat en direct',
-                onTap: () => _launchUrl(EnvConfig.whatsAppUrl),
-              ),
-            ],
-          ),
+      body: supportSettingsAsync.when(
+        data: (settings) => _buildContent(context, settings, isDark),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => _buildContent(context, SupportSettings.defaults(), isDark),
+      ),
+    );
+  }
 
-          const SizedBox(height: 20),
+  Widget _buildContent(BuildContext context, SupportSettings settings, bool isDark) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Section Contact
+        _buildSectionCard(
+          context,
+          title: 'Nous contacter',
+          children: [
+            _buildContactTile(
+              context,
+              icon: Icons.email_outlined,
+              title: 'Email',
+              subtitle: settings.supportEmail,
+              onTap: () => _launchUrl(settings.emailUrl),
+            ),
+            const Divider(height: 1),
+            _buildContactTile(
+              context,
+              icon: Icons.phone_outlined,
+              title: 'Téléphone',
+              subtitle: settings.supportPhone,
+              onTap: () => _launchUrl(settings.phoneUrl),
+            ),
+            const Divider(height: 1),
+            _buildContactTile(
+              context,
+              icon: Icons.chat_outlined,
+              title: 'WhatsApp',
+              subtitle: 'Chat en direct',
+              onTap: () => _launchUrl(settings.whatsAppUrl),
+            ),
+          ],
+        ),
 
-          // FAQ Section
-          _buildSectionCard(
-            context,
-            title: 'Questions fréquentes',
-            children: [
-              _buildFaqItem(
-                context,
-                question: 'Comment ajouter un produit à mon inventaire ?',
-                answer: 'Allez dans l\'onglet "Stock", appuyez sur le bouton "+", puis scannez le code-barres ou entrez les informations manuellement.',
-              ),
-              const Divider(height: 1),
-              _buildFaqItem(
-                context,
-                question: 'Comment traiter une commande ?',
-                answer: 'Dans l\'onglet "Commandes", appuyez sur une commande en attente, puis utilisez les boutons "Confirmer" ou "Préparer" selon l\'état de la commande.',
-              ),
-              const Divider(height: 1),
-              _buildFaqItem(
-                context,
-                question: 'Comment modifier les informations de ma pharmacie ?',
-                answer: 'Allez dans "Profil" > "Ma Pharmacie" > appuyez sur l\'icône de modification pour éditer les informations.',
-              ),
-              const Divider(height: 1),
-              _buildFaqItem(
-                context,
-                question: 'Comment activer le mode garde ?',
-                answer: 'Dans "Profil" > "Mode Garde", vous pouvez activer/désactiver le mode garde et définir vos horaires de garde.',
-              ),
-              const Divider(height: 1),
-              _buildFaqItem(
-                context,
-                question: 'Comment voir mes statistiques de vente ?',
-                answer: 'Accédez à "Rapports & Analytics" depuis le menu profil pour voir vos statistiques détaillées.',
-              ),
-            ],
-          ),
+        const SizedBox(height: 20),
 
-          const SizedBox(height: 20),
+        // FAQ Section
+        _buildSectionCard(
+          context,
+          title: 'Questions fréquentes',
+          children: [
+            _buildFaqItem(
+              context,
+              question: 'Comment ajouter un produit à mon inventaire ?',
+              answer: 'Allez dans l\'onglet "Stock", appuyez sur le bouton "+", puis scannez le code-barres ou entrez les informations manuellement.',
+            ),
+            const Divider(height: 1),
+            _buildFaqItem(
+              context,
+              question: 'Comment traiter une commande ?',
+              answer: 'Dans l\'onglet "Commandes", appuyez sur une commande en attente, puis utilisez les boutons "Confirmer" ou "Préparer" selon l\'état de la commande.',
+            ),
+            const Divider(height: 1),
+            _buildFaqItem(
+              context,
+              question: 'Comment modifier les informations de ma pharmacie ?',
+              answer: 'Allez dans "Profil" > "Ma Pharmacie" > appuyez sur l\'icône de modification pour éditer les informations.',
+            ),
+            const Divider(height: 1),
+            _buildFaqItem(
+              context,
+              question: 'Comment activer le mode garde ?',
+              answer: 'Dans "Profil" > "Mode Garde", vous pouvez activer/désactiver le mode garde et définir vos horaires de garde.',
+            ),
+            const Divider(height: 1),
+            _buildFaqItem(
+              context,
+              question: 'Comment voir mes statistiques de vente ?',
+              answer: 'Accédez à "Rapports & Analytics" depuis le menu profil pour voir vos statistiques détaillées.',
+            ),
+          ],
+        ),
 
-          // Ressources
-          _buildSectionCard(
-            context,
-            title: 'Ressources',
-            children: [
+        const SizedBox(height: 20),
+
+        // Ressources
+        _buildSectionCard(
+          context,
+          title: 'Ressources',
+          children: [
+            if (settings.tutorialsUrl.isNotEmpty) ...[
               _buildResourceTile(
                 context,
                 icon: Icons.play_circle_outline,
                 title: 'Tutoriels vidéo',
-                onTap: () => _launchUrl(EnvConfig.tutorialsUrl),
+                onTap: () => _launchUrl(settings.tutorialsUrl),
               ),
               const Divider(height: 1),
+            ],
+            if (settings.guideUrl.isNotEmpty) ...[
               _buildResourceTile(
                 context,
                 icon: Icons.menu_book_outlined,
                 title: 'Guide d\'utilisation',
-                onTap: () => _launchUrl(EnvConfig.guideUrl),
+                onTap: () => _launchUrl(settings.guideUrl),
               ),
+              const Divider(height: 1),
+            ],
+            if (settings.faqUrl.isNotEmpty) ...[
+              _buildResourceTile(
+                context,
+                icon: Icons.help_outline,
+                title: 'FAQ en ligne',
+                onTap: () => _launchUrl(settings.faqUrl),
+              ),
+              const Divider(height: 1),
+            ],
+            _buildResourceTile(
+              context,
+              icon: Icons.update_outlined,
+              title: 'Notes de mise à jour',
+              onTap: () => _showChangelogDialog(context),
+            ),
+            if (settings.websiteUrl.isNotEmpty) ...[
               const Divider(height: 1),
               _buildResourceTile(
                 context,
-                icon: Icons.update_outlined,
-                title: 'Notes de mise à jour',
-                onTap: () => _showChangelogDialog(context),
+                icon: Icons.language_outlined,
+                title: 'Site web',
+                onTap: () => _launchUrl(settings.websiteUrl),
               ),
+            ],
+          ],
+        ),
+
+        const SizedBox(height: 20),
+
+        // Liens légaux
+        if (settings.termsUrl.isNotEmpty || settings.privacyUrl.isNotEmpty)
+          _buildSectionCard(
+            context,
+            title: 'Informations légales',
+            children: [
+              if (settings.termsUrl.isNotEmpty) ...[
+                _buildResourceTile(
+                  context,
+                  icon: Icons.article_outlined,
+                  title: 'Conditions d\'utilisation',
+                  onTap: () => _launchUrl(settings.termsUrl),
+                ),
+              ],
+              if (settings.termsUrl.isNotEmpty && settings.privacyUrl.isNotEmpty)
+                const Divider(height: 1),
+              if (settings.privacyUrl.isNotEmpty) ...[
+                _buildResourceTile(
+                  context,
+                  icon: Icons.privacy_tip_outlined,
+                  title: 'Politique de confidentialité',
+                  onTap: () => _launchUrl(settings.privacyUrl),
+                ),
+              ],
             ],
           ),
 
+        if (settings.termsUrl.isNotEmpty || settings.privacyUrl.isNotEmpty)
           const SizedBox(height: 20),
 
-          // Report Bug
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.orange.withOpacity(0.3)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.bug_report_outlined, color: Colors.orange),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Signaler un problème',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      Text(
-                        'Aidez-nous à améliorer l\'application',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onPressed: () => _showReportBugDialog(context),
-                ),
-              ],
-            ),
+        // Report Bug
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.orange.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.orange.withOpacity(0.3)),
           ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.bug_report_outlined, color: Colors.orange),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Signaler un problème',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      'Aidez-nous à améliorer l\'application',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.arrow_forward_ios, size: 16),
+                onPressed: () => _showReportBugDialog(context, settings),
+              ),
+            ],
+          ),
+        ),
 
-          const SizedBox(height: 32),
-        ],
-      ),
+        const SizedBox(height: 32),
+      ],
     );
   }
 
@@ -343,7 +404,7 @@ class HelpSupportPage extends StatelessWidget {
     );
   }
 
-  void _showReportBugDialog(BuildContext context) {
+  void _showReportBugDialog(BuildContext context, SupportSettings settings) {
     final controller = TextEditingController();
     
     showDialog(
@@ -372,6 +433,12 @@ class HelpSupportPage extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () {
+              if (controller.text.isNotEmpty) {
+                // Envoyer par email
+                final subject = Uri.encodeComponent('Bug Report - DR-PHARMA Pharmacy App');
+                final body = Uri.encodeComponent(controller.text);
+                _launchUrl('mailto:${settings.supportEmail}?subject=$subject&body=$body');
+              }
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Merci pour votre signalement !')),
