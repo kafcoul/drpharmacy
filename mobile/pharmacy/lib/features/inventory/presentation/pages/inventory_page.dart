@@ -532,18 +532,18 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                       String statusLabel;
 
                       if (product.isOutOfStock) {
-                        statusColor = const Color(0xFFC62828); // Red 800
-                        bgColor = const Color(0xFFFFEBEE);
+                        statusColor = isDark ? const Color(0xFFEF5350) : const Color(0xFFC62828); // Red
+                        bgColor = isDark ? const Color(0xFF3D1B1B) : const Color(0xFFFFEBEE);
                         statusIcon = Icons.warning_rounded;
                         statusLabel = 'Rupture';
                       } else if (product.isLowStock) {
-                        statusColor = const Color(0xFFE65100); // Orange 900
-                        bgColor = const Color(0xFFFFF3E0);
+                        statusColor = isDark ? const Color(0xFFFFB74D) : const Color(0xFFE65100); // Orange
+                        bgColor = isDark ? const Color(0xFF3D2E1B) : const Color(0xFFFFF3E0);
                         statusIcon = Icons.warning_amber_rounded;
                         statusLabel = 'Faible';
                       } else {
-                        statusColor = const Color(0xFF2E7D32); // Green 800
-                        bgColor = const Color(0xFFE8F5E9);
+                        statusColor = isDark ? const Color(0xFF81C784) : const Color(0xFF2E7D32); // Green
+                        bgColor = isDark ? const Color(0xFF1B3D20) : const Color(0xFFE8F5E9);
                         statusIcon = Icons.check_circle_outline_rounded;
                         statusLabel = 'En Stock';
                       }
@@ -551,11 +551,13 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                       return Container(
                         margin: const EdgeInsets.only(bottom: 20, left: 4, right: 4),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF8D8D8D).withOpacity(0.1),
+                              color: isDark 
+                                  ? Colors.black.withOpacity(0.3) 
+                                  : const Color(0xFF8D8D8D).withOpacity(0.1),
                               blurRadius: 24,
                               offset: const Offset(0, 8),
                               spreadRadius: 0,
@@ -584,10 +586,10 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                                     width: 56,
                                     height: 56,
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
                                       shape: BoxShape.circle,
                                       border: product.imageUrl != null 
-                                          ? Border.all(color: Colors.grey.shade200, width: 1)
+                                          ? Border.all(color: isDark ? Colors.grey.shade700 : Colors.grey.shade200, width: 1)
                                           : null,
                                     ),
                                     child: ClipOval(
@@ -669,7 +671,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                                         const SizedBox(height: 4),
                                         Text(
                                           product.description.isEmpty ? 'Aucune description' : product.description,
-                                          style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                                          style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600], fontSize: 13),
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -680,14 +682,14 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                                             Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                               decoration: BoxDecoration(
-                                                color: const Color(0xFFF5F7FA),
+                                                color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F7FA),
                                                 borderRadius: BorderRadius.circular(8),
                                               ),
                                               child: Text(
                                                 '${NumberFormat.currency(symbol: 'FCFA', decimalDigits: 0, locale: 'fr_FR').format(product.price)}',
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontWeight: FontWeight.w600,
-                                                  color: Colors.black87,
+                                                  color: isDark ? Colors.white : Colors.black87,
                                                   fontSize: 13,
                                                 ),
                                               ),
@@ -698,7 +700,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                                                   TextSpan(
                                                     text: 'Qte: ',
                                                     style: TextStyle(
-                                                      color: Colors.grey[600],
+                                                      color: isDark ? Colors.grey[400] : Colors.grey[600],
                                                       fontSize: 13,
                                                     ),
                                                   ),
