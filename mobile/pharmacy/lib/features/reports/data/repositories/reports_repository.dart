@@ -72,13 +72,31 @@ class ReportsRepository {
         queryParameters: {'period': period},
       );
       
-      if (response.data['success'] == true) {
-        final data = response.data['data'] as Map<String, dynamic>;
+      // Vérifier si response.data est bien une Map
+      if (response.data is! Map<String, dynamic>) {
+        throw Exception('Format de réponse invalide');
+      }
+      
+      final responseData = response.data as Map<String, dynamic>;
+      
+      if (responseData['success'] == true && responseData['data'] != null) {
+        final data = responseData['data'];
+        if (data is! Map<String, dynamic>) {
+          throw Exception('Format de données invalide');
+        }
         return _normalizeOverviewData(data);
       }
-      throw Exception(response.data['message']?.toString() ?? 'Erreur lors du chargement');
+      
+      // Gérer les erreurs API
+      final errorMessage = responseData['message']?.toString() 
+          ?? responseData['error']?.toString() 
+          ?? 'Erreur lors du chargement';
+      throw Exception(errorMessage);
     } on DioException catch (e) {
       throw _handleError(e);
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Erreur inattendue: $e');
     }
   }
 
@@ -90,12 +108,25 @@ class ReportsRepository {
         queryParameters: {'period': period},
       );
       
-      if (response.data['success'] == true) {
-        return response.data['data'];
+      if (response.data is! Map<String, dynamic>) {
+        throw Exception('Format de réponse invalide');
       }
-      throw Exception(response.data['message'] ?? 'Erreur lors du chargement');
+      
+      final responseData = response.data as Map<String, dynamic>;
+      
+      if (responseData['success'] == true && responseData['data'] != null) {
+        final data = responseData['data'];
+        if (data is! Map<String, dynamic>) {
+          throw Exception('Format de données invalide');
+        }
+        return data;
+      }
+      throw Exception(responseData['message']?.toString() ?? 'Erreur lors du chargement');
     } on DioException catch (e) {
       throw _handleError(e);
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Erreur inattendue: $e');
     }
   }
 
@@ -107,12 +138,25 @@ class ReportsRepository {
         queryParameters: {'period': period},
       );
       
-      if (response.data['success'] == true) {
-        return response.data['data'];
+      if (response.data is! Map<String, dynamic>) {
+        throw Exception('Format de réponse invalide');
       }
-      throw Exception(response.data['message'] ?? 'Erreur lors du chargement');
+      
+      final responseData = response.data as Map<String, dynamic>;
+      
+      if (responseData['success'] == true && responseData['data'] != null) {
+        final data = responseData['data'];
+        if (data is! Map<String, dynamic>) {
+          throw Exception('Format de données invalide');
+        }
+        return data;
+      }
+      throw Exception(responseData['message']?.toString() ?? 'Erreur lors du chargement');
     } on DioException catch (e) {
       throw _handleError(e);
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Erreur inattendue: $e');
     }
   }
 
@@ -121,12 +165,25 @@ class ReportsRepository {
     try {
       final response = await _dio.get('/pharmacy/reports/inventory');
       
-      if (response.data['success'] == true) {
-        return response.data['data'];
+      if (response.data is! Map<String, dynamic>) {
+        throw Exception('Format de réponse invalide');
       }
-      throw Exception(response.data['message'] ?? 'Erreur lors du chargement');
+      
+      final responseData = response.data as Map<String, dynamic>;
+      
+      if (responseData['success'] == true && responseData['data'] != null) {
+        final data = responseData['data'];
+        if (data is! Map<String, dynamic>) {
+          throw Exception('Format de données invalide');
+        }
+        return data;
+      }
+      throw Exception(responseData['message']?.toString() ?? 'Erreur lors du chargement');
     } on DioException catch (e) {
       throw _handleError(e);
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Erreur inattendue: $e');
     }
   }
 
@@ -135,12 +192,25 @@ class ReportsRepository {
     try {
       final response = await _dio.get('/pharmacy/reports/stock-alerts');
       
-      if (response.data['success'] == true) {
-        return response.data['data'];
+      if (response.data is! Map<String, dynamic>) {
+        throw Exception('Format de réponse invalide');
       }
-      throw Exception(response.data['message'] ?? 'Erreur lors du chargement');
+      
+      final responseData = response.data as Map<String, dynamic>;
+      
+      if (responseData['success'] == true && responseData['data'] != null) {
+        final data = responseData['data'];
+        if (data is! Map<String, dynamic>) {
+          throw Exception('Format de données invalide');
+        }
+        return data;
+      }
+      throw Exception(responseData['message']?.toString() ?? 'Erreur lors du chargement');
     } on DioException catch (e) {
       throw _handleError(e);
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Erreur inattendue: $e');
     }
   }
 
@@ -160,12 +230,25 @@ class ReportsRepository {
         },
       );
       
-      if (response.data['success'] == true) {
-        return response.data['data'];
+      if (response.data is! Map<String, dynamic>) {
+        throw Exception('Format de réponse invalide');
       }
-      throw Exception(response.data['message'] ?? 'Erreur lors de l\'export');
+      
+      final responseData = response.data as Map<String, dynamic>;
+      
+      if (responseData['success'] == true && responseData['data'] != null) {
+        final data = responseData['data'];
+        if (data is! Map<String, dynamic>) {
+          throw Exception('Format de données invalide');
+        }
+        return data;
+      }
+      throw Exception(responseData['message']?.toString() ?? 'Erreur lors de l\'export');
     } on DioException catch (e) {
       throw _handleError(e);
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Erreur inattendue: $e');
     }
   }
 
