@@ -24,8 +24,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\EnsureProductionSafe::class, // SECURITY: Vérifier config production
         ]);
         
-        // Enregistrer les alias de middleware personnalisés
+        // Remplacer le middleware Authenticate par notre version personnalisée
+        // pour éviter l'erreur "Route [login] not defined" sur les requêtes API
         $middleware->alias([
+            'auth' => \App\Http\Middleware\Authenticate::class,
             'role' => \App\Http\Middleware\CheckRole::class,
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'production.safe' => \App\Http\Middleware\EnsureProductionSafe::class,
