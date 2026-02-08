@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
 import '../providers/prescription_provider.dart';
 import 'prescription_details_page.dart';
@@ -16,14 +17,15 @@ class PrescriptionsListPage extends ConsumerWidget {
     final notifier = ref.read(prescriptionListProvider.notifier);
     final filtered = notifier.filteredPrescriptions;
     final primaryColor = Theme.of(context).colorScheme.primary;
+    final isDark = AppColors.isDark(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.backgroundColor(context),
       body: SafeArea(
         child: Column(
           children: [
             Container(
-              color: Colors.white,
+              color: AppColors.cardColor(context),
               padding: const EdgeInsets.only(top: 16, bottom: 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,7 +48,7 @@ class PrescriptionsListPage extends ConsumerWidget {
                                end: Alignment.bottomRight,
                              ),
                              borderRadius: BorderRadius.circular(16),
-                             boxShadow: [
+                             boxShadow: isDark ? [] : [
                                BoxShadow(
                                  color: Colors.purple.withOpacity(0.3),
                                  blurRadius: 12,
@@ -67,12 +69,12 @@ class PrescriptionsListPage extends ConsumerWidget {
                            child: Column(
                              crossAxisAlignment: CrossAxisAlignment.start,
                              children: [
-                               const Text(
+                               Text(
                                  'Mes Ordonnances',
                                  style: TextStyle(
                                    fontSize: 26,
                                    fontWeight: FontWeight.w800,
-                                   color: Colors.black87,
+                                   color: isDark ? Colors.white : Colors.black87,
                                    letterSpacing: -0.5,
                                    height: 1.2,
                                  ),
@@ -83,7 +85,7 @@ class PrescriptionsListPage extends ConsumerWidget {
                                  style: TextStyle(
                                    fontSize: 13,
                                    fontWeight: FontWeight.w500,
-                                   color: Colors.grey.shade600,
+                                   color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                                  ),
                                ),
                              ],
@@ -93,7 +95,7 @@ class PrescriptionsListPage extends ConsumerWidget {
                          // Notification
                          Container(
                            decoration: BoxDecoration(
-                             color: Colors.grey[50],
+                             color: isDark ? Colors.grey[800] : Colors.grey[50],
                              shape: BoxShape.circle,
                            ),
                            child: IconButton(
@@ -105,7 +107,7 @@ class PrescriptionsListPage extends ConsumerWidget {
                                    backgroundColor: Colors.redAccent,
                                    smallSize: 10,
                                    label: unreadCount > 0 ? null : null, 
-                                   child: const Icon(Icons.notifications_none_rounded, color: Colors.black87, size: 28),
+                                   child: Icon(Icons.notifications_none_rounded, color: isDark ? Colors.white : Colors.black87, size: 28),
                                  );
                                },
                              ),
@@ -149,14 +151,14 @@ class PrescriptionsListPage extends ConsumerWidget {
                      ),
                    ),
                    const SizedBox(height: 16),
-                   const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
+                   Divider(height: 1, thickness: 1, color: isDark ? Colors.grey[800] : const Color(0xFFF0F0F0)),
                 ],
               ),
             ),
             
             // Corps de la liste
             Expanded(
-              child: _buildBody(context, state, filtered, ref),
+              child: _buildBody(context, state, filtered, ref, isDark),
             ),
           ],
         ),
@@ -169,6 +171,7 @@ class PrescriptionsListPage extends ConsumerWidget {
     PrescriptionListState state,
     List<PrescriptionModel> prescriptions,
     WidgetRef ref,
+    bool isDark,
   ) {
     if (state.status == PrescriptionStatus.loading) {
       return Center(
@@ -187,7 +190,7 @@ class PrescriptionsListPage extends ConsumerWidget {
             const SizedBox(height: 16),
             Text(
               state.errorMessage ?? 'Une erreur est survenue',
-              style: const TextStyle(color: Colors.black87, fontSize: 16),
+              style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 16),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -214,10 +217,10 @@ class PrescriptionsListPage extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: isDark ? Colors.grey[800] : Colors.grey[100],
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.description_outlined, size: 64, color: Colors.grey[400]),
+              child: Icon(Icons.description_outlined, size: 64, color: isDark ? Colors.grey[500] : Colors.grey[400]),
             ),
             const SizedBox(height: 24),
             Text(
@@ -225,14 +228,14 @@ class PrescriptionsListPage extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
+                color: isDark ? Colors.white : Colors.grey[800],
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Vous n\'avez pas encore d\'ordonnances\ncorrespondant à ce filtre.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
             ),
           ],
         ),
@@ -241,7 +244,7 @@ class PrescriptionsListPage extends ConsumerWidget {
 
     return RefreshIndicator(
       color: Theme.of(context).primaryColor,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.cardColor(context),
       onRefresh: () =>
           ref.read(prescriptionListProvider.notifier).getPrescriptions(),
       child: ListView.builder(
@@ -277,12 +280,14 @@ class _PrescriptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 20, left: 4, right: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cardColor(context),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
+        boxShadow: isDark ? [] : [
           BoxShadow(
             color: const Color(0xFF8D8D8D).withOpacity(0.1),
             blurRadius: 24,
@@ -312,14 +317,14 @@ class _PrescriptionCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF5F7FA),
+                        color: isDark ? Colors.grey[800] : const Color(0xFFF5F7FA),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         '#${prescription.id}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w800,
-                          color: Colors.black87,
+                          color: isDark ? Colors.white : Colors.black87,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -335,7 +340,7 @@ class _PrescriptionCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withOpacity(0.08),
+                        color: Theme.of(context).primaryColor.withOpacity(isDark ? 0.2 : 0.08),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -351,6 +356,7 @@ class _PrescriptionCard extends StatelessWidget {
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
+                          color: isDark ? Colors.white : null,
                         ),
                       ),
                     ),
@@ -365,20 +371,20 @@ class _PrescriptionCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF5F7FA),
+                        color: isDark ? Colors.grey[800] : const Color(0xFFF5F7FA),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.access_time_rounded,
                         size: 20,
-                        color: Color(0xFF9E9E9E),
+                        color: isDark ? Colors.grey[400] : const Color(0xFF9E9E9E),
                       ),
                     ),
                     const SizedBox(width: 14),
                     Text(
                       DateFormat('dd MMM yyyy • HH:mm', 'fr').format(DateTime.parse(prescription.createdAt)),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF757575),
+                        color: isDark ? Colors.grey[400] : const Color(0xFF757575),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -406,6 +412,8 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(30),
@@ -413,12 +421,14 @@ class _FilterChip extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
-          color: isActive ? Theme.of(context).primaryColor : Colors.white,
+          color: isActive 
+              ? Theme.of(context).primaryColor 
+              : (isDark ? AppColors.cardColor(context) : Colors.white),
           borderRadius: BorderRadius.circular(30),
           border: isActive 
               ? Border.all(color: Colors.transparent)
-              : Border.all(color: Colors.grey[200]!, width: 1.5),
-          boxShadow: isActive
+              : Border.all(color: isDark ? Colors.grey[700]! : Colors.grey[200]!, width: 1.5),
+          boxShadow: isActive && !isDark
               ? [
                   BoxShadow(
                     color: Theme.of(context).primaryColor.withOpacity(0.25),
@@ -431,7 +441,7 @@ class _FilterChip extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: isActive ? Colors.white : Colors.grey[600],
+            color: isActive ? Colors.white : (isDark ? Colors.grey[400] : Colors.grey[600]),
             fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
             fontSize: 15,
           ),
@@ -448,6 +458,7 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
     Color color;
     String label;
 
@@ -472,9 +483,9 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withOpacity(isDark ? 0.2 : 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withOpacity(isDark ? 0.3 : 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/presentation/widgets/connectivity_widgets.dart';
 import '../../../../core/providers/core_providers.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
 import '../../../orders/presentation/pages/orders_list_page.dart';
 import '../../../prescriptions/presentation/pages/prescriptions_list_page.dart';
@@ -48,16 +49,19 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 
   Widget _buildBottomNav(int unreadNotifications) {
+    final isDark = AppColors.isDark(context);
+    
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
+        color: AppColors.cardColor(context),
+        boxShadow: isDark ? [] : [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
         ],
+        border: isDark ? Border(top: BorderSide(color: Colors.grey.shade800)) : null,
       ),
       child: SafeArea(
         child: Padding(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
 import '../../data/models/wallet_data.dart';
 import '../providers/wallet_provider.dart';
@@ -52,7 +53,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
     final primaryColor = theme.colorScheme.primary;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.backgroundColor(context),
       body: SafeArea(
         child: walletAsync.when(
           data: (wallet) => _buildContent(context, wallet, primaryColor),
@@ -408,8 +409,10 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
     required Color color,
     required VoidCallback onTap,
   }) {
+    final isDark = AppColors.isDark(context);
+    
     return Material(
-      color: Colors.white,
+      color: AppColors.cardColor(context),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: () {
@@ -424,7 +427,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withOpacity(isDark ? 0.2 : 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: color, size: 24),
@@ -432,10 +435,10 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
               const SizedBox(height: 12),
               Text(
                 label,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1E3A5F)),
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF1E3A5F)),
               ),
               const SizedBox(height: 2),
-              Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+              Text(subtitle, style: TextStyle(fontSize: 11, color: isDark ? Colors.grey.shade400 : Colors.grey.shade500)),
             ],
           ),
         ),
@@ -444,28 +447,31 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
   }
 
   Widget _buildStatsSection(BuildContext context, WalletData wallet) {
+    final isDark = AppColors.isDark(context);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Apercu financier',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E3A5F)),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1E3A5F)),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _selectedPeriod,
-                  icon: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey.shade600, size: 20),
+                  icon: Icon(Icons.keyboard_arrow_down_rounded, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, size: 20),
                   isDense: true,
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700, fontWeight: FontWeight.w500),
+                  dropdownColor: AppColors.cardColor(context),
+                  style: TextStyle(fontSize: 13, color: isDark ? Colors.grey.shade300 : Colors.grey.shade700, fontWeight: FontWeight.w500),
                   items: _periods.map((period) => DropdownMenuItem(value: period, child: Text(period))).toList(),
                   onChanged: (value) {
                     if (value != null) setState(() => _selectedPeriod = value);
@@ -508,13 +514,14 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
     required Color color,
   }) {
     final currencyFormat = NumberFormat.currency(locale: 'fr_FR', symbol: 'FCFA', decimalDigits: 0);
+    final isDark = AppColors.isDark(context);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cardColor(context),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
+        boxShadow: isDark ? [] : [
           BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
@@ -522,7 +529,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: color.withOpacity(isDark ? 0.2 : 0.1), borderRadius: BorderRadius.circular(12)),
             child: Icon(icon, color: color, size: 22),
           ),
           const SizedBox(width: 12),
@@ -530,11 +537,11 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+                Text(title, style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontWeight: FontWeight.w500)),
                 const SizedBox(height: 4),
                 Text(
                   currencyFormat.format(value),
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E3A5F)),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1E3A5F)),
                 ),
               ],
             ),
@@ -545,12 +552,14 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
   }
 
   Widget _buildTransactionsHeader(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
+        Text(
           'Transactions recentes',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E3A5F)),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1E3A5F)),
         ),
         TextButton.icon(
           onPressed: () => _showHistorySheet(context),
@@ -587,13 +596,14 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
     final isCredit = tx.type == 'credit';
     final currencyFormat = NumberFormat.currency(locale: 'fr_FR', symbol: 'FCFA', decimalDigits: 0);
     final sign = isCredit ? '+' : '-';
+    final isDark = AppColors.isDark(context);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cardColor(context),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
+        boxShadow: isDark ? [] : [
           BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
@@ -602,7 +612,9 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isCredit ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE),
+              color: isCredit 
+                  ? (isDark ? const Color(0xFF2E7D32).withOpacity(0.2) : const Color(0xFFE8F5E9))
+                  : (isDark ? const Color(0xFFC62828).withOpacity(0.2) : const Color(0xFFFFEBEE)),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
@@ -618,12 +630,12 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
               children: [
                 Text(
                   tx.description ?? 'Transaction',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1E3A5F)),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF1E3A5F)),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-                Text(tx.date ?? '', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                Text(tx.date ?? '', style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade400 : Colors.grey.shade500)),
               ],
             ),
           ),
@@ -641,13 +653,15 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
   }
 
   Widget _buildEmptyTransactions() {
+    final isDark = AppColors.isDark(context);
+    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(40),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cardColor(context),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
+        boxShadow: isDark ? [] : [
           BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
@@ -655,35 +669,39 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
         children: [
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
-            child: Icon(Icons.receipt_long_outlined, size: 48, color: Colors.grey.shade400),
+            decoration: BoxDecoration(color: isDark ? Colors.grey.shade800 : Colors.grey.shade100, shape: BoxShape.circle),
+            child: Icon(Icons.receipt_long_outlined, size: 48, color: isDark ? Colors.grey.shade500 : Colors.grey.shade400),
           ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'Aucune transaction',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E3A5F)),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1E3A5F)),
           ),
           const SizedBox(height: 8),
-          Text('Vos transactions apparaitront ici', style: TextStyle(fontSize: 14, color: Colors.grey.shade500)),
+          Text('Vos transactions apparaitront ici', style: TextStyle(fontSize: 14, color: isDark ? Colors.grey.shade400 : Colors.grey.shade500)),
         ],
       ),
     );
   }
 
   Widget _buildLoadingState(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircularProgressIndicator(color: Theme.of(context).primaryColor),
           const SizedBox(height: 20),
-          Text('Chargement...', style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+          Text('Chargement...', style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 16)),
         ],
       ),
     );
   }
 
   Widget _buildErrorState(BuildContext context, Object err) {
+    final isDark = AppColors.isDark(context);
+    
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(40),
@@ -692,16 +710,16 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
           children: [
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: Colors.red.shade50, shape: BoxShape.circle),
+              decoration: BoxDecoration(color: isDark ? Colors.red.shade900.withOpacity(0.3) : Colors.red.shade50, shape: BoxShape.circle),
               child: Icon(Icons.error_outline_rounded, size: 48, color: Colors.red.shade400),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Une erreur est survenue',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E3A5F)),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1E3A5F)),
             ),
             const SizedBox(height: 8),
-            Text(err.toString(), style: TextStyle(fontSize: 14, color: Colors.grey.shade500), textAlign: TextAlign.center),
+            Text(err.toString(), style: TextStyle(fontSize: 14, color: isDark ? Colors.grey.shade400 : Colors.grey.shade500), textAlign: TextAlign.center),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: () => ref.refresh(walletProvider),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../providers/notifications_provider.dart';
 
 class NotificationsPage extends ConsumerWidget {
@@ -45,17 +46,18 @@ class NotificationsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(notificationsProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // Fond soft gris clair
+      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF8F9FA),
       body: SafeArea(
         child: Column(
           children: [
              // En-tête amélioré
             Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : Colors.white,
+                boxShadow: isDark ? null : const [
                   BoxShadow(
                     color: Colors.black12,
                     blurRadius: 4,
@@ -69,11 +71,11 @@ class NotificationsPage extends ConsumerWidget {
                   // Bouton retour
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: Colors.black87),
+                      icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: isDark ? Colors.white : Colors.black87),
                       onPressed: () => context.pop(),
                       style: IconButton.styleFrom(
                         padding: EdgeInsets.zero,
@@ -117,11 +119,11 @@ class NotificationsPage extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Notifications',
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
-                            color: Colors.black87,
+                            color: isDark ? Colors.white : Colors.black87,
                             letterSpacing: -0.5,
                             fontSize: 22,
                           ),
@@ -129,7 +131,7 @@ class NotificationsPage extends ConsumerWidget {
                         Text(
                           '${state.notifications.where((n) => !n.isRead).length} non lues',
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
@@ -179,7 +181,7 @@ class NotificationsPage extends ConsumerWidget {
                             Container(
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFF3E0), // Orange très doux
+                                color: isDark ? Colors.orange.withOpacity(0.2) : const Color(0xFFFFF3E0),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
@@ -189,13 +191,13 @@ class NotificationsPage extends ConsumerWidget {
                               ),
                             ),
                             const SizedBox(height: 24),
-                            const Text(
+                            Text(
                               'Erreur de chargement',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black87,
+                                color: isDark ? Colors.white : Colors.black87,
                                 letterSpacing: -0.5,
                               ),
                             ),
@@ -204,7 +206,7 @@ class NotificationsPage extends ConsumerWidget {
                               'Impossible de récupérer les notifications pour le moment.\nVérifiez votre connexion et réessayez.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: Colors.grey[600],
+                                color: isDark ? Colors.grey[400] : Colors.grey[600],
                                 fontSize: 15,
                                 height: 1.5,
                               ),
@@ -254,10 +256,10 @@ class NotificationsPage extends ConsumerWidget {
                             Container(
                               padding: const EdgeInsets.all(24),
                               decoration: BoxDecoration(
-                                color: Colors.grey[100],
+                                color: isDark ? Colors.grey[800] : Colors.grey[100],
                                 shape: BoxShape.circle,
                               ),
-                              child: Icon(Icons.notifications_none_rounded, size: 48, color: Colors.grey[400]),
+                              child: Icon(Icons.notifications_none_rounded, size: 48, color: isDark ? Colors.grey[500] : Colors.grey[400]),
                             ),
                             const SizedBox(height: 24),
                             Text(
@@ -265,14 +267,14 @@ class NotificationsPage extends ConsumerWidget {
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.grey[800],
+                                color: isDark ? Colors.white : Colors.grey[800],
                               ),
                             ),
                             const SizedBox(height: 12),
                             Text(
                               'Vous êtes à jour. Les commandes, alertes stock et paiements apparaîtront ici.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey[600], height: 1.4),
+                              style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600], height: 1.4),
                             ),
                           ],
                         ),
@@ -283,7 +285,7 @@ class NotificationsPage extends ConsumerWidget {
                   // --- LISTE ---
                   return RefreshIndicator(
                     color: primaryColor,
-                    backgroundColor: Colors.white,
+                    backgroundColor: isDark ? AppColors.cardColor(context) : Colors.white,
                     onRefresh: () => ref.read(notificationsProvider.notifier).loadNotifications(),
                     child: ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
@@ -296,9 +298,11 @@ class NotificationsPage extends ConsumerWidget {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
-                            color: isUnread ? Colors.white : const Color(0xFFFCFCFC),
+                            color: isUnread 
+                                ? (isDark ? AppColors.cardColor(context) : Colors.white)
+                                : (isDark ? Colors.grey[850] : const Color(0xFFFCFCFC)),
                             borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
+                            boxShadow: isDark ? [] : [
                               BoxShadow(
                                 color: const Color(0xFF8D8D8D).withOpacity(isUnread ? 0.08 : 0.03),
                                 blurRadius: 20,
@@ -307,7 +311,7 @@ class NotificationsPage extends ConsumerWidget {
                             ],
                             border: isUnread 
                               ? Border.all(color: primaryColor.withOpacity(0.1), width: 1.5) 
-                              : Border.all(color: Colors.transparent),
+                              : Border.all(color: isDark ? Colors.grey[700]! : Colors.transparent),
                           ),
                           child: Material(
                             color: Colors.transparent,
@@ -329,12 +333,14 @@ class NotificationsPage extends ConsumerWidget {
                                         Container(
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            color: isUnread ? style.color.withOpacity(0.1) : Colors.grey[100],
+                                            color: isUnread 
+                                                ? style.color.withOpacity(isDark ? 0.2 : 0.1) 
+                                                : (isDark ? Colors.grey[800] : Colors.grey[100]),
                                             shape: BoxShape.circle,
                                           ),
                                           child: Icon(
                                             style.icon,
-                                            color: isUnread ? style.color : Colors.grey[500],
+                                            color: isUnread ? style.color : (isDark ? Colors.grey[400] : Colors.grey[500]),
                                             size: 24,
                                           ),
                                         ),
@@ -348,7 +354,7 @@ class NotificationsPage extends ConsumerWidget {
                                               decoration: BoxDecoration(
                                                 color: Colors.redAccent,
                                                 shape: BoxShape.circle,
-                                                border: Border.all(color: Colors.white, width: 2),
+                                                border: Border.all(color: isDark ? AppColors.cardColor(context) : Colors.white, width: 2),
                                               ),
                                             ),
                                           ),
@@ -369,7 +375,9 @@ class NotificationsPage extends ConsumerWidget {
                                                   style: TextStyle(
                                                     fontWeight: isUnread ? FontWeight.w800 : FontWeight.w600,
                                                     fontSize: 16,
-                                                    color: isUnread ? Colors.black87 : Colors.grey[700],
+                                                    color: isUnread 
+                                                        ? (isDark ? Colors.white : Colors.black87) 
+                                                        : (isDark ? Colors.grey[300] : Colors.grey[700]),
                                                   ),
                                                 ),
                                               ),
@@ -377,7 +385,7 @@ class NotificationsPage extends ConsumerWidget {
                                                 _formatDate(notification.createdAt),
                                                 style: TextStyle(
                                                   fontSize: 11,
-                                                  color: isUnread ? primaryColor : Colors.grey[400],
+                                                  color: isUnread ? primaryColor : (isDark ? Colors.grey[500] : Colors.grey[400]),
                                                   fontWeight: FontWeight.w600,
                                                 ),
                                               ),
@@ -387,7 +395,9 @@ class NotificationsPage extends ConsumerWidget {
                                           Text(
                                             notification.body,
                                             style: TextStyle(
-                                              color: isUnread ? Colors.grey[800] : Colors.grey[500],
+                                              color: isUnread 
+                                                  ? (isDark ? Colors.grey[300] : Colors.grey[800]) 
+                                                  : (isDark ? Colors.grey[500] : Colors.grey[500]),
                                               fontSize: 14,
                                               height: 1.4,
                                             ),

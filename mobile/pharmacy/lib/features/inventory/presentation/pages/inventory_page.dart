@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/presentation/widgets/voice_search_widget.dart';
 import '../../../../core/presentation/widgets/error_display.dart';
 import '../../../../core/utils/error_messages.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/product_entity.dart';
@@ -216,6 +217,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(inventoryProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
+    final isDark = AppColors.isDark(context);
 
     // Filter products based on search query
     final filteredProducts = state.products.where((product) {
@@ -225,12 +227,12 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.backgroundColor(context),
       body: SafeArea(
         child: Column(
           children: [
             Container(
-              color: Colors.white,
+              color: AppColors.cardColor(context),
               padding: const EdgeInsets.only(top: 16, bottom: 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,7 +262,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                                   end: Alignment.bottomRight,
                                 ),
                                 borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
+                                boxShadow: isDark ? [] : [
                                   BoxShadow(
                                     color: Colors.teal.withOpacity(0.3),
                                     blurRadius: 12,
@@ -281,12 +283,12 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Gestion Stock',
                                     style: TextStyle(
                                       fontSize: 26,
                                       fontWeight: FontWeight.w800,
-                                      color: Colors.black87,
+                                      color: isDark ? Colors.white : Colors.black87,
                                       letterSpacing: -0.5,
                                       height: 1.2,
                                     ),
@@ -297,7 +299,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
-                                      color: Colors.grey.shade600,
+                                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                                     ),
                                   ),
                                 ],
@@ -307,7 +309,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                             // Notification
                             Container(
                               decoration: BoxDecoration(
-                                color: Colors.grey[50],
+                                color: isDark ? Colors.grey[800] : Colors.grey[50],
                                 shape: BoxShape.circle,
                               ),
                               child: IconButton(
@@ -319,7 +321,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                                       backgroundColor: Colors.redAccent,
                                       smallSize: 10,
                                       label: unreadCount > 0 ? null : null, 
-                                      child: const Icon(Icons.notifications_none_rounded, color: Colors.black87, size: 28),
+                                      child: Icon(Icons.notifications_none_rounded, color: isDark ? Colors.white : Colors.black87, size: 28),
                                     );
                                   },
                                 ),
@@ -341,13 +343,15 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                         Expanded(
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Colors.grey[100],
+                              color: isDark ? Colors.grey[800] : Colors.grey[100],
                               borderRadius: BorderRadius.circular(30),
                             ),
                             child: TextField(
                               controller: _searchController,
+                              style: TextStyle(color: isDark ? Colors.white : Colors.black),
                               decoration: InputDecoration(
                                 hintText: 'Rechercher un produit...',
+                                hintStyle: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600]),
                                 hintStyle: const TextStyle(color: Colors.grey),
                                 prefixIcon: const Icon(Icons.search, color: Colors.grey),
                                 suffixIcon: IconButton(

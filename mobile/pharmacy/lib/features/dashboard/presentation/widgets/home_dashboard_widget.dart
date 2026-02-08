@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../inventory/presentation/widgets/add_product_sheet.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
@@ -23,7 +24,7 @@ class HomeDashboardWidget extends ConsumerWidget {
     final userName = authState.user?.name ?? 'Pharmacien';
     
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.backgroundColor(context),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -187,6 +188,7 @@ class HomeDashboardWidget extends ConsumerWidget {
   Widget _buildMainKPIs(BuildContext context, WidgetRef ref) {
     final orderState = ref.watch(orderListProvider);
     final walletAsync = ref.watch(walletProvider);
+    final isDark = AppColors.isDark(context);
     
     // Calculer les statistiques des commandes
     final pendingOrders = orderState.orders.where((o) => o.status == 'pending').length;
@@ -202,12 +204,12 @@ class HomeDashboardWidget extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Aperçu du jour',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1A2E),
+              color: isDark ? Colors.white : const Color(0xFF1A1A2E),
             ),
           ),
           const SizedBox(height: 16),
@@ -296,17 +298,19 @@ class HomeDashboardWidget extends ConsumerWidget {
   }
 
   Widget _buildQuickActions(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Actions rapides',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1A2E),
+              color: isDark ? Colors.white : const Color(0xFF1A1A2E),
             ),
           ),
           const SizedBox(height: 16),
@@ -356,6 +360,7 @@ class HomeDashboardWidget extends ConsumerWidget {
     final orderState = ref.watch(orderListProvider);
     final recentOrders = orderState.orders.take(3).toList();
     final isLoading = orderState.status == OrderStatus.loading;
+    final isDark = AppColors.isDark(context);
     
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -365,12 +370,12 @@ class HomeDashboardWidget extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Commandes récentes',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A2E),
+                  color: isDark ? Colors.white : const Color(0xFF1A1A2E),
                 ),
               ),
               TextButton(
@@ -412,25 +417,27 @@ class HomeDashboardWidget extends ConsumerWidget {
   }
 
   Widget _buildEmptyOrdersCard() {
+    final isDark = AppColors.isDark(context);
+    
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cardColor(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: isDark ? Colors.grey.shade700 : Colors.grey.shade200),
       ),
       child: Column(
         children: [
           Icon(
             Icons.inbox_rounded,
             size: 48,
-            color: Colors.grey.shade400,
+            color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
           ),
           const SizedBox(height: 12),
           Text(
             'Aucune commande récente',
             style: TextStyle(
-              color: Colors.grey.shade600,
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
               fontSize: 16,
             ),
           ),
@@ -473,12 +480,14 @@ class _KPICard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cardColor(context),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
+        boxShadow: isDark ? [] : [
           BoxShadow(
             color: color.withOpacity(0.1),
             blurRadius: 10,
@@ -494,7 +503,7 @@ class _KPICard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withOpacity(isDark ? 0.2 : 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: color, size: 20),
@@ -503,7 +512,7 @@ class _KPICard extends StatelessWidget {
               Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 14,
-                color: Colors.grey.shade400,
+                color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
               ),
             ],
           ),
@@ -511,7 +520,7 @@ class _KPICard extends StatelessWidget {
           Text(
             title,
             style: TextStyle(
-              color: Colors.grey.shade600,
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
               fontSize: 13,
             ),
           ),
@@ -533,7 +542,7 @@ class _KPICard extends StatelessWidget {
                 child: Text(
                   subtitle,
                   style: TextStyle(
-                    color: Colors.grey.shade500,
+                    color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
                     fontSize: 11,
                   ),
                 ),
@@ -611,14 +620,16 @@ class _RecentOrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.cardColor(context),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
+          boxShadow: isDark ? [] : [
             BoxShadow(
               color: Colors.black.withOpacity(0.03),
               blurRadius: 10,
@@ -631,7 +642,7 @@ class _RecentOrderCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: _getStatusColor(status).withOpacity(0.1),
+                color: _getStatusColor(status).withOpacity(isDark ? 0.2 : 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -647,16 +658,17 @@ class _RecentOrderCard extends StatelessWidget {
                 children: [
                   Text(
                     orderNumber,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     customerName,
                     style: TextStyle(
-                      color: Colors.grey.shade600,
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                       fontSize: 13,
                     ),
                   ),
@@ -668,16 +680,17 @@ class _RecentOrderCard extends StatelessWidget {
               children: [
                 Text(
                   '${NumberFormat('#,###', 'fr_FR').format(total)} F',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
+                    color: isDark ? Colors.white : Colors.black,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(status).withOpacity(0.1),
+                    color: _getStatusColor(status).withOpacity(isDark ? 0.2 : 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(

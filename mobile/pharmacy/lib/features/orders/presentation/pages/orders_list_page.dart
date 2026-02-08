@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/presentation/widgets/widgets.dart';
+import '../../../../core/theme/app_colors.dart';
 
 import '../../../../features/notifications/presentation/providers/notifications_provider.dart';
 import '../providers/order_list_provider.dart';
@@ -17,14 +18,15 @@ class OrdersListPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(orderListProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
+    final isDark = AppColors.isDark(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.backgroundColor(context),
       body: SafeArea(
         child: Column(
           children: [
             Container(
-              color: Colors.white,
+              color: AppColors.cardColor(context),
               padding: const EdgeInsets.only(top: 16, bottom: 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,7 +39,7 @@ class OrdersListPage extends ConsumerWidget {
                      iconBackgroundColor: primaryColor,
                      trailing: Container(
                        decoration: BoxDecoration(
-                         color: Colors.grey[50],
+                         color: isDark ? Colors.grey[800] : Colors.grey[50],
                          shape: BoxShape.circle,
                        ),
                        child: IconButton(
@@ -49,7 +51,7 @@ class OrdersListPage extends ConsumerWidget {
                                backgroundColor: Colors.redAccent,
                                smallSize: 10,
                                label: unreadCount > 0 ? null : null, 
-                               child: const Icon(Icons.notifications_none_rounded, color: Colors.black87, size: 28),
+                               child: Icon(Icons.notifications_none_rounded, color: isDark ? Colors.white : Colors.black87, size: 28),
                              );
                            },
                          ),
@@ -96,7 +98,7 @@ class OrdersListPage extends ConsumerWidget {
                      ),
                    ),
                    const SizedBox(height: 16),
-                   const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
+                   Divider(height: 1, thickness: 1, color: isDark ? Colors.grey[800] : const Color(0xFFF0F0F0)),
                 ],
               ),
             ),
@@ -112,6 +114,8 @@ class OrdersListPage extends ConsumerWidget {
   }
 
   Widget _buildBody(BuildContext context, OrderListState state, WidgetRef ref) {
+    final isDark = AppColors.isDark(context);
+    
     // Loading state avec shimmer
     if (state.status == OrderStatus.loading) {
       return const SkeletonList(
@@ -150,7 +154,7 @@ class OrdersListPage extends ConsumerWidget {
     // Liste des commandes
     return RefreshIndicator(
       color: Theme.of(context).colorScheme.primary,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.cardColor(context),
       onRefresh: () => ref.read(orderListProvider.notifier).fetchOrders(),
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
@@ -365,11 +369,13 @@ class _OrderSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cardColor(context),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
