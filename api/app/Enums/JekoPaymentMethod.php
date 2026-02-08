@@ -4,28 +4,23 @@ namespace App\Enums;
 
 enum JekoPaymentMethod: string
 {
+    // Côte d'Ivoire
     case WAVE = 'wave';
-    case ORANGE = 'orange';
-    case MTN = 'mtn';
-    case MOOV = 'moov';
-    case DJAMO = 'djamo';
-    case BANK_TRANSFER = 'bank_transfer';
+    case ORANGE_CI = 'orange_ci';
+    case MTN_CI = 'mtn_ci';
+    case MOOV_CI = 'moov_ci';
     
-    // Bénin specific
-    case MTN_BJ = 'mtn_bj';
-    case MOOV_BJ = 'moov_bj';
+    // Autres
+    case BANK_TRANSFER = 'bank_transfer';
 
     public function label(): string
     {
         return match ($this) {
             self::WAVE => 'Wave',
-            self::ORANGE => 'Orange Money',
-            self::MTN => 'MTN Mobile Money',
-            self::MOOV => 'Moov Money',
-            self::DJAMO => 'Djamo',
+            self::ORANGE_CI => 'Orange Money',
+            self::MTN_CI => 'MTN Mobile Money',
+            self::MOOV_CI => 'Moov Money',
             self::BANK_TRANSFER => 'Virement Bancaire',
-            self::MTN_BJ => 'MTN Bénin',
-            self::MOOV_BJ => 'Moov Bénin',
         };
     }
 
@@ -33,10 +28,9 @@ enum JekoPaymentMethod: string
     {
         return match ($this) {
             self::WAVE => 'wave',
-            self::ORANGE => 'orange-money',
-            self::MTN, self::MTN_BJ => 'mtn-momo',
-            self::MOOV, self::MOOV_BJ => 'moov-money',
-            self::DJAMO => 'djamo',
+            self::ORANGE_CI => 'orange-money',
+            self::MTN_CI => 'mtn-momo',
+            self::MOOV_CI => 'moov-money',
             self::BANK_TRANSFER => 'bank',
         };
     }
@@ -47,15 +41,29 @@ enum JekoPaymentMethod: string
     }
     
     /**
-     * Méthodes disponibles pour les décaissements (payout)
+     * Méthodes disponibles pour les décaissements (payout) - Côte d'Ivoire
      */
     public static function payoutMethods(): array
     {
         return [
-            self::MTN_BJ,
-            self::MOOV_BJ,
+            self::ORANGE_CI,
+            self::MTN_CI,
+            self::MOOV_CI,
             self::WAVE,
             self::BANK_TRANSFER,
+        ];
+    }
+    
+    /**
+     * Méthodes disponibles pour les paiements (encaissement) - Côte d'Ivoire
+     */
+    public static function paymentMethods(): array
+    {
+        return [
+            self::ORANGE_CI,
+            self::MTN_CI,
+            self::MOOV_CI,
+            self::WAVE,
         ];
     }
 }

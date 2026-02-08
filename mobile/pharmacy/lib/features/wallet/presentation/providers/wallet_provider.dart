@@ -35,6 +35,8 @@ final withdrawRequestProvider = FutureProvider.autoDispose.family<WithdrawRespon
     amount: params['amount'] as double,
     paymentMethod: params['payment_method'] as String,
     accountDetails: params['account_details'] as String?,
+    phone: params['phone'] as String?,
+    pin: params['pin'] as String?,
   );
 });
 
@@ -50,6 +52,8 @@ class WalletActionsNotifier extends StateNotifier<AsyncValue<void>> {
     required double amount,
     required String paymentMethod,
     String? accountDetails,
+    String? phone,
+    String? pin,
   }) async {
     state = const AsyncValue.loading();
     try {
@@ -57,6 +61,8 @@ class WalletActionsNotifier extends StateNotifier<AsyncValue<void>> {
         amount: amount,
         paymentMethod: paymentMethod,
         accountDetails: accountDetails,
+        phone: phone,
+        pin: pin,
       );
       state = const AsyncValue.data(null);
       // Rafraîchir les données du wallet

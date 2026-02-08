@@ -132,8 +132,8 @@ class WalletController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'amount' => 'required|numeric|min:1000',
-            'payment_method' => 'required|in:bank,mobile_money,mtn_bj,moov_bj,wave',
-            'phone' => 'required_if:payment_method,mobile_money,mtn_bj,moov_bj,wave|string',
+            'payment_method' => 'required|in:bank,orange_ci,mtn_ci,moov_ci,wave',
+            'phone' => 'required_if:payment_method,orange_ci,mtn_ci,moov_ci,wave|string',
             'bank_details' => 'required_if:payment_method,bank|array',
             'bank_details.bank_code' => 'required_if:payment_method,bank|string',
             'bank_details.account_number' => 'required_if:payment_method,bank|string',
@@ -263,17 +263,17 @@ class WalletController extends Controller
     }
 
     /**
-     * Map payment method string to JekoPaymentMethod enum
+     * Map payment method string to JekoPaymentMethod enum (Côte d'Ivoire)
      */
     private function mapPaymentMethod(string $method): JekoPaymentMethod
     {
         return match ($method) {
-            'mtn_bj', 'mtn' => JekoPaymentMethod::MTN_BJ,
-            'moov_bj', 'moov' => JekoPaymentMethod::MOOV_BJ,
+            'orange_ci', 'orange' => JekoPaymentMethod::ORANGE_CI,
+            'mtn_ci', 'mtn' => JekoPaymentMethod::MTN_CI,
+            'moov_ci', 'moov' => JekoPaymentMethod::MOOV_CI,
             'wave' => JekoPaymentMethod::WAVE,
-            'mobile_money' => JekoPaymentMethod::MTN_BJ, // Default to MTN
             'bank' => JekoPaymentMethod::BANK_TRANSFER,
-            default => JekoPaymentMethod::MTN_BJ,
+            default => JekoPaymentMethod::ORANGE_CI, // Default to Orange CI
         };
     }
 

@@ -34,18 +34,43 @@ class WalletRepository {
   /// Demande de retrait
   Future<WithdrawResponse> requestWithdrawal({
     required double amount,
-    required String paymentMethod, // bank, mobile_money
+    required String paymentMethod, // wave, mtn, orange, moov, bank
     String? accountDetails,
+    String? phone,
+    String? pin,
   }) async {
     try {
+      // Mapper vers les codes Côte d'Ivoire
+      final mappedMethod = _mapPaymentMethodToCI(paymentMethod);
+      
       final response = await _dio.post('$_endpoint/withdraw', data: {
         'amount': amount,
-        'payment_method': paymentMethod,
+        'payment_method': mappedMethod,
         'account_details': accountDetails,
+        'phone': phone,
+        'pin': pin,
       });
       return WithdrawResponse.fromJson(response.data);
     } catch (e) {
       throw Exception('Failed to request withdrawal: $e');
+    }
+  }
+  
+  /// Mapper les méthodes de paiement vers les codes Côte d'Ivoire
+  String _mapPaymentMethodToCI(String method) {
+    switch (method) {
+      case 'orange':
+        return 'orange_ci';
+      case 'mtn':
+        return 'mtn_ci';
+      case 'moov':
+        return 'moov_ci';
+      case 'wave':
+        return 'wave';
+      case 'bank':
+        return 'bank';
+      default:
+        return method;
     }
   }
 
