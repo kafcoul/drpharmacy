@@ -207,14 +207,38 @@ class RegisterController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)],
             'pharmacy_name' => 'required|string|max:255',
             'pharmacy_license' => 'required|string|max:50',
-            // 'license_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120', // Moved to profile verification
+            'pharmacy_email' => 'nullable|string|email|max:255', // Email spécifique pour la pharmacie
+            'pharmacy_phone' => 'nullable|string|max:20', // Téléphone spécifique pour la pharmacie
             'pharmacy_address' => 'required|string',
             'city' => 'required|string',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-
             'device_name' => 'string',
         ]);
+
+        // Déterminer l'email et téléphone de la pharmacie
+        $pharmacyEmail = strtolower(trim($validated['pharmacy_email'] ?? $validated['email']));
+        $pharmacyPhone = $validated['pharmacy_phone'] ?? $validated['phone'];
+
+        // Vérifier l'unicité dans la table pharmacies
+        $existingPharmacy = \App\Models\Pharmacy::where('email', $pharmacyEmail)
+            ->orWhere('phone', $pharmacyPhone)
+            ->first();
+
+        if ($existingPharmacy) {
+            $conflicts = [];
+            if ($existingPharmacy->email === $pharmacyEmail) {
+                $conflicts['pharmacy_email'] = ['Cet email est déjà utilisé par une autre pharmacie.'];
+            }
+            if ($existingPharmacy->phone === $pharmacyPhone) {
+                $conflicts['pharmacy_phone'] = ['Ce téléphone est déjà utilisé par une autre pharmacie.'];
+            }
+            return response()->json([
+                'success' => false,
+                'message' => 'Une pharmacie existe déjà avec cet email ou téléphone.',
+                'errors' => $conflicts,
+            ], 422);
+        }
 
         DB::beginTransaction();
 
@@ -230,15 +254,14 @@ class RegisterController extends Controller
                 'role' => 'pharmacy',
             ]);
 
-            // Create pharmacy
+            // Create pharmacy avec email/phone potentiellement différents
             $pharmacy = \App\Models\Pharmacy::create([
                 'name' => $validated['pharmacy_name'],
-                'phone' => $validated['phone'],
-                'email' => $validated['email'],  // Déjà en minuscules
+                'phone' => $pharmacyPhone,
+                'email' => $pharmacyEmail,
                 'address' => $validated['pharmacy_address'],
                 'city' => $validated['city'],
                 'license_number' => $validated['pharmacy_license'],
-                // 'license_document' => $licensePath, // Moved to profile verification
                 'owner_name' => $validated['name'],
                 'latitude' => $validated['latitude'] ?? null,
                 'longitude' => $validated['longitude'] ?? null,
