@@ -167,6 +167,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/orders/{id}', [CustomerOrderController::class, 'show']);
         Route::get('/orders/{id}/delivery-waiting-status', [CustomerOrderController::class, 'deliveryWaitingStatus']);
         
+        // Chat avec le livreur (via delivery)
+        Route::get('/deliveries/{delivery}/chat', [\App\Http\Controllers\Api\ChatController::class, 'getMessages']);
+        Route::post('/deliveries/{delivery}/chat', [\App\Http\Controllers\Api\ChatController::class, 'sendMessage']);
+        Route::get('/deliveries/{delivery}/chat/unread', [\App\Http\Controllers\Api\ChatController::class, 'getUnreadCount']);
+        Route::post('/deliveries/{delivery}/chat/read', [\App\Http\Controllers\Api\ChatController::class, 'markAllAsRead']);
+        
         // Orders - Actions sensibles nécessitent téléphone vérifié et rate limiting
         Route::middleware(['verified.phone', 'throttle:orders'])->group(function () {
             Route::post('/orders', [CustomerOrderController::class, 'store']);
