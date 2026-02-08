@@ -13,10 +13,11 @@ class CalculateCommissionAction
 {
     /**
      * Calculer et distribuer les commissions pour une commande
+     * @param bool $skipCourier Pour les commandes cash, le coursier a déjà reçu ses gains via le système de livraison
      */
-    public function execute(Order $order): Commission
+    public function execute(Order $order, bool $skipCourier = false): Commission
     {
-        return DB::transaction(function () use ($order) {
+        return DB::transaction(function () use ($order, $skipCourier) {
             // Vérifier si la commande a déjà des commissions
             if ($order->commission) {
                 Log::info('Commission already calculated', ['order_id' => $order->id]);
@@ -32,7 +33,7 @@ class CalculateCommissionAction
             $totalAmount = $order->total_amount;
             $platformAmount = $totalAmount * $platformRate;
             $pharmacyAmount = $totalAmount * $pharmacyRate;
-            $courierAmount = $totalAmount * $courierRate;
+            $courierAmount = $skipCourier ? 0 : ($totalAmount * $courierRate);
 
             // Créer le record Commission
             $commission = Commission::create([
@@ -59,15 +60,18 @@ class CalculateCommissionAction
                     'rate' => $pharmacyRate,
                     'amount' => $pharmacyAmount,
                 ],
-                // Courier (si delivery existe)
-                [
+            ];
+
+            // Ajouter la ligne coursier seulement si pas skipCourier
+            if (!$skipCourier) {
+                $commissionLines[] = [
                     'commission_id' => $commission->id,
                     'actor_type' => 'App\Models\Courier',
                     'actor_id' => $order->delivery?->courier_id,
                     'rate' => $courierRate,
                     'amount' => $courierAmount,
-                ],
-            ];
+                ];
+            }
 
             foreach ($commissionLines as $lineData) {
                 CommissionLine::create($lineData);

@@ -38,7 +38,7 @@ class WalletController extends Controller
             'balance' => 0
         ]);
         
-        // Get recent transactions
+        // Get recent transactions (30 dernières pour l'affichage)
         $transactions = $wallet->transactions()
             ->latest()
             ->limit(30)
@@ -53,6 +53,10 @@ class WalletController extends Controller
                     'date' => $tx->created_at->format('d/m/Y H:i'),
                 ];
             });
+        
+        // Calculer le total des gains sur TOUTES les transactions (pas seulement les 30 dernières)
+        $totalEarnings = $wallet->transactions()->where('type', 'credit')->sum('amount');
+        $totalCommissionPaid = $wallet->transactions()->where('type', 'debit')->sum('amount');
             
         return response()->json([
             'status' => 'success',
@@ -60,8 +64,8 @@ class WalletController extends Controller
                 'balance' => $wallet->balance,
                 'currency' => $wallet->currency,
                 'transactions' => $transactions,
-                'total_earnings' => $transactions->where('type', 'credit')->sum('amount'),
-                'total_commission_paid' => $transactions->where('type', 'debit')->sum('amount'),
+                'total_earnings' => $totalEarnings,
+                'total_commission_paid' => $totalCommissionPaid,
             ]
         ]);
     }

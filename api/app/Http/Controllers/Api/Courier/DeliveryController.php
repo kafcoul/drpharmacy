@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Delivery;
 use App\Services\WalletService;
 use App\Services\WaitingFeeService;
+use App\Actions\CalculateCommissionAction;
 use App\Notifications\CourierArrivedNotification;
 use App\Notifications\OrderDeliveredToPharmacyNotification;
 use Illuminate\Http\Request;
@@ -16,7 +17,8 @@ class DeliveryController extends Controller
 {
     public function __construct(
         private WalletService $walletService,
-        private WaitingFeeService $waitingFeeService
+        private WaitingFeeService $waitingFeeService,
+        private CalculateCommissionAction $calculateCommission
     ) {}
 
     /**
@@ -485,6 +487,24 @@ class DeliveryController extends Controller
                         'pharmacy_id' => $pharmacy->id,
                         'order_id' => $delivery->order->id,
                     ]);
+                }
+
+                // 7. Calculer et distribuer les commissions pour la pharmacie (paiement cash)
+                // Pour les paiements cash, le paiement est confirmé à la livraison
+                // skipCourier=true car le coursier a déjà reçu ses gains via creditDeliveryEarning
+                if (in_array($delivery->order->payment_mode, ['cash', 'on_delivery'])) {
+                    try {
+                        $this->calculateCommission->execute($delivery->order, skipCourier: true);
+                        Log::info('Commissions calculées pour commande cash', [
+                            'order_id' => $delivery->order->id,
+                            'pharmacy_id' => $pharmacy?->id,
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Erreur calcul commissions cash', [
+                            'order_id' => $delivery->order->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
                 }
 
                 Log::info('Livraison validée avec succès', [
