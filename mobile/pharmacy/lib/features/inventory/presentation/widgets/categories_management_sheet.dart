@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/presentation/widgets/error_display.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/error_messages.dart';
 import '../providers/inventory_provider.dart';
 
@@ -71,9 +72,9 @@ class _CategoriesManagementSheetState extends ConsumerState<CategoriesManagement
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: AppColors.cardColor(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         children: [
@@ -87,16 +88,17 @@ class _CategoriesManagementSheetState extends ConsumerState<CategoriesManagement
                   'Gestion des Catégories',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: AppColors.textColor(context),
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: Icon(Icons.close, color: AppColors.textColor(context)),
                   onPressed: () => context.pop(),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1),
+          Divider(height: 1, color: AppColors.isDark(context) ? Colors.grey[700] : Colors.grey[300]),
 
           // List or creation form
           if (_isCreating)
@@ -110,31 +112,37 @@ class _CategoriesManagementSheetState extends ConsumerState<CategoriesManagement
                     children: [
                       Text(
                         'Nouvelle Catégorie',
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: AppColors.textColor(context),
+                        ),
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
                         controller: _nameController,
+                        style: TextStyle(color: AppColors.textColor(context)),
                         decoration: InputDecoration(
                           labelText: 'Nom de la catégorie',
+                          labelStyle: TextStyle(color: AppColors.textColor(context).withOpacity(0.7)),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Colors.grey[50],
+                          fillColor: AppColors.isDark(context) ? Colors.grey[800] : Colors.grey[50],
                         ),
                         validator: (v) => v == null || v.isEmpty ? 'Requis' : null,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _descController,
+                        style: TextStyle(color: AppColors.textColor(context)),
                         decoration: InputDecoration(
                           labelText: 'Description (optionnel)',
+                          labelStyle: TextStyle(color: AppColors.textColor(context).withOpacity(0.7)),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Colors.grey[50],
+                          fillColor: AppColors.isDark(context) ? Colors.grey[800] : Colors.grey[50],
                         ),
                         maxLines: 3,
                       ),
@@ -192,7 +200,7 @@ class _CategoriesManagementSheetState extends ConsumerState<CategoriesManagement
                   ? Center(
                       child: Text(
                         'Aucune catégorie définie',
-                        style: TextStyle(color: Colors.grey[600]),
+                        style: TextStyle(color: AppColors.textColor(context).withOpacity(0.6)),
                       ),
                     )
                   : ListView.separated(
@@ -204,8 +212,10 @@ class _CategoriesManagementSheetState extends ConsumerState<CategoriesManagement
                         final primaryColor = Theme.of(context).colorScheme.primary;
                         return Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border.all(color: Colors.grey[200]!),
+                            color: AppColors.cardColor(context),
+                            border: Border.all(
+                              color: AppColors.isDark(context) ? Colors.grey[700]! : Colors.grey[200]!,
+                            ),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: ListTile(
@@ -221,13 +231,19 @@ class _CategoriesManagementSheetState extends ConsumerState<CategoriesManagement
                             ),
                             title: Text(
                               cat.name,
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textColor(context),
+                              ),
                             ),
                             subtitle: cat.description != null && cat.description!.isNotEmpty
                                 ? Text(
                                     cat.description!,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: AppColors.textColor(context).withOpacity(0.7),
+                                    ),
                                   )
                                 : null,
                           ),

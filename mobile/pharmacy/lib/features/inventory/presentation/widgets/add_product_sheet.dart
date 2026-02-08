@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/presentation/widgets/ui_components.dart';
 import '../../../../core/presentation/widgets/error_display.dart';
@@ -207,9 +208,9 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
     final categories = inventoryState.categories;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: AppColors.cardColor(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom, // Pour le clavier
@@ -225,7 +226,7 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: AppColors.isDark(context) ? Colors.grey[600] : Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -235,7 +236,7 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
             child: Text(
               widget.productToEdit != null ? "Modifier Produit" : "Nouveau Produit", 
-              style: AppTextStyles.h2
+              style: AppTextStyles.h2.copyWith(color: AppColors.textColor(context)),
             ),
           ),
 
@@ -253,7 +254,7 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
                         width: 100,
                         height: 100,
                         decoration: BoxDecoration(
-                          color: Colors.grey[100],
+                          color: AppColors.isDark(context) ? Colors.grey[800] : Colors.grey[100],
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade800 : Colors.grey.shade200),
                           image: _imageBytes != null
@@ -276,7 +277,7 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
                     if (_imageBytes == null && widget.productToEdit?.imageUrl == null)
                        Padding(
                          padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
-                         child: Text("Ajouter une photo", style: AppTextStyles.bodySmall),
+                         child: Text("Ajouter une photo", style: AppTextStyles.bodySmall.copyWith(color: AppColors.textColor(context).withOpacity(0.7))),
                        ),
                      if (_imageBytes != null || widget.productToEdit?.imageUrl != null)
                         const SizedBox(height: 16),
@@ -284,8 +285,10 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
                     // Code Barre
                     TextFormField(
                       controller: _barcodeController,
+                      style: TextStyle(color: AppColors.textColor(context)),
                       decoration: InputDecoration(
                         labelText: 'Code Barre (Optionnel)',
+                        labelStyle: TextStyle(color: AppColors.textColor(context).withOpacity(0.7)),
                         prefixIcon: Icon(Icons.qr_code_rounded, color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade400 : Colors.grey.shade600),
                       ),
                     ),
@@ -294,8 +297,10 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
                     // Nom du produit
                     TextFormField(
                       controller: _nameController,
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: AppColors.textColor(context)),
+                      decoration: InputDecoration(
                         labelText: 'Nom du produit *',
+                        labelStyle: TextStyle(color: AppColors.textColor(context).withOpacity(0.7)),
                         hintText: 'Ex: Doliprane 1000mg',
                       ),
                       validator: (v) => v?.isEmpty ?? true ? 'Requis' : null,
@@ -308,12 +313,15 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
                       value: _categoryController.text.isNotEmpty ? _categoryController.text : null,
                       decoration: InputDecoration(
                         labelText: 'Catégorie *',
+                        labelStyle: TextStyle(color: AppColors.textColor(context).withOpacity(0.7)),
                         prefixIcon: Icon(Icons.category_outlined, color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade400 : Colors.grey.shade600),
                       ),
+                      dropdownColor: AppColors.cardColor(context),
+                      style: TextStyle(color: AppColors.textColor(context)),
                       items: categories.map((cat) {
                         return DropdownMenuItem(
                           value: cat.name,
-                          child: Text(cat.name),
+                          child: Text(cat.name, style: TextStyle(color: AppColors.textColor(context))),
                         );
                       }).toList(),
                       onChanged: (val) {
@@ -332,9 +340,11 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
                           flex: 3,
                           child: TextFormField(
                             controller: _priceController,
+                            style: TextStyle(color: AppColors.textColor(context)),
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Prix *',
+                              labelStyle: TextStyle(color: AppColors.textColor(context).withOpacity(0.7)),
                               suffixText: 'FCFA',
                             ),
                             validator: (v) => v?.isEmpty ?? true ? 'Requis' : null,
@@ -345,9 +355,11 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
                           flex: 2,
                           child: TextFormField(
                             controller: _stockController,
+                            style: TextStyle(color: AppColors.textColor(context)),
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Stock *',
+                              labelStyle: TextStyle(color: AppColors.textColor(context).withOpacity(0.7)),
                             ),
                             validator: (v) => v?.isEmpty ?? true ? 'Requis' : null,
                           ),
@@ -359,15 +371,15 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
                     // Toggle Ordonnance
                     Container(
                       decoration: BoxDecoration(
-                        color: Theme.of(context).scaffoldBackgroundColor,
+                        color: AppColors.backgroundColor(context),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade800 : Colors.grey.shade200),
                       ),
                       child: SwitchListTile(
                         value: _requiresPrescription,
                         onChanged: (val) => setState(() => _requiresPrescription = val),
-                        title: Text("Ordonnance Requise", style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
-                        subtitle: Text("Cochez si le produit nécessite une ordonnance", style: AppTextStyles.bodySmall),
+                        title: Text("Ordonnance Requise", style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600, color: AppColors.textColor(context))),
+                        subtitle: Text("Cochez si le produit nécessite une ordonnance", style: AppTextStyles.bodySmall.copyWith(color: AppColors.textColor(context).withOpacity(0.7))),
                         activeColor: Theme.of(context).colorScheme.primary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
@@ -375,10 +387,10 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
                     const SizedBox(height: 16),
                     
                     // --- SECTION DETAILS SUPPLEMENTAIRES ---
-                    const Divider(),
+                    Divider(color: AppColors.isDark(context) ? Colors.grey[700] : Colors.grey[300]),
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text("Détails Supplémentaires", style: AppTextStyles.h3),
+                      child: Text("Détails Supplémentaires", style: AppTextStyles.h3.copyWith(color: AppColors.textColor(context))),
                     ),
                     
                     // Brand & Manufacturer
@@ -386,12 +398,20 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
                       children: [
                         Expanded(child: TextFormField(
                           controller: _brandController,
-                          decoration: const InputDecoration(labelText: 'Marque'),
+                          style: TextStyle(color: AppColors.textColor(context)),
+                          decoration: InputDecoration(
+                            labelText: 'Marque',
+                            labelStyle: TextStyle(color: AppColors.textColor(context).withOpacity(0.7)),
+                          ),
                         )),
                         const SizedBox(width: 16),
                         Expanded(child: TextFormField(
                           controller: _manufacturerController,
-                          decoration: const InputDecoration(labelText: 'Fabricant'),
+                          style: TextStyle(color: AppColors.textColor(context)),
+                          decoration: InputDecoration(
+                            labelText: 'Fabricant',
+                            labelStyle: TextStyle(color: AppColors.textColor(context).withOpacity(0.7)),
+                          ),
                         )),
                       ],
                     ),
@@ -400,7 +420,11 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
                     // Active Ingredient
                     TextFormField(
                       controller: _activeIngredientController,
-                      decoration: const InputDecoration(labelText: 'Principe Actif'),
+                      style: TextStyle(color: AppColors.textColor(context)),
+                      decoration: InputDecoration(
+                        labelText: 'Principe Actif',
+                        labelStyle: TextStyle(color: AppColors.textColor(context).withOpacity(0.7)),
+                      ),
                     ),
                     const SizedBox(height: 16),
 
@@ -412,9 +436,14 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
                             value: ['pièce', 'boîte', 'flacon', 'tube', 'sachet', 'ampoule'].contains(_unitController.text) 
                                 ? _unitController.text 
                                 : 'pièce',
-                            decoration: const InputDecoration(labelText: 'Unité'),
+                            decoration: InputDecoration(
+                              labelText: 'Unité',
+                              labelStyle: TextStyle(color: AppColors.textColor(context).withOpacity(0.7)),
+                            ),
+                            dropdownColor: AppColors.cardColor(context),
+                            style: TextStyle(color: AppColors.textColor(context)),
                             items: ['pièce', 'boîte', 'flacon', 'tube', 'sachet', 'ampoule'].map((u) => DropdownMenuItem(
-                              value: u, child: Text(u)
+                              value: u, child: Text(u, style: TextStyle(color: AppColors.textColor(context)))
                             )).toList(),
                             onChanged: (v) => setState(() => _unitController.text = v!),
                           ),
@@ -435,7 +464,7 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
                               decoration: const InputDecoration(labelText: 'Date exp.'),
                               child: Text(
                                 _expiryDate != null ? "${_expiryDate!.day}/${_expiryDate!.month}/${_expiryDate!.year}" : "Choisir",
-                                style: TextStyle(color: _expiryDate != null ? Colors.black : Colors.grey),
+                                style: TextStyle(color: _expiryDate != null ? AppColors.textColor(context) : AppColors.textColor(context).withOpacity(0.5)),
                               ),
                             ),
                           ),
@@ -447,14 +476,22 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
                     // Instructions & Side Effects
                     TextFormField(
                       controller: _usageController,
+                      style: TextStyle(color: AppColors.textColor(context)),
                       maxLines: 2,
-                      decoration: const InputDecoration(labelText: 'Instructions d\'usage'),
+                      decoration: InputDecoration(
+                        labelText: 'Instructions d\'usage',
+                        labelStyle: TextStyle(color: AppColors.textColor(context).withOpacity(0.7)),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _sideEffectsController,
+                      style: TextStyle(color: AppColors.textColor(context)),
                       maxLines: 2,
-                      decoration: const InputDecoration(labelText: 'Effets secondaires'),
+                      decoration: InputDecoration(
+                        labelText: 'Effets secondaires',
+                        labelStyle: TextStyle(color: AppColors.textColor(context).withOpacity(0.7)),
+                      ),
                     ),
                     
                     const SizedBox(height: 32),
