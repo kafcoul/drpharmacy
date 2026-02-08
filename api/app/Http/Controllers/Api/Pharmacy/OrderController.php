@@ -178,6 +178,40 @@ class OrderController extends Controller
     }
 
     /**
+     * Mark order as delivered (customer pickup at pharmacy)
+     */
+    public function delivered(Request $request, $id)
+    {
+        $pharmacy = $request->user()->pharmacies()->approved()->first();
+
+        if (!$pharmacy) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Aucune pharmacie approuvée trouvée',
+            ], 403);
+        }
+
+        $order = $pharmacy->orders()->findOrFail($id);
+
+        if (!in_array($order->status, ['ready', 'ready_for_pickup'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cette commande ne peut pas être marquée comme livrée',
+            ], 400);
+        }
+
+        $order->update([
+            'status' => 'delivered',
+            'delivered_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Commande livrée avec succès',
+        ]);
+    }
+
+    /**
      * Add notes to an order
      */
     public function addNotes(Request $request, $id)

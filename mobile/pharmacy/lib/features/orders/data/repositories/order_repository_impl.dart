@@ -88,6 +88,19 @@ class OrderRepositoryImpl implements OrderRepository {
   }
 
   @override
+  Future<Either<Failure, void>> markOrderDelivered(int id) async {
+    if (await networkInfo.isConnected) {
+      try {
+        await remoteDataSource.markOrderDelivered(id);
+        return const Right(null);
+      } catch (e) {
+        return Left(ServerFailure(e.toString()));
+      }
+    }
+    return const Left(NetworkFailure('No internet connection'));
+  }
+
+  @override
   Future<Either<Failure, void>> addNotes(int id, String notes) async {
     if (await networkInfo.isConnected) {
       try {

@@ -204,6 +204,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/orders/{id}', [PharmacyOrderController::class, 'show']);
         Route::post('/orders/{id}/confirm', [PharmacyOrderController::class, 'confirm']);
         Route::post('/orders/{id}/ready', [PharmacyOrderController::class, 'ready']);
+        Route::post('/orders/{id}/delivered', [PharmacyOrderController::class, 'delivered']);
         Route::post('/orders/{id}/reject', [PharmacyOrderController::class, 'reject']);
         Route::post('/orders/{id}/notes', [PharmacyOrderController::class, 'addNotes']);
         Route::get('/orders/{id}/delivery-waiting-status', [PharmacyOrderController::class, 'deliveryWaitingStatus']);

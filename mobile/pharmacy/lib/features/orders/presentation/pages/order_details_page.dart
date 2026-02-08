@@ -348,15 +348,45 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
         child: SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            icon: const Icon(Icons.handshake),
-            label: const Text('Confirmer le Retrait Client'),
+            icon: _isLoading 
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  )
+                : const Icon(Icons.handshake),
+            label: Text(_isLoading ? 'Traitement...' : 'Confirmer le Retrait Client'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
-            onPressed: () {
-               ref.read(orderListProvider.notifier).updateOrderStatus(_order.id, 'delivered');
-               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Commande marquée comme livrée !')));
+            onPressed: _isLoading ? null : () async {
+              setState(() => _isLoading = true);
+              try {
+                await ref.read(orderListProvider.notifier).markOrderDelivered(_order.id);
+                setState(() {
+                  _order = _order.copyWith(status: 'delivered');
+                });
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Commande livrée avec succès !'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Erreur: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              } finally {
+                if (mounted) setState(() => _isLoading = false);
+              }
             },
           ),
         ),
