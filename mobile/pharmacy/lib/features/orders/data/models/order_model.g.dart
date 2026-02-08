@@ -47,7 +47,7 @@ Map<String, dynamic> _$OrderModelToJson(OrderModel instance) =>
 
 OrderItemModel _$OrderItemModelFromJson(Map<String, dynamic> json) =>
     OrderItemModel(
-      name: json['name'] as String,
+      name: _toString(json['name']),
       quantity: _toInt(json['quantity']),
       unitPrice: _toDouble(json['unit_price']),
       totalPrice: _toDouble(json['total_price']),

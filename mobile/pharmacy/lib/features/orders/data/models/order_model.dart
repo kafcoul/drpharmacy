@@ -37,6 +37,12 @@ int? _toIntNullable(dynamic value) {
   return null;
 }
 
+/// Convertit une valeur dynamique en String (gère null)
+String _toString(dynamic value) {
+  if (value == null) return 'Produit inconnu';
+  return value.toString();
+}
+
 @JsonSerializable()
 class OrderModel {
   final int id;
@@ -112,6 +118,7 @@ class OrderModel {
 
 @JsonSerializable()
 class OrderItemModel {
+  @JsonKey(fromJson: _toString)
   final String name;
   @JsonKey(fromJson: _toInt)
   final int quantity;

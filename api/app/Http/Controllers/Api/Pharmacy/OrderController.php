@@ -88,7 +88,7 @@ class OrderController extends Controller
                     'phone' => $order->customer->phone,
                 ],
                 'items' => $order->items->map(fn($item) => [
-                    'name' => $item->name,
+                    'name' => $item->product_name,
                     'quantity' => $item->quantity,
                     'unit_price' => $item->unit_price,
                     'total_price' => $item->total_price,
