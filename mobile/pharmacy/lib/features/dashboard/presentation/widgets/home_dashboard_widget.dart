@@ -398,7 +398,7 @@ class HomeDashboardWidget extends ConsumerWidget {
           if (isLoading)
             const Center(child: CircularProgressIndicator())
           else if (recentOrders.isEmpty)
-            _buildEmptyOrdersCard()
+            _buildEmptyOrdersCard(context, isDark)
           else
             ...recentOrders.map((order) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -416,9 +416,7 @@ class HomeDashboardWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyOrdersCard() {
-    final isDark = AppColors.isDark(context);
-    
+  Widget _buildEmptyOrdersCard(BuildContext context, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(

@@ -68,9 +68,10 @@ final supportSettingsProvider = FutureProvider<SupportSettings>((ref) async {
   
   try {
     final response = await apiClient.get('/support/settings');
+    final data = response.data;
     
-    if (response['success'] == true && response['data'] != null) {
-      return SupportSettings.fromJson(response['data']);
+    if (data['success'] == true && data['data'] != null) {
+      return SupportSettings.fromJson(data['data']);
     }
   } catch (e) {
     // En cas d'erreur, utiliser les valeurs par défaut

@@ -352,8 +352,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                               decoration: InputDecoration(
                                 hintText: 'Rechercher un produit...',
                                 hintStyle: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600]),
-                                hintStyle: const TextStyle(color: Colors.grey),
-                                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                                prefixIcon: Icon(Icons.search, color: isDark ? Colors.grey[500] : Colors.grey),
                                 suffixIcon: IconButton(
                                   onPressed: () => _startVoiceSearch(),
                                   icon: Icon(
