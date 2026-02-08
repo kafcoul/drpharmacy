@@ -6,7 +6,7 @@ class OrderListState {
   final OrderStatus status;
   final List<OrderEntity> orders;
   final String? errorMessage;
-  final String activeFilter; // 'pending', 'confirmed', 'ready', 'picked_up', 'cancelled'
+  final String activeFilter; // 'all', 'pending', 'confirmed', 'ready', 'picked_up', 'delivered', 'cancelled'
 
   const OrderListState({
     this.status = OrderStatus.initial,

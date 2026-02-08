@@ -94,6 +94,27 @@ class OrdersListPage extends ConsumerWidget {
                            onTap: () =>
                                ref.read(orderListProvider.notifier).setFilter('ready'),
                          ),
+                         const SizedBox(width: 12),
+                         _FilterChip(
+                           label: 'En livraison',
+                           isActive: state.activeFilter == 'picked_up',
+                           onTap: () =>
+                               ref.read(orderListProvider.notifier).setFilter('picked_up'),
+                         ),
+                         const SizedBox(width: 12),
+                         _FilterChip(
+                           label: 'Livrées',
+                           isActive: state.activeFilter == 'delivered',
+                           onTap: () =>
+                               ref.read(orderListProvider.notifier).setFilter('delivered'),
+                         ),
+                         const SizedBox(width: 12),
+                         _FilterChip(
+                           label: 'Annulées',
+                           isActive: state.activeFilter == 'cancelled',
+                           onTap: () =>
+                               ref.read(orderListProvider.notifier).setFilter('cancelled'),
+                         ),
                        ],
                      ),
                    ),
