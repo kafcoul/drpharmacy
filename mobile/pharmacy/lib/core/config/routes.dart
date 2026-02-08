@@ -12,6 +12,7 @@ import '../../features/profile/presentation/pages/help_support_page.dart';
 import '../../features/profile/presentation/pages/legal_page.dart';
 import '../../features/reports/presentation/pages/reports_dashboard_page.dart';
 import '../../features/inventory/presentation/pages/enhanced_scanner_page.dart';
+import '../../features/orders/presentation/pages/order_details_wrapper_page.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/auth/presentation/providers/state/auth_state.dart';
 import '../presentation/pages/splash_page.dart';
@@ -103,6 +104,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/scanner',
         builder: (context, state) => const EnhancedScannerPage(),
+      ),
+      GoRoute(
+        path: '/orders/:id',
+        builder: (context, state) {
+          final orderId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+          return OrderDetailsWrapperPage(orderId: orderId);
+        },
       ),
     ],
   );
