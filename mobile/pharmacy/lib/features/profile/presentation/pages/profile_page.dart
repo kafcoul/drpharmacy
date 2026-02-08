@@ -212,29 +212,34 @@ class ProfilePage extends ConsumerWidget {
   }
 
   Widget _buildProfileHeader(UserEntity user) {
-    return Column(
-      children: [
-        _buildAvatar(user),
-        const SizedBox(height: 12),
-        Text(
-          user.name,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          _getFormattedRoleAndLocation(user),
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w400,
-            color: Colors.grey[600],
-          ),
-        ),
-      ],
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Column(
+          children: [
+            _buildAvatar(user),
+            const SizedBox(height: 12),
+            Text(
+              user.name,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _getFormattedRoleAndLocation(user),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+                color: isDark ? Colors.grey[400] : Colors.grey[600],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -561,14 +566,15 @@ class ProfilePage extends ConsumerWidget {
 
 
   Widget _buildInfoSection(BuildContext context, UserEntity user) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? AppColors.darkCard : Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
-            boxShadow: [
+            border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
+            boxShadow: isDark ? null : [
               BoxShadow(
                 color: Colors.black.withOpacity(0.02),
                 blurRadius: 10,
@@ -580,13 +586,15 @@ class ProfilePage extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildContactRow(
+                context: context,
                 icon: Icons.email_outlined,
                 label: 'Email',
                 value: user.email,
                 onTap: () => _launchEmail(user.email),
               ),
-              Divider(height: 1, thickness: 1, color: Colors.grey.shade100, indent: 60),
+              Divider(height: 1, thickness: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade100, indent: 60),
               _buildContactRow(
+                context: context,
                 icon: Icons.phone_outlined,
                 label: 'Téléphone',
                 value: user.phone,
@@ -606,17 +614,17 @@ class ProfilePage extends ConsumerWidget {
                 ),
               );
             },
-            icon: Icon(Icons.edit_outlined, size: 14, color: Colors.grey[600]),
+            icon: Icon(Icons.edit_outlined, size: 14, color: isDark ? Colors.grey[400] : Colors.grey[600]),
             label: Text(
               'Modifier mes informations',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: Colors.grey[700],
+                color: isDark ? Colors.grey[400] : Colors.grey[700],
               ),
             ),
             style: OutlinedButton.styleFrom(
-              side: BorderSide(color: Colors.grey.shade300),
+              side: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -629,11 +637,13 @@ class ProfilePage extends ConsumerWidget {
   }
 
   Widget _buildContactRow({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required String value,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16), // Match container
@@ -644,11 +654,11 @@ class ProfilePage extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.grey[50],
+                color: isDark ? Colors.grey[800] : Colors.grey[50],
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: isDark ? Colors.grey.shade700 : Colors.grey.shade200),
               ),
-              child: Icon(icon, size: 18, color: Colors.grey[700]),
+              child: Icon(icon, size: 18, color: isDark ? Colors.grey[400] : Colors.grey[700]),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -659,17 +669,17 @@ class ProfilePage extends ConsumerWidget {
                     label,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[500],
+                      color: isDark ? Colors.grey[500] : Colors.grey[500],
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     value,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -677,7 +687,7 @@ class ProfilePage extends ConsumerWidget {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, size: 18, color: Colors.grey[300]),
+            Icon(Icons.chevron_right, size: 18, color: isDark ? Colors.grey[600] : Colors.grey[300]),
           ],
         ),
       ),
@@ -720,13 +730,14 @@ class ProfilePage extends ConsumerWidget {
   }
 
   Widget _buildPharmacyCard(BuildContext context, PharmacyEntity pharmacy) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.darkCard : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
+        border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
+        boxShadow: isDark ? null : [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
             blurRadius: 8,
@@ -751,7 +762,7 @@ class ProfilePage extends ConsumerWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.blueGrey.withOpacity(0.05),
+                      color: Colors.blueGrey.withOpacity(isDark ? 0.2 : 0.05),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.store_mall_directory_outlined, color: Colors.blueGrey, size: 22),
@@ -767,10 +778,10 @@ class ProfilePage extends ConsumerWidget {
                             Flexible(
                               child: Text(
                                 pharmacy.name,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
+                                  color: isDark ? Colors.white : Colors.black87,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -786,7 +797,7 @@ class ProfilePage extends ConsumerWidget {
                             padding: const EdgeInsets.only(bottom: 2),
                             child: Text(
                               pharmacy.address!,
-                              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                              style: TextStyle(fontSize: 13, color: isDark ? Colors.grey[400] : Colors.grey[600]),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -794,7 +805,7 @@ class ProfilePage extends ConsumerWidget {
                         if (pharmacy.city != null)
                           Text(
                             pharmacy.city!,
-                            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                            style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[500] : Colors.grey[500]),
                           ),
                       ],
                     ),
@@ -802,9 +813,9 @@ class ProfilePage extends ConsumerWidget {
                 ],
               ),
               
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 10),
-                child: Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Divider(height: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
               ),
 
               Row(

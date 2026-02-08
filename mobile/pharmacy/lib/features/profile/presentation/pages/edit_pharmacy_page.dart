@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../auth/domain/entities/pharmacy_entity.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/duty_zones_provider.dart';
@@ -147,6 +148,7 @@ class _EditPharmacyPageState extends ConsumerState<EditPharmacyPage> {
     final state = ref.watch(profileProvider);
     final isLoading = state.isLoading;
     final dutyZonesValue = ref.watch(dutyZonesProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Get the latest pharmacy data from auth provider
     final authState = ref.watch(authProvider);
@@ -157,12 +159,13 @@ class _EditPharmacyPageState extends ConsumerState<EditPharmacyPage> {
     ) ?? widget.pharmacy;
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: isDark ? AppColors.darkBackground : Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Gérer ma Pharmacie'),
+        title: Text('Gérer ma Pharmacie', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
         centerTitle: false,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+        foregroundColor: isDark ? Colors.white : Colors.black87,
+        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black87),
         elevation: 0.5,
       ),
       body: SingleChildScrollView(
@@ -172,20 +175,21 @@ class _EditPharmacyPageState extends ConsumerState<EditPharmacyPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSectionTitle('Informations Générales'),
+              _buildSectionTitle(context, 'Informations Générales'),
               const SizedBox(height: 16),
               Card(
                 elevation: 0,
-                color: Colors.white,
+                color: isDark ? AppColors.darkCard : Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.shade200),
+                  side: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
                       _buildTextField(
+                        context: context,
                         controller: _nameController,
                         label: 'Nom de la Pharmacie',
                         icon: Icons.store_mall_directory_outlined,
@@ -197,20 +201,21 @@ class _EditPharmacyPageState extends ConsumerState<EditPharmacyPage> {
               ),
               
               const SizedBox(height: 24),
-              _buildSectionTitle('Localisation'),
+              _buildSectionTitle(context, 'Localisation'),
               const SizedBox(height: 16),
               Card(
                 elevation: 0,
-                color: Colors.white,
+                color: isDark ? AppColors.darkCard : Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.shade200),
+                  side: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
                       _buildTextField(
+                        context: context,
                         controller: _cityController,
                         label: 'Ville / Quartier',
                         icon: Icons.location_city_outlined,
@@ -221,15 +226,20 @@ class _EditPharmacyPageState extends ConsumerState<EditPharmacyPage> {
                       dutyZonesValue.when(
                         data: (zones) => DropdownButtonFormField<int>(
                           value: _selectedDutyZoneId,
+                          dropdownColor: isDark ? AppColors.darkCard : Colors.white,
+                          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                           decoration: InputDecoration(
                             labelText: 'Zone de Garde',
-                            prefixIcon: const Icon(Icons.share_location_outlined, color: Colors.grey),
-                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            labelStyle: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey),
+                            prefixIcon: Icon(Icons.share_location_outlined, color: isDark ? Colors.grey[400] : Colors.grey),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            filled: true,
+                            fillColor: isDark ? Colors.grey[850] : Colors.grey[50],
                           ),
                           items: zones.map((zone) => DropdownMenuItem(
                             value: zone.id,
-                            child: Text(zone.name),
+                            child: Text(zone.name, style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
                           )).toList(),
                           onChanged: (val) {
                              setState(() => _selectedDutyZoneId = val);
@@ -241,6 +251,7 @@ class _EditPharmacyPageState extends ConsumerState<EditPharmacyPage> {
                       ),
                       const SizedBox(height: 16),
                       _buildTextField(
+                        context: context,
                         controller: _addressController,
                         label: 'Adresse exacte (ex: En face de la mairie)',
                         icon: Icons.map_outlined,
@@ -252,26 +263,28 @@ class _EditPharmacyPageState extends ConsumerState<EditPharmacyPage> {
                 ),
               ),
 
-              _buildSectionTitle('Documents & Vérification'),
+              _buildSectionTitle(context, 'Documents & Vérification'),
               const SizedBox(height: 16),
               Card(
                 elevation: 0,
-                color: Colors.white,
+                color: isDark ? AppColors.darkCard : Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.shade200),
+                  side: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
                       _buildTextField(
+                        context: context,
                         controller: _licenseNumberController,
                         label: 'Numéro de Licence',
                         icon: Icons.badge_outlined,
                       ),
                       const SizedBox(height: 16),
                       _buildFilePicker(
+                        context: context,
                         title: 'Document de Licence',
                         file: _licenseFile,
                         onTap: () => _pickFile(true),
@@ -279,6 +292,7 @@ class _EditPharmacyPageState extends ConsumerState<EditPharmacyPage> {
                       ),
                       const SizedBox(height: 16),
                       _buildFilePicker(
+                        context: context,
                         title: 'CNI / Pièce d\'Identité',
                         file: _idCardFile,
                         onTap: () => _pickFile(false),
@@ -290,20 +304,21 @@ class _EditPharmacyPageState extends ConsumerState<EditPharmacyPage> {
               ),
 
               const SizedBox(height: 24),
-              _buildSectionTitle('Contact'),
+              _buildSectionTitle(context, 'Contact'),
               const SizedBox(height: 16),
               Card(
                 elevation: 0,
-                color: Colors.white,
+                color: isDark ? AppColors.darkCard : Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.shade200),
+                  side: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
                       _buildTextField(
+                        context: context,
                         controller: _phoneController,
                         label: 'Téléphone',
                         icon: Icons.phone_outlined,
@@ -312,6 +327,7 @@ class _EditPharmacyPageState extends ConsumerState<EditPharmacyPage> {
                       ),
                       const SizedBox(height: 16),
                       _buildTextField(
+                        context: context,
                         controller: _emailController,
                         label: 'Email professionnel (Optionnel)',
                         icon: Icons.email_outlined,
@@ -355,18 +371,20 @@ class _EditPharmacyPageState extends ConsumerState<EditPharmacyPage> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(BuildContext context, String title) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.bold,
-        color: Colors.black87,
+        color: isDark ? Colors.white : Colors.black87,
       ),
     );
   }
 
   Widget _buildTextField({
+    required BuildContext context,
     required TextEditingController controller,
     required String label,
     required IconData icon,
@@ -374,67 +392,70 @@ class _EditPharmacyPageState extends ConsumerState<EditPharmacyPage> {
     String? Function(String?)? validator,
     int maxLines = 1,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       maxLines: maxLines,
       validator: validator,
-      style: const TextStyle(fontSize: 15),
+      style: TextStyle(fontSize: 15, color: isDark ? Colors.white : Colors.black87),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
-        prefixIcon: Icon(icon, color: Colors.grey[500], size: 22),
+        labelStyle: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600], fontSize: 14),
+        prefixIcon: Icon(icon, color: isDark ? Colors.grey[400] : Colors.grey[500], size: 22),
         contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
         ),
         filled: true,
-        fillColor: Colors.grey[50],
+        fillColor: isDark ? Colors.grey[850] : Colors.grey[50],
       ),
     );
   }
 
   Widget _buildFilePicker({
+    required BuildContext context,
     required String title,
     required XFile? file,
     required VoidCallback onTap,
     bool isUploaded = false,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
           borderRadius: BorderRadius.circular(12),
-          color: Colors.grey[50],
+          color: isDark ? Colors.grey[850] : Colors.grey[50],
         ),
         child: Row(
           children: [
             Icon(
               file != null ? Icons.check_circle : (isUploaded ? Icons.verified : Icons.upload_file),
-              color: file != null ? Colors.green : (isUploaded ? Colors.blue : Colors.grey),
+              color: file != null ? Colors.green : (isUploaded ? Colors.blue : (isDark ? Colors.grey[400] : Colors.grey)),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+                  Text(title, style: TextStyle(fontWeight: FontWeight.w500, color: isDark ? Colors.white : Colors.black87)),
                   Text(
                     file != null ? file.name : (isUploaded ? "Document reçu (Cliquez pour modifier)" : "Aucun fichier sélectionné"),
                     style: TextStyle(
-                      color: file != null ? Colors.green : Colors.grey[600],
+                      color: file != null ? Colors.green : (isDark ? Colors.grey[400] : Colors.grey[600]),
                       fontSize: 12,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -442,7 +463,7 @@ class _EditPharmacyPageState extends ConsumerState<EditPharmacyPage> {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.grey),
+            Icon(Icons.chevron_right, color: isDark ? Colors.grey[600] : Colors.grey),
           ],
         ),
       ),

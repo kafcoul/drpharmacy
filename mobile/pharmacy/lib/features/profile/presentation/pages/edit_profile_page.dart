@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../providers/profile_provider.dart';
 
@@ -67,12 +68,15 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
+      backgroundColor: isDark ? AppColors.darkBackground : Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Modifier mes informations'),
+        title: Text('Modifier mes informations', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
         elevation: 0.5,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+        foregroundColor: isDark ? Colors.white : Colors.black87,
+        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black87),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
@@ -82,6 +86,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildTextField(
+                context: context,
                 controller: _nameController,
                 label: 'Nom complet',
                 icon: Icons.person_outline,
@@ -89,6 +94,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
               ),
               const SizedBox(height: 20),
               _buildTextField(
+                context: context,
                 controller: _phoneController,
                 label: 'Téléphone',
                 icon: Icons.phone_outlined,
@@ -98,7 +104,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
               const SizedBox(height: 10),
               Text(
                 'L\'adresse email ne peut pas être modifiée ici.',
-                style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[500], fontSize: 12),
               ),
               const SizedBox(height: 40),
               SizedBox(
@@ -123,33 +129,37 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   }
 
   Widget _buildTextField({
+    required BuildContext context,
     required TextEditingController controller,
     required String label,
     required IconData icon,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
+      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: Colors.grey[600], size: 20),
+        labelStyle: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+        prefixIcon: Icon(icon, color: isDark ? Colors.grey[400] : Colors.grey[600], size: 20),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: isDark ? AppColors.darkCard : Colors.white,
       ),
     );
   }
