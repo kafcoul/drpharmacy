@@ -209,31 +209,78 @@ class OrderResource extends Resource
                     ]),
             ])
             ->actions([
+                // Assignation AUTOMATIQUE - trouve le meilleur livreur
+                Tables\Actions\Action::make('autoAssignCourier')
+                    ->label('🤖 Auto-Assigner')
+                    ->icon('heroicon-o-bolt')
+                    ->color('success')
+                    ->visible(fn ($record) => in_array($record->status, ['ready', 'ready_for_pickup', 'confirmed', 'preparing']) && !$record->delivery()->exists())
+                    ->requiresConfirmation()
+                    ->modalHeading('Assignation Automatique')
+                    ->modalDescription('Le système va trouver le meilleur livreur disponible à proximité de la pharmacie (basé sur distance, note et expérience).')
+                    ->modalSubmitActionLabel('Assigner automatiquement')
+                    ->action(function ($record) {
+                        $service = app(\App\Services\CourierAssignmentService::class);
+                        $delivery = $service->assignCourier($record);
+                        
+                        if ($delivery) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('✅ Livreur assigné automatiquement')
+                                ->body("Livreur: {$delivery->courier->name} ({$delivery->courier->vehicle_type})")
+                                ->success()
+                                ->send();
+                        } else {
+                            \Filament\Notifications\Notification::make()
+                                ->title('❌ Aucun livreur disponible')
+                                ->body('Aucun livreur disponible dans un rayon de 20km. Essayez l\'assignation manuelle.')
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+                    
+                // Assignation MANUELLE - l'admin choisit le livreur
                 Tables\Actions\Action::make('assignCourier')
-                    ->label('Assigner Livreur')
+                    ->label('👤 Assigner Manuellement')
                     ->icon('heroicon-o-truck')
                     ->color('info')
-                    ->visible(fn ($record) => in_array($record->status, ['ready_for_pickup', 'confirmed', 'preparing']) && !$record->delivery()->exists())
+                    ->visible(fn ($record) => in_array($record->status, ['ready', 'ready_for_pickup', 'confirmed', 'preparing']) && !$record->delivery()->exists())
                     ->form([
                         Forms\Components\Select::make('courier_id')
-                            ->label('Livreur Disponible')
+                            ->label('Choisir un Livreur')
                             ->options(fn () => \App\Models\Courier::where('status', 'available')
-                                ->select(DB::raw("CONCAT(name, ' (', vehicle_type, ')') as label"), 'id')
-                                ->pluck('label', 'id'))
+                                ->get()
+                                ->mapWithKeys(fn ($c) => [$c->id => "{$c->name} ({$c->vehicle_type}) - ⭐ {$c->rating}"]))
                             ->required()
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->helperText('Seuls les livreurs disponibles sont affichés'),
                     ])
                     ->action(function ($record, array $data) {
                         $courier = \App\Models\Courier::find($data['courier_id']);
                         if ($courier) {
                             $service = app(\App\Services\CourierAssignmentService::class);
-                            $service->assignSpecificCourier($record, $courier);
+                            $delivery = $service->assignSpecificCourier($record, $courier);
                             
-                            \Filament\Notifications\Notification::make()
-                                ->title('Livreur assigné avec succès')
-                                ->success()
-                                ->send();
+                            if ($delivery) {
+                                // Envoyer la notification au livreur
+                                try {
+                                    $courier->user->notify(new \App\Notifications\DeliveryAssignedNotification($delivery));
+                                } catch (\Exception $e) {
+                                    \Illuminate\Support\Facades\Log::error("Failed to notify courier: " . $e->getMessage());
+                                }
+                                
+                                \Filament\Notifications\Notification::make()
+                                    ->title('✅ Livreur assigné manuellement')
+                                    ->body("Livreur: {$courier->name} - Notification envoyée")
+                                    ->success()
+                                    ->send();
+                            } else {
+                                \Filament\Notifications\Notification::make()
+                                    ->title('❌ Erreur')
+                                    ->body('Impossible d\'assigner ce livreur')
+                                    ->danger()
+                                    ->send();
+                            }
                         }
                     }),
                 Tables\Actions\ViewAction::make(),
