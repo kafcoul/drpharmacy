@@ -37,15 +37,15 @@ class SupportSettings {
 
   factory SupportSettings.fromJson(Map<String, dynamic> json) {
     return SupportSettings(
-      supportPhone: json['support_phone'] ?? '+225 07 00 00 00 00',
+      supportPhone: json['support_phone'] ?? '+225 07 79 00 00 00',
       supportEmail: json['support_email'] ?? 'support@drpharma.ci',
-      supportWhatsapp: json['support_whatsapp'] ?? '+225 07 00 00 00 00',
+      supportWhatsapp: json['support_whatsapp'] ?? '+225 07 79 00 00 00',
       websiteUrl: json['website_url'] ?? 'https://drpharma.ci',
-      tutorialsUrl: json['tutorials_url'] ?? '',
-      guideUrl: json['guide_url'] ?? '',
-      faqUrl: json['faq_url'] ?? '',
-      termsUrl: json['terms_url'] ?? '',
-      privacyUrl: json['privacy_url'] ?? '',
+      tutorialsUrl: json['tutorials_url'] ?? 'https://www.youtube.com/@drpharma',
+      guideUrl: json['guide_url'] ?? 'https://drpharma.ci/guide',
+      faqUrl: json['faq_url'] ?? 'https://drpharma.ci/faq',
+      termsUrl: json['terms_url'] ?? 'https://drpharma.ci/terms',
+      privacyUrl: json['privacy_url'] ?? 'https://drpharma.ci/privacy',
     );
   }
 

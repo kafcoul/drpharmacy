@@ -16,15 +16,15 @@ class SupportSettingsController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'support_phone' => Setting::get('support_phone', '+225 07 00 00 00 00'),
+                'support_phone' => Setting::get('support_phone', '+225 07 79 00 00 00'),
                 'support_email' => Setting::get('support_email', 'support@drpharma.ci'),
-                'support_whatsapp' => Setting::get('support_whatsapp', '+225 07 00 00 00 00'),
+                'support_whatsapp' => Setting::get('support_whatsapp', '+225 07 79 00 00 00'),
                 'website_url' => Setting::get('website_url', 'https://drpharma.ci'),
-                'tutorials_url' => Setting::get('tutorials_url', ''),
-                'guide_url' => Setting::get('guide_url', ''),
-                'faq_url' => Setting::get('faq_url', ''),
-                'terms_url' => Setting::get('terms_url', ''),
-                'privacy_url' => Setting::get('privacy_url', ''),
+                'tutorials_url' => Setting::get('tutorials_url', 'https://www.youtube.com/@drpharma'),
+                'guide_url' => Setting::get('guide_url', 'https://drpharma.ci/guide'),
+                'faq_url' => Setting::get('faq_url', 'https://drpharma.ci/faq'),
+                'terms_url' => Setting::get('terms_url', 'https://drpharma.ci/terms'),
+                'privacy_url' => Setting::get('privacy_url', 'https://drpharma.ci/privacy'),
             ],
         ]);
     }
