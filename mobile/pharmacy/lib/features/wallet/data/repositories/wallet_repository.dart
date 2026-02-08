@@ -62,9 +62,9 @@ class WalletRepository {
       case 'orange':
         return 'orange';
       case 'mtn':
-        return 'mtn_ci';
+        return 'mtn';
       case 'moov':
-        return 'moov_ci';
+        return 'moov';
       case 'wave':
         return 'wave';
       case 'bank':

@@ -7,8 +7,8 @@ enum JekoPaymentMethod: string
     // Côte d'Ivoire - Codes Jeko
     case WAVE = 'wave';
     case ORANGE = 'orange';
-    case MTN_CI = 'mtn_ci';
-    case MOOV_CI = 'moov_ci';
+    case MTN = 'mtn';
+    case MOOV = 'moov';
     
     // Autres
     case BANK_TRANSFER = 'bank_transfer';
@@ -18,8 +18,8 @@ enum JekoPaymentMethod: string
         return match ($this) {
             self::WAVE => 'Wave',
             self::ORANGE => 'Orange Money',
-            self::MTN_CI => 'MTN Mobile Money',
-            self::MOOV_CI => 'Moov Money',
+            self::MTN => 'MTN Mobile Money',
+            self::MOOV => 'Moov Money',
             self::BANK_TRANSFER => 'Virement Bancaire',
         };
     }
@@ -29,8 +29,8 @@ enum JekoPaymentMethod: string
         return match ($this) {
             self::WAVE => 'wave',
             self::ORANGE => 'orange-money',
-            self::MTN_CI => 'mtn-momo',
-            self::MOOV_CI => 'moov-money',
+            self::MTN => 'mtn-momo',
+            self::MOOV => 'moov-money',
             self::BANK_TRANSFER => 'bank',
         };
     }
@@ -47,8 +47,8 @@ enum JekoPaymentMethod: string
     {
         return [
             self::ORANGE,
-            self::MTN_CI,
-            self::MOOV_CI,
+            self::MTN,
+            self::MOOV,
             self::WAVE,
             self::BANK_TRANSFER,
         ];
@@ -61,8 +61,8 @@ enum JekoPaymentMethod: string
     {
         return [
             self::ORANGE,
-            self::MTN_CI,
-            self::MOOV_CI,
+            self::MTN,
+            self::MOOV,
             self::WAVE,
         ];
     }
