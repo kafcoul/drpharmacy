@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/domain/entities/user_entity.dart';
@@ -19,6 +20,7 @@ class ProfilePage extends ConsumerWidget {
     final authState = ref.watch(authProvider);
     final user = authState.user;
     final primaryColor = Theme.of(context).colorScheme.primary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (user == null) {
       return const Scaffold(
@@ -27,7 +29,7 @@ class ProfilePage extends ConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: isDark ? AppColors.darkBackground : Colors.grey[50],
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -35,7 +37,7 @@ class ProfilePage extends ConsumerWidget {
             children: [
               // Header amélioré
               Container(
-                color: Colors.white,
+                color: isDark ? AppColors.darkSurface : Colors.white,
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
@@ -71,7 +73,7 @@ class ProfilePage extends ConsumerWidget {
                         const SizedBox(width: 16),
                         
                         // Titre
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -80,18 +82,18 @@ class ProfilePage extends ConsumerWidget {
                                 style: TextStyle(
                                   fontSize: 26,
                                   fontWeight: FontWeight.w800,
-                                  color: Colors.black87,
+                                  color: isDark ? Colors.white : Colors.black87,
                                   letterSpacing: -0.5,
                                   height: 1.2,
                                 ),
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Text(
                                 'Gérez votre compte et préférences',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.grey,
+                                  color: isDark ? Colors.grey.shade400 : Colors.grey,
                                 ),
                               ),
                             ],
@@ -104,7 +106,7 @@ class ProfilePage extends ConsumerWidget {
                           children: [
                             Container(
                               decoration: BoxDecoration(
-                                color: Colors.grey.shade100,
+                                color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
                                 shape: BoxShape.circle,
                               ),
                               child: IconButton(
@@ -114,7 +116,7 @@ class ProfilePage extends ConsumerWidget {
                                     return Badge(
                                       isLabelVisible: unreadCount > 0,
                                       label: Text(unreadCount.toString()),
-                                      child: const Icon(Icons.notifications_outlined, color: Colors.black87, size: 24),
+                                      child: Icon(Icons.notifications_outlined, color: isDark ? Colors.white : Colors.black87, size: 24),
                                     );
                                   },
                                 ),
@@ -152,7 +154,7 @@ class ProfilePage extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Infos Contact
-                    _buildSectionTitle('Coordonnées'),
+                    _buildSectionTitle('Coordonnées', isDark: isDark),
                     const SizedBox(height: 12),
                     _buildInfoSection(context, user),
 
@@ -160,19 +162,19 @@ class ProfilePage extends ConsumerWidget {
 
                     // Pharmacies
                     if (user.pharmacies.isNotEmpty) ...[
-                      _buildSectionTitle('Ma Pharmacie'),
+                      _buildSectionTitle('Ma Pharmacie', isDark: isDark),
                       const SizedBox(height: 12),
                       _buildPharmacyCard(context, user.pharmacies.first),
                     ] else if (user.role?.toLowerCase() == 'pharmacy') ...[
-                      _buildSectionTitle('Ma Pharmacie'),
+                      _buildSectionTitle('Ma Pharmacie', isDark: isDark),
                       const SizedBox(height: 12),
-                      _buildEmptyState(),
+                      _buildEmptyState(context),
                     ],
 
                     const SizedBox(height: 32),
 
                     // Section Paramètres & Outils
-                    _buildSectionTitle('Paramètres & Outils'),
+                    _buildSectionTitle('Paramètres & Outils', isDark: isDark),
                     const SizedBox(height: 12),
                     _buildSettingsSection(context),
 
@@ -236,37 +238,38 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, {bool isDark = false}) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.bold,
-          color: Colors.black87,
+          color: isDark ? Colors.white : Colors.black87,
         ),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
+     final isDark = Theme.of(context).brightness == Brightness.dark;
      return Card(
         elevation: 0,
-        color: Colors.grey[50],
+        color: isDark ? AppColors.darkCard : Colors.grey[50],
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.grey[200]!)
+            side: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey[200]!)
         ),
-        child: const Padding(
-          padding: EdgeInsets.all(24.0),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             children: [
-               Icon(Icons.store_mall_directory_outlined, size: 48, color: Colors.grey),
-               SizedBox(height: 12),
+               Icon(Icons.store_mall_directory_outlined, size: 48, color: isDark ? Colors.grey.shade600 : Colors.grey),
+               const SizedBox(height: 12),
                Text(
                 "Aucune pharmacie associée",
-                style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
+                style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey, fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -275,12 +278,13 @@ class ProfilePage extends ConsumerWidget {
   }
 
   Widget _buildSettingsSection(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.darkCard : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
+        border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
+        boxShadow: isDark ? null : [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
             blurRadius: 10,
@@ -298,7 +302,7 @@ class ProfilePage extends ConsumerWidget {
             subtitle: 'Statistiques de vente et performance',
             onTap: () => context.push('/reports'),
           ),
-          Divider(height: 1, thickness: 1, color: Colors.grey.shade100, indent: 60),
+          Divider(height: 1, thickness: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade100, indent: 60),
           _buildSettingsTile(
             context,
             icon: Icons.palette_outlined,
@@ -307,7 +311,7 @@ class ProfilePage extends ConsumerWidget {
             subtitle: 'Thème, couleurs et mode sombre',
             onTap: () => context.push('/appearance-settings'),
           ),
-          Divider(height: 1, thickness: 1, color: Colors.grey.shade100, indent: 60),
+          Divider(height: 1, thickness: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade100, indent: 60),
           _buildSettingsTile(
             context,
             icon: Icons.security_outlined,
@@ -316,7 +320,7 @@ class ProfilePage extends ConsumerWidget {
             subtitle: 'Mot de passe et connexion',
             onTap: () => context.push('/security-settings'),
           ),
-          Divider(height: 1, thickness: 1, color: Colors.grey.shade100, indent: 60),
+          Divider(height: 1, thickness: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade100, indent: 60),
           _buildSettingsTile(
             context,
             icon: Icons.notifications_outlined,
@@ -325,7 +329,7 @@ class ProfilePage extends ConsumerWidget {
             subtitle: 'Gérer vos alertes et préférences',
             onTap: () => context.push('/notification-settings'),
           ),
-          Divider(height: 1, thickness: 1, color: Colors.grey.shade100, indent: 60),
+          Divider(height: 1, thickness: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade100, indent: 60),
           _buildSettingsTile(
             context,
             icon: Icons.help_outline,
@@ -334,7 +338,7 @@ class ProfilePage extends ConsumerWidget {
             subtitle: 'FAQ, contact et ressources',
             onTap: () => context.push('/help-support'),
           ),
-          Divider(height: 1, thickness: 1, color: Colors.grey.shade100, indent: 60),
+          Divider(height: 1, thickness: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade100, indent: 60),
           _buildSettingsTile(
             context,
             icon: Icons.description_outlined,
@@ -343,7 +347,7 @@ class ProfilePage extends ConsumerWidget {
             subtitle: 'CGU et mentions légales',
             onTap: () => context.push('/terms'),
           ),
-          Divider(height: 1, thickness: 1, color: Colors.grey.shade100, indent: 60),
+          Divider(height: 1, thickness: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade100, indent: 60),
           _buildSettingsTile(
             context,
             icon: Icons.privacy_tip_outlined,
@@ -365,6 +369,7 @@ class ProfilePage extends ConsumerWidget {
     required String subtitle,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -387,10 +392,10 @@ class ProfilePage extends ConsumerWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -398,13 +403,13 @@ class ProfilePage extends ConsumerWidget {
                     subtitle,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[500],
+                      color: isDark ? Colors.grey.shade400 : Colors.grey[500],
                     ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, size: 20, color: Colors.grey[400]),
+            Icon(Icons.chevron_right, size: 20, color: isDark ? Colors.grey.shade600 : Colors.grey[400]),
           ],
         ),
       ),

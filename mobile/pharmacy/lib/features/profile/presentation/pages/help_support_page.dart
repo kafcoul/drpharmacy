@@ -204,22 +204,29 @@ class HelpSupportPage extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Signaler un problème',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
                     ),
                     Text(
                       'Aidez-nous à améliorer l\'application',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey.shade600,
+                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                       ),
                     ),
                   ],
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.arrow_forward_ios, size: 16),
+                icon: Icon(
+                  Icons.arrow_forward_ios, 
+                  size: 16,
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                ),
                 onPressed: () => _showReportBugDialog(context, settings),
               ),
             ],
@@ -254,9 +261,9 @@ class HelpSupportPage extends ConsumerWidget {
         ),
         Container(
           decoration: BoxDecoration(
-            color: isDark ? Colors.grey.shade900 : Colors.white,
+            color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [
+            boxShadow: isDark ? null : [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
                 blurRadius: 10,
@@ -298,6 +305,7 @@ class HelpSupportPage extends ConsumerWidget {
     required String question,
     required String answer,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ExpansionTile(
       tilePadding: const EdgeInsets.symmetric(horizontal: 16),
       childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -312,7 +320,7 @@ class HelpSupportPage extends ConsumerWidget {
         Text(
           answer,
           style: TextStyle(
-            color: Colors.grey.shade600,
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
             fontSize: 14,
           ),
         ),

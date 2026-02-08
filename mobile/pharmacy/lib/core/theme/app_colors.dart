@@ -38,4 +38,91 @@ class AppColors {
   
   // Shadows
   static Color shadow = const Color(0xFF8D8D8D).withOpacity(0.08);
+
+  // Dark Theme Colors
+  static const Color darkBackground = Color(0xFF121212);
+  static const Color darkSurface = Color(0xFF1E1E1E);
+  static const Color darkCard = Color(0xFF2C2C2C);
+  static const Color darkTextPrimary = Color(0xFFFFFFFF);
+  static const Color darkTextSecondary = Color(0xFFB3B3B3);
+  static const Color darkDivider = Color(0xFF3D3D3D);
+  static const Color darkBorder = Color(0xFF4D4D4D);
+
+  // ==================== ADAPTIVE COLORS ====================
+  
+  /// Couleur de fond de carte adaptative (light/dark)
+  static Color cardColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? darkCard 
+        : Colors.white;
+  }
+
+  /// Couleur de fond de page adaptative
+  static Color backgroundColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? darkBackground 
+        : background;
+  }
+
+  /// Couleur de surface adaptative
+  static Color surfaceColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? darkSurface 
+        : surface;
+  }
+
+  /// Couleur de texte principale adaptative
+  static Color textColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? darkTextPrimary 
+        : textPrimary;
+  }
+
+  /// Couleur de texte secondaire adaptative
+  static Color textSecondaryColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? darkTextSecondary 
+        : textSecondary;
+  }
+
+  /// Couleur de texte légère (pour hints, placeholders)
+  static Color textLightColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? Colors.grey.shade500 
+        : Colors.grey.shade600;
+  }
+
+  /// Couleur de bordure adaptative
+  static Color borderColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? darkBorder 
+        : border;
+  }
+
+  /// Couleur de diviseur adaptative
+  static Color dividerColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? darkDivider 
+        : divider;
+  }
+
+  /// Couleur de fond d'input adaptative
+  static Color inputFillColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? darkCard 
+        : Colors.grey.shade100;
+  }
+
+  /// Couleur de fond hover/pressed adaptative
+  static Color hoverColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? Colors.white.withOpacity(0.05) 
+        : Colors.black.withOpacity(0.05);
+  }
+
+  /// Vérifie si le mode sombre est actif
+  static bool isDark(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark;
+  }
 }
+
