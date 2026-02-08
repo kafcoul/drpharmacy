@@ -17,6 +17,15 @@ ProductModel _$ProductModelFromJson(Map<String, dynamic> json) => ProductModel(
   barcode: json['barcode'] as String?,
   requiresPrescription: json['requires_prescription'] as bool,
   isAvailable: json['is_available'] as bool,
+  brand: json['brand'] as String?,
+  manufacturer: json['manufacturer'] as String?,
+  activeIngredient: json['active_ingredient'] as String?,
+  unit: json['unit'] as String?,
+  expiryDate: json['expiry_date'] == null
+      ? null
+      : DateTime.parse(json['expiry_date'] as String),
+  usageInstructions: json['usage_instructions'] as String?,
+  sideEffects: json['side_effects'] as String?,
 );
 
 Map<String, dynamic> _$ProductModelToJson(ProductModel instance) =>
@@ -31,4 +40,11 @@ Map<String, dynamic> _$ProductModelToJson(ProductModel instance) =>
       'barcode': instance.barcode,
       'requires_prescription': instance.requiresPrescription,
       'is_available': instance.isAvailable,
+      'brand': instance.brand,
+      'manufacturer': instance.manufacturer,
+      'active_ingredient': instance.activeIngredient,
+      'unit': instance.unit,
+      'expiry_date': instance.expiryDate?.toIso8601String(),
+      'usage_instructions': instance.usageInstructions,
+      'side_effects': instance.sideEffects,
     };

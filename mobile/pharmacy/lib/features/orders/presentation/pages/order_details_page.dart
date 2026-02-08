@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../domain/entities/order_entity.dart';
 import '../providers/order_list_provider.dart';
+import '../../../chat/presentation/pages/chat_page.dart';
 
 class OrderDetailsPage extends ConsumerStatefulWidget {
   final OrderEntity order;
@@ -114,6 +115,12 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
         // Status Card
         _buildStatusCard(),
         const SizedBox(height: 16),
+
+        // Courier Info (if assigned)
+        if (_order.courierId != null) ...[
+          _buildCourierCard(),
+          const SizedBox(height: 16),
+        ],
 
         // Customer Info
         _buildSectionCard(
@@ -244,6 +251,81 @@ class _OrderDetailsPageState extends ConsumerState<OrderDetailsPage> {
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCourierCard() {
+    return Card(
+      color: Colors.orange.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Colors.orange,
+                  radius: 20,
+                  child: const Icon(Icons.delivery_dining, color: Colors.white),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Livreur assigné',
+                        style: TextStyle(fontSize: 12, color: Colors.orange),
+                      ),
+                      Text(
+                        _order.courierName ?? 'Coursier',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      if (_order.courierPhone != null)
+                        Text(
+                          _order.courierPhone!,
+                          style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Chat button with courier
+            if (_order.deliveryId != null && _order.courierId != null)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.chat, size: 18),
+                  label: const Text('💬 Chat avec le livreur'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChatPage(
+                          deliveryId: _order.deliveryId!,
+                          participantType: 'courier',
+                          participantId: _order.courierId!,
+                          participantName: _order.courierName ?? 'Livreur',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
           ],
         ),
       ),

@@ -261,6 +261,12 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/stock-alerts', [\App\Http\Controllers\Api\Pharmacy\ReportsController::class, 'stockAlerts']);
             Route::get('/export', [\App\Http\Controllers\Api\Pharmacy\ReportsController::class, 'export']);
         });
+        
+        // Chat V2 (via delivery)
+        Route::get('/deliveries/{delivery}/chat', [\App\Http\Controllers\Api\ChatController::class, 'getMessages']);
+        Route::post('/deliveries/{delivery}/chat', [\App\Http\Controllers\Api\ChatController::class, 'sendMessage']);
+        Route::get('/deliveries/{delivery}/chat/unread', [\App\Http\Controllers\Api\ChatController::class, 'getUnreadCount']);
+        Route::post('/deliveries/{delivery}/chat/read', [\App\Http\Controllers\Api\ChatController::class, 'markAllAsRead']);
     });
     
     // Courier routes - Middleware 'courier' vérifie le profil coursier
@@ -307,6 +313,12 @@ Route::middleware('auth:sanctum')->group(function () {
         // Chat
         Route::get('/orders/{id}/messages', [\App\Http\Controllers\Api\Courier\ChatController::class, 'index']);
         Route::post('/orders/{id}/messages', [\App\Http\Controllers\Api\Courier\ChatController::class, 'store']);
+        
+        // Chat V2 (via delivery)
+        Route::get('/deliveries/{delivery}/chat', [\App\Http\Controllers\Api\ChatController::class, 'getMessages']);
+        Route::post('/deliveries/{delivery}/chat', [\App\Http\Controllers\Api\ChatController::class, 'sendMessage']);
+        Route::get('/deliveries/{delivery}/chat/unread', [\App\Http\Controllers\Api\ChatController::class, 'getUnreadCount']);
+        Route::post('/deliveries/{delivery}/chat/read', [\App\Http\Controllers\Api\ChatController::class, 'markAllAsRead']);
         
         // JEKO Payments
         // SECURITY V-003: Rate limiting - max 10 initiations de paiement par minute par utilisateur

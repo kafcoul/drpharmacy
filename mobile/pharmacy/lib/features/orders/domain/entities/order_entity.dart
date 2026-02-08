@@ -11,10 +11,16 @@ class OrderEntity {
   final DateTime createdAt;
   final String customerName;
   final String customerPhone;
+  final int? customerId;
   final int? itemsCount;
   final List<OrderItemEntity>? items;
   final double? deliveryFee;
   final double? subtotal;
+  // Delivery info
+  final int? deliveryId;
+  final int? courierId;
+  final String? courierName;
+  final String? courierPhone;
 
   const OrderEntity({
     required this.id,
@@ -25,6 +31,7 @@ class OrderEntity {
     required this.createdAt,
     required this.customerName,
     required this.customerPhone,
+    this.customerId,
     this.deliveryAddress,
     this.customerNotes,
     this.pharmacyNotes,
@@ -33,6 +40,10 @@ class OrderEntity {
     this.items,
     this.deliveryFee,
     this.subtotal,
+    this.deliveryId,
+    this.courierId,
+    this.courierName,
+    this.courierPhone,
   });
 
   OrderEntity copyWith({
@@ -48,10 +59,15 @@ class OrderEntity {
     DateTime? createdAt,
     String? customerName,
     String? customerPhone,
+    int? customerId,
     int? itemsCount,
     List<OrderItemEntity>? items,
     double? deliveryFee,
     double? subtotal,
+    int? deliveryId,
+    int? courierId,
+    String? courierName,
+    String? courierPhone,
   }) {
     return OrderEntity(
       id: id ?? this.id,
@@ -62,6 +78,7 @@ class OrderEntity {
       createdAt: createdAt ?? this.createdAt,
       customerName: customerName ?? this.customerName,
       customerPhone: customerPhone ?? this.customerPhone,
+      customerId: customerId ?? this.customerId,
       deliveryAddress: deliveryAddress ?? this.deliveryAddress,
       customerNotes: customerNotes ?? this.customerNotes,
       pharmacyNotes: pharmacyNotes ?? this.pharmacyNotes,
@@ -70,6 +87,10 @@ class OrderEntity {
       items: items ?? this.items,
       deliveryFee: deliveryFee ?? this.deliveryFee,
       subtotal: subtotal ?? this.subtotal,
+      deliveryId: deliveryId ?? this.deliveryId,
+      courierId: courierId ?? this.courierId,
+      courierName: courierName ?? this.courierName,
+      courierPhone: courierPhone ?? this.courierPhone,
     );
   }
 }

@@ -24,6 +24,7 @@ OrderModel _$OrderModelFromJson(Map<String, dynamic> json) => OrderModel(
       .toList(),
   deliveryFee: _toDoubleNullable(json['delivery_fee']),
   subtotal: _toDoubleNullable(json['subtotal']),
+  delivery: json['delivery'] as Map<String, dynamic>?,
 );
 
 Map<String, dynamic> _$OrderModelToJson(OrderModel instance) =>
@@ -43,6 +44,7 @@ Map<String, dynamic> _$OrderModelToJson(OrderModel instance) =>
       'items': instance.items,
       'delivery_fee': instance.deliveryFee,
       'subtotal': instance.subtotal,
+      'delivery': instance.delivery,
     };
 
 OrderItemModel _$OrderItemModelFromJson(Map<String, dynamic> json) =>

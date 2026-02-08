@@ -70,6 +70,8 @@ class OrderModel {
   final double? deliveryFee;
   @JsonKey(fromJson: _toDoubleNullable)
   final double? subtotal;
+  // Delivery info
+  final Map<String, dynamic>? delivery;
 
   const OrderModel({
     required this.id,
@@ -87,6 +89,7 @@ class OrderModel {
     this.items,
     this.deliveryFee,
     this.subtotal,
+    this.delivery,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) =>
@@ -95,6 +98,10 @@ class OrderModel {
   Map<String, dynamic> toJson() => _$OrderModelToJson(this);
 
   OrderEntity toEntity() {
+    // Extract delivery/courier info
+    final deliveryData = delivery;
+    final courierData = deliveryData?['courier'] as Map<String, dynamic>?;
+    
     return OrderEntity(
       id: id,
       reference: reference,
@@ -104,6 +111,7 @@ class OrderModel {
       createdAt: DateTime.parse(createdAt),
       customerName: customer['name'] ?? 'Inconnu',
       customerPhone: customer['phone'] ?? '',
+      customerId: _toIntNullable(customer['id']),
       deliveryAddress: deliveryAddress,
       customerNotes: customerNotes,
       pharmacyNotes: pharmacyNotes,
@@ -112,6 +120,10 @@ class OrderModel {
       items: items?.map((e) => e.toEntity()).toList(),
       deliveryFee: deliveryFee,
       subtotal: subtotal,
+      deliveryId: _toIntNullable(deliveryData?['id']),
+      courierId: _toIntNullable(courierData?['id']),
+      courierName: courierData?['name'] as String?,
+      courierPhone: courierData?['phone'] as String?,
     );
   }
 }
