@@ -422,7 +422,7 @@ class WalletService
         $commissionAmount = self::getCommissionAmount();
         
         if (!$wallet->hasSufficientBalance($commissionAmount)) {
-            throw new Exception('Solde insuffisant pour la commission. Veuillez recharger votre wallet.');
+            throw new Exception('Solde insuffisant. Veuillez recharger.');
         }
 
         $reference = 'COM-' . strtoupper(Str::random(8));

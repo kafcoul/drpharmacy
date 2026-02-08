@@ -451,7 +451,7 @@ class DeliveryController extends Controller
                 // Note: Idéalement on devrait aussi lock le wallet, mais walletService gère ses propres transactions.
                 // Ici on vérifie juste la condition métier avant d'engager les changements d'état.
                 if (!$this->walletService->canCompleteDelivery($courier)) {
-                    throw new \Exception('Solde insuffisant pour la commission (' . WalletService::getCommissionAmount() . ' FCFA). Veuillez recharger.', 402);
+                    throw new \Exception('Solde insuffisant. Veuillez recharger.', 402);
                 }
 
                 // 4. Mise à jour des états
