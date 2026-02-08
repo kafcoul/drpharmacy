@@ -7,6 +7,7 @@ use App\Models\Delivery;
 use App\Services\WalletService;
 use App\Services\WaitingFeeService;
 use App\Notifications\CourierArrivedNotification;
+use App\Notifications\OrderDeliveredToPharmacyNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -472,6 +473,19 @@ class DeliveryController extends Controller
                 }
 
                 $commissionTransaction = $this->walletService->deductCommission($courier, $delivery);
+
+                // 6. Notifier la pharmacie que la livraison est terminée
+                $pharmacy = $delivery->order->pharmacy;
+                if ($pharmacy && $pharmacy->user) {
+                    $pharmacy->user->notify(new OrderDeliveredToPharmacyNotification(
+                        $delivery->order,
+                        $delivery
+                    ));
+                    Log::info('Notification de livraison envoyée à la pharmacie', [
+                        'pharmacy_id' => $pharmacy->id,
+                        'order_id' => $delivery->order->id,
+                    ]);
+                }
 
                 Log::info('Livraison validée avec succès', [
                     'delivery_id' => $delivery->id,
