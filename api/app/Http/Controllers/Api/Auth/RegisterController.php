@@ -264,12 +264,20 @@ class RegisterController extends Controller
                         'id' => $user->id,
                         'name' => $user->name,
                         'email' => $user->email,
+                        'phone' => $user->phone,
                         'role' => $user->role,
-                    ],
-                    'pharmacy' => [
-                        'id' => $pharmacy->id,
-                        'name' => $pharmacy->name,
-                        'status' => $pharmacy->status,
+                        'pharmacies' => [
+                            [
+                                'id' => $pharmacy->id,
+                                'name' => $pharmacy->name,
+                                'address' => $pharmacy->address,
+                                'city' => $pharmacy->city,
+                                'phone' => $pharmacy->phone,
+                                'email' => $pharmacy->email,
+                                'status' => $pharmacy->status,
+                                'license_number' => $pharmacy->license_number,
+                            ]
+                        ],
                     ],
                     'token' => $token,
                 ],
