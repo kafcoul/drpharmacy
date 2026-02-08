@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
 import '../../data/models/wallet_data.dart';
+import '../../services/pdf_export_service.dart';
 import '../providers/wallet_provider.dart';
 
 class WalletScreen extends ConsumerStatefulWidget {
@@ -1246,22 +1247,9 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              const Icon(Icons.download_done_rounded, color: Colors.white),
-                              const SizedBox(width: 12),
-                              Text('Export $selectedFormat en cours...'),
-                            ],
-                          ),
-                          backgroundColor: const Color(0xFF6C63FF),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      );
+                      await _performExport(selectedFormat, selectedPeriod);
                     },
                     icon: const Icon(Icons.download_rounded),
                     label: Text('Exporter en $selectedFormat'),
@@ -1304,6 +1292,100 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
         ),
       ),
     );
+  }
+
+  /// Effectue l'export dans le format sélectionné
+  Future<void> _performExport(String format, String period) async {
+    final walletAsync = ref.read(walletProvider);
+    
+    walletAsync.whenData((wallet) async {
+      try {
+        // Afficher le loading
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                ),
+                const SizedBox(width: 12),
+                Text('Génération du $format en cours...'),
+              ],
+            ),
+            backgroundColor: const Color(0xFF6C63FF),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+
+        if (format == 'PDF') {
+          final pdfData = await PdfExportService.generateStatement(
+            wallet: wallet,
+            pharmacyName: 'Ma Pharmacie', // TODO: Récupérer le vrai nom
+            period: period,
+          );
+          
+          // Partager le PDF
+          await PdfExportService.sharePdf(pdfData, 'releve_drpharma_${DateTime.now().millisecondsSinceEpoch}.pdf');
+          
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.check_circle_rounded, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('PDF généré avec succès!'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        } else {
+          // Pour Excel et CSV, afficher un message "à venir"
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Text('Export $format bientôt disponible'),
+                ],
+              ),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline_rounded, color: Colors.white),
+                const SizedBox(width: 12),
+                Text('Erreur: ${e.toString()}'),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    });
   }
 
   void _showStatisticsSheet(BuildContext context, WalletData wallet) {
