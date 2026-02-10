@@ -36,6 +36,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscureConfirmPassword = true;
   int _currentStep = 0;
 
+  // Erreurs par champ
+  Map<String, String?> _fieldErrors = {};
+  String? _generalError;
+
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -133,17 +137,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
     
+    // Réinitialiser les erreurs
+    setState(() {
+      _fieldErrors = {};
+      _generalError = null;
+    });
+    
     // Vérifier les documents obligatoires (recto ET verso)
     if (_idCardFrontImage == null) {
-      _showError('Veuillez télécharger le RECTO de votre pièce d\'identité');
+      setState(() => _fieldErrors['id_card_front'] = 'Veuillez télécharger le RECTO de votre pièce d\'identité');
       return;
     }
     if (_idCardBackImage == null) {
-      _showError('Veuillez télécharger le VERSO de votre pièce d\'identité');
+      setState(() => _fieldErrors['id_card_back'] = 'Veuillez télécharger le VERSO de votre pièce d\'identité');
       return;
     }
     if (_selfieImage == null) {
-      _showError('Veuillez prendre un selfie de vérification');
+      setState(() => _fieldErrors['selfie'] = 'Veuillez prendre un selfie de vérification');
       return;
     }
 
@@ -169,10 +179,54 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         _showSuccessDialog();
       }
     } catch (e) {
-      _showError(e.toString().replaceAll('Exception:', '').trim());
+      if (mounted) {
+        _parseAndShowErrors(e.toString());
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _parseAndShowErrors(String error) {
+    final errorMessage = error.replaceAll('Exception:', '').trim();
+    final errorLower = errorMessage.toLowerCase();
+    
+    setState(() {
+      // Parser les erreurs et les associer aux champs
+      if (errorLower.contains('email') && (errorLower.contains('existe') || errorLower.contains('taken') || errorLower.contains('already'))) {
+        _fieldErrors['email'] = 'Cet email est déjà utilisé';
+        _currentStep = 0; // Retourner à l'étape des infos personnelles
+      } else if (errorLower.contains('email') && errorLower.contains('invalid')) {
+        _fieldErrors['email'] = 'Format d\'email invalide';
+        _currentStep = 0;
+      } else if (errorLower.contains('phone') || errorLower.contains('téléphone')) {
+        if (errorLower.contains('existe') || errorLower.contains('taken') || errorLower.contains('already')) {
+          _fieldErrors['phone'] = 'Ce numéro est déjà utilisé';
+        } else {
+          _fieldErrors['phone'] = 'Numéro de téléphone invalide';
+        }
+        _currentStep = 0;
+      } else if (errorLower.contains('password') || errorLower.contains('mot de passe')) {
+        _fieldErrors['password'] = errorMessage;
+        _currentStep = 0;
+      } else if (errorLower.contains('name') || errorLower.contains('nom')) {
+        _fieldErrors['name'] = errorMessage;
+        _currentStep = 0;
+      } else if (errorLower.contains('vehicle') || errorLower.contains('véhicule') || errorLower.contains('immatriculation')) {
+        _fieldErrors['vehicle'] = errorMessage;
+        _currentStep = 1;
+      } else if (errorLower.contains('license') || errorLower.contains('permis')) {
+        _fieldErrors['license'] = errorMessage;
+        _currentStep = 1;
+      } else if (errorLower.contains('document') || errorLower.contains('image') || errorLower.contains('photo')) {
+        _fieldErrors['documents'] = errorMessage;
+        _currentStep = 2;
+      } else if (errorMessage.contains('DioException') || errorMessage.contains('SocketException')) {
+        _generalError = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+      } else {
+        _generalError = errorMessage;
+      }
+    });
   }
 
   void _showError(String message) {
@@ -338,10 +392,34 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget _buildPersonalInfoStep() {
     return Column(
       children: [
+        // Erreur générale
+        if (_generalError != null)
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.red.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _generalError!,
+                    style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
         _buildTextField(
           controller: _nameController,
           label: 'Nom complet',
           icon: Icons.person_outline,
+          fieldKey: 'name',
           validator: (value) => value!.isEmpty ? 'Entrez votre nom' : null,
         ),
         const SizedBox(height: 16),
@@ -349,6 +427,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           controller: _emailController,
           label: 'Email',
           icon: Icons.email_outlined,
+          fieldKey: 'email',
           keyboardType: TextInputType.emailAddress,
           validator: (value) {
             if (value!.isEmpty) return 'Entrez votre email';
@@ -361,6 +440,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           controller: _phoneController,
           label: 'Téléphone',
           icon: Icons.phone_outlined,
+          fieldKey: 'phone',
           keyboardType: TextInputType.phone,
           validator: (value) => value!.isEmpty ? 'Entrez votre téléphone' : null,
         ),
@@ -369,6 +449,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           controller: _passwordController,
           label: 'Mot de passe',
           icon: Icons.lock_outline,
+          fieldKey: 'password',
           obscureText: _obscurePassword,
           suffixIcon: IconButton(
             icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
@@ -385,6 +466,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           controller: _confirmPasswordController,
           label: 'Confirmer mot de passe',
           icon: Icons.lock_outline,
+          fieldKey: 'confirm_password',
           obscureText: _obscureConfirmPassword,
           suffixIcon: IconButton(
             icon: Icon(_obscureConfirmPassword ? Icons.visibility : Icons.visibility_off),
@@ -403,6 +485,29 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Erreur sur le véhicule
+        if (_fieldErrors['vehicle'] != null)
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.red.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _fieldErrors['vehicle']!,
+                    style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
         const Text(
           'Type de véhicule',
           style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
@@ -437,6 +542,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           controller: _vehicleRegistrationController,
           label: 'Immatriculation du véhicule',
           icon: Icons.badge_outlined,
+          fieldKey: 'vehicle_registration',
           validator: (value) => value!.isEmpty ? 'Entrez l\'immatriculation' : null,
         ),
         const SizedBox(height: 16),
@@ -444,6 +550,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           controller: _licenseNumberController,
           label: 'Numéro de permis (optionnel pour vélo)',
           icon: Icons.credit_card_outlined,
+          fieldKey: 'license',
         ),
       ],
     );
@@ -453,6 +560,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Erreur sur les documents
+        if (_fieldErrors['documents'] != null || _fieldErrors['id_card_front'] != null || 
+            _fieldErrors['id_card_back'] != null || _fieldErrors['selfie'] != null)
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.red.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _fieldErrors['documents'] ?? 
+                    _fieldErrors['id_card_front'] ?? 
+                    _fieldErrors['id_card_back'] ?? 
+                    _fieldErrors['selfie'] ?? '',
+                    style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
         const Text(
           'Pour vérifier votre identité, nous avons besoin des documents suivants :',
           style: TextStyle(color: Colors.grey, height: 1.5),
@@ -465,8 +599,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           subtitle: 'Face avant de votre CNI',
           icon: Icons.badge,
           image: _idCardFrontImage,
-          onTap: () => _showImagePickerDialog('id_card_front', 'CNI (Recto)'),
+          onTap: () {
+            if (_fieldErrors['id_card_front'] != null) {
+              setState(() => _fieldErrors.remove('id_card_front'));
+            }
+            _showImagePickerDialog('id_card_front', 'CNI (Recto)');
+          },
           isRequired: true,
+          hasError: _fieldErrors['id_card_front'] != null,
         ),
         const SizedBox(height: 16),
         
@@ -476,8 +616,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           subtitle: 'Face arrière de votre CNI',
           icon: Icons.badge_outlined,
           image: _idCardBackImage,
-          onTap: () => _showImagePickerDialog('id_card_back', 'CNI (Verso)'),
+          onTap: () {
+            if (_fieldErrors['id_card_back'] != null) {
+              setState(() => _fieldErrors.remove('id_card_back'));
+            }
+            _showImagePickerDialog('id_card_back', 'CNI (Verso)');
+          },
           isRequired: true,
+          hasError: _fieldErrors['id_card_back'] != null,
         ),
         const SizedBox(height: 16),
         
@@ -487,8 +633,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           subtitle: 'Prenez une photo de vous tenant votre pièce d\'identité',
           icon: Icons.camera_front,
           image: _selfieImage,
-          onTap: () => _showImagePickerDialog('selfie', 'Selfie de vérification'),
+          onTap: () {
+            if (_fieldErrors['selfie'] != null) {
+              setState(() => _fieldErrors.remove('selfie'));
+            }
+            _showImagePickerDialog('selfie', 'Selfie de vérification');
+          },
           isRequired: true,
+          hasError: _fieldErrors['selfie'] != null,
         ),
         const SizedBox(height: 16),
         
@@ -542,33 +694,52 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     required TextEditingController controller,
     required String label,
     required IconData icon,
+    String? fieldKey,
     TextInputType keyboardType = TextInputType.text,
     bool obscureText = false,
     Widget? suffixIcon,
     String? Function(String?)? validator,
   }) {
+    final hasError = fieldKey != null && _fieldErrors[fieldKey] != null;
+    final errorText = fieldKey != null ? _fieldErrors[fieldKey] : null;
+    
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
       validator: validator,
+      onChanged: (_) {
+        if (fieldKey != null && _fieldErrors[fieldKey] != null) {
+          setState(() => _fieldErrors.remove(fieldKey));
+        }
+      },
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
+        prefixIcon: Icon(icon, color: hasError ? Colors.red : null),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: Colors.white,
+        fillColor: hasError ? Colors.red.shade50 : Colors.white,
+        errorText: errorText,
+        errorStyle: TextStyle(color: Colors.red.shade700, fontSize: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: hasError ? Colors.red.shade300 : Colors.grey.shade300),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.blue, width: 2),
+          borderSide: BorderSide(color: hasError ? Colors.red : Colors.blue, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.red.shade300),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
         ),
       ),
     );
@@ -636,6 +807,7 @@ class _DocumentUploadCard extends StatelessWidget {
   final File? image;
   final VoidCallback onTap;
   final bool isRequired;
+  final bool hasError;
 
   const _DocumentUploadCard({
     required this.title,
@@ -644,6 +816,7 @@ class _DocumentUploadCard extends StatelessWidget {
     required this.image,
     required this.onTap,
     this.isRequired = false,
+    this.hasError = false,
   });
 
   @override
@@ -656,10 +829,15 @@ class _DocumentUploadCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: hasImage ? Colors.green.shade50 : Colors.white,
+          color: hasError 
+              ? Colors.red.shade50 
+              : (hasImage ? Colors.green.shade50 : Colors.white),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: hasImage ? Colors.green : Colors.grey.shade300,
+            color: hasError 
+                ? Colors.red.shade300 
+                : (hasImage ? Colors.green : Colors.grey.shade300),
+            width: hasError ? 1.5 : 1,
           ),
         ),
         child: Row(
@@ -668,7 +846,9 @@ class _DocumentUploadCard extends StatelessWidget {
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                color: hasImage ? Colors.green.shade100 : Colors.grey.shade100,
+                color: hasError 
+                    ? Colors.red.shade100 
+                    : (hasImage ? Colors.green.shade100 : Colors.grey.shade100),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: hasImage
@@ -676,7 +856,11 @@ class _DocumentUploadCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                       child: Image.file(image!, fit: BoxFit.cover),
                     )
-                  : Icon(icon, color: Colors.grey.shade500, size: 28),
+                  : Icon(
+                      icon, 
+                      color: hasError ? Colors.red.shade400 : Colors.grey.shade500, 
+                      size: 28,
+                    ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -688,24 +872,32 @@ class _DocumentUploadCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           title,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: hasError ? Colors.red.shade700 : null,
+                          ),
                         ),
                       ),
                       if (hasImage)
-                        const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                        const Icon(Icons.check_circle, color: Colors.green, size: 20)
+                      else if (hasError)
+                        Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    subtitle,
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    hasError ? 'Ce document est requis' : subtitle,
+                    style: TextStyle(
+                      color: hasError ? Colors.red.shade600 : Colors.grey.shade600, 
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
             ),
             Icon(
               hasImage ? Icons.edit : Icons.add_a_photo,
-              color: hasImage ? Colors.green : Colors.blue,
+              color: hasError ? Colors.red : (hasImage ? Colors.green : Colors.blue),
             ),
           ],
         ),
