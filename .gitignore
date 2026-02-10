@@ -47,6 +47,9 @@ mobile/**/.packages
 mobile/**/pubspec.lock
 mobile/**/*.iml
 mobile/**/.idea/
+mobile/**/.env
+mobile/**/.env.*
+!mobile/**/.env.example
 mobile/**/android/.gradle/
 mobile/**/android/local.properties
 mobile/**/android/**/GeneratedPluginRegistrant.*
