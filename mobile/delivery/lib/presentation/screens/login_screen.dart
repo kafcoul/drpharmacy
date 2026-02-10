@@ -21,6 +21,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _obscurePassword = true;
   bool _biometricAvailable = false;
   bool _biometricEnabled = false;
+  
+  // Erreurs par champ
+  String? _emailError;
+  String? _passwordError;
+  String? _generalError;
 
   @override
   void initState() {
@@ -103,6 +108,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // Prevent double-tap / multiple submissions
     if (_isLoading) return;
     
+    // Réinitialiser les erreurs
+    setState(() {
+      _emailError = null;
+      _passwordError = null;
+      _generalError = null;
+    });
+    
     if (!_formKey.currentState!.validate()) return;
     
     setState(() => _isLoading = true);
@@ -127,25 +139,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             .replaceAll('Exception', '')
             .trim();
         
-        // Si le message est encore trop technique, utiliser un message générique
-        if (errorMessage.contains('DioException') || errorMessage.contains('SocketException')) {
-          errorMessage = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
-        }
+        // Parser les erreurs et les associer aux champs appropriés
+        final errorLower = errorMessage.toLowerCase();
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 8),
-                Expanded(child: Text(errorMessage)),
-              ],
-            ),
-            backgroundColor: Colors.red.shade700,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+        if (errorLower.contains('email') || errorLower.contains('identifiant') || 
+            errorLower.contains('utilisateur') || errorLower.contains('user') ||
+            errorLower.contains('phone') || errorLower.contains('téléphone')) {
+          setState(() => _emailError = errorMessage);
+        } else if (errorLower.contains('mot de passe') || errorLower.contains('password') ||
+                   errorLower.contains('credentials') || errorLower.contains('identifiants')) {
+          // Pour les erreurs d'identifiants, afficher sous les deux champs
+          setState(() {
+            _emailError = 'Identifiants incorrects';
+            _passwordError = 'Vérifiez votre mot de passe';
+          });
+        } else if (errorMessage.contains('DioException') || errorMessage.contains('SocketException')) {
+          setState(() => _generalError = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
+        } else {
+          // Erreur générale sous le formulaire
+          setState(() => _generalError = errorMessage);
+        }
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -247,29 +260,69 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                           const SizedBox(height: 30),
                           
+                          // Erreur générale (connexion serveur, etc.)
+                          if (_generalError != null)
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.red.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.red.shade200),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _generalError!,
+                                      style: TextStyle(
+                                        color: Colors.red.shade700,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          
                           // Identifier Field
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.text,
                             style: const TextStyle(fontSize: 16),
+                            onChanged: (_) {
+                              if (_emailError != null) setState(() => _emailError = null);
+                            },
                             decoration: InputDecoration(
                               labelText: 'Email ou Téléphone',
                               hintText: 'ex: +225 0102030405',
-                              prefixIcon: Icon(Icons.person_outline, color: primaryColor),
+                              prefixIcon: Icon(Icons.person_outline, color: _emailError != null ? Colors.red : primaryColor),
                               filled: true,
-                              fillColor: Colors.grey.shade50,
+                              fillColor: _emailError != null ? Colors.red.shade50 : Colors.grey.shade50,
                               contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                              errorText: _emailError,
+                              errorStyle: TextStyle(color: Colors.red.shade700, fontSize: 12),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide.none,
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey.shade200),
+                                borderSide: BorderSide(color: _emailError != null ? Colors.red.shade300 : Colors.grey.shade200),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: primaryColor, width: 1.5),
+                                borderSide: BorderSide(color: _emailError != null ? Colors.red : primaryColor, width: 1.5),
+                              ),
+                              errorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.red.shade300),
+                              ),
+                              focusedErrorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Colors.red, width: 1.5),
                               ),
                             ),
                             validator: (value) {
@@ -286,9 +339,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             controller: _passwordController,
                             obscureText: _obscurePassword,
                             style: const TextStyle(fontSize: 16),
+                            onChanged: (_) {
+                              if (_passwordError != null) setState(() => _passwordError = null);
+                            },
                             decoration: InputDecoration(
                               labelText: 'Mot de passe',
-                              prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
+                              prefixIcon: Icon(Icons.lock_outline, color: _passwordError != null ? Colors.red : primaryColor),
                               suffixIcon: IconButton(
                                 icon: Icon(
                                   _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
@@ -301,19 +357,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 },
                               ),
                               filled: true,
-                              fillColor: Colors.grey.shade50,
+                              fillColor: _passwordError != null ? Colors.red.shade50 : Colors.grey.shade50,
                               contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                              errorText: _passwordError,
+                              errorStyle: TextStyle(color: Colors.red.shade700, fontSize: 12),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide.none,
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey.shade200),
+                                borderSide: BorderSide(color: _passwordError != null ? Colors.red.shade300 : Colors.grey.shade200),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: primaryColor, width: 1.5),
+                                borderSide: BorderSide(color: _passwordError != null ? Colors.red : primaryColor, width: 1.5),
+                              ),
+                              errorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.red.shade300),
+                              ),
+                              focusedErrorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Colors.red, width: 1.5),
                               ),
                             ),
                             validator: (value) {
