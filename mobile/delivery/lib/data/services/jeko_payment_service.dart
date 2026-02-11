@@ -115,6 +115,33 @@ class JekoPaymentService {
 
   JekoPaymentService(this._repository);
 
+  /// Nettoyer les messages d'erreur pour l'affichage utilisateur
+  String _cleanErrorMessage(dynamic error) {
+    String message = error.toString();
+    
+    // Supprimer les préfixes "Exception:" répétés
+    while (message.startsWith('Exception: ')) {
+      message = message.substring(11);
+    }
+    
+    // Messages d'erreur user-friendly
+    if (message.contains('connexion') || message.contains('SocketException') || message.contains('XMLHttpRequest')) {
+      return 'Impossible de contacter le serveur. Vérifiez votre connexion internet.';
+    }
+    
+    if (message.contains('timeout') || message.contains('Timeout')) {
+      return 'La connexion a pris trop de temps. Veuillez réessayer.';
+    }
+    
+    if (message.contains('JEKO') || message.contains('paiement')) {
+      // Garder le message JEKO mais le rendre plus lisible
+      return message.replaceAll('Erreur lors de la création du paiement JEKO', 
+          'Impossible d\'initier le paiement. Veuillez réessayer.');
+    }
+    
+    return message.isNotEmpty ? message : 'Une erreur est survenue. Veuillez réessayer.';
+  }
+
   /// Initialiser l'écoute des deep links (appeler dans main.dart)
   static Future<void> initDeepLinks() async {
     final appLinks = AppLinks();
@@ -238,7 +265,7 @@ class JekoPaymentService {
     } catch (e) {
       status = status.copyWith(
         state: PaymentFlowState.failed,
-        errorMessage: e.toString(),
+        errorMessage: _cleanErrorMessage(e),
       );
       onStatusChange(status);
       return status;

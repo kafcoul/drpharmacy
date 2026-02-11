@@ -62,8 +62,7 @@ return [
         'return_url' => env('JEKO_RETURN_URL'),
         'error_url' => env('JEKO_ERROR_URL'),
         // Mode sandbox: true = simulation, false = production réelle
-        // Par défaut null = automatique (sandbox en local, production sinon)
-        'sandbox_mode' => env('JEKO_SANDBOX_MODE', null),
+        'sandbox_mode' => env('JEKO_SANDBOX_MODE', false) === true || env('JEKO_SANDBOX_MODE', 'false') === 'true',
         // Security: Whitelist IPs autorisées pour les webhooks
         // Laissez vide pour désactiver la vérification (dev), configurez en production
         'webhook_allowed_ips' => array_filter(explode(',', env('JEKO_WEBHOOK_IPS', ''))),

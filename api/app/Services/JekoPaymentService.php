@@ -579,16 +579,21 @@ class JekoPaymentService
     }
 
     /**
-     * Vérifier si on est en mode sandbox (clés JEKO non configurées)
+     * Vérifier si on est en mode sandbox (clés JEKO non configurées ou JEKO_SANDBOX_MODE=true)
      */
     private function isSandboxMode(): bool
     {
+        // Mode sandbox explicitement activé dans la config
+        if (config('services.jeko.sandbox_mode', false)) {
+            return true;
+        }
+        
         // En mode sandbox si les clés contiennent "your_" ou sont vides
         $placeholders = ['your_', 'xxx', 'test', 'placeholder'];
         
         foreach ($placeholders as $placeholder) {
-            if (str_contains(strtolower($this->apiKey), $placeholder) ||
-                str_contains(strtolower($this->storeId), $placeholder)) {
+            if (str_contains(strtolower($this->apiKey ?? ''), $placeholder) ||
+                str_contains(strtolower($this->storeId ?? ''), $placeholder)) {
                 return true;
             }
         }

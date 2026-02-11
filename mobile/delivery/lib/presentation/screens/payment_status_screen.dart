@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../core/utils/error_handler.dart';
 import '../../data/repositories/jeko_payment_repository.dart';
 import '../../data/services/jeko_payment_service.dart';
 
@@ -317,7 +318,9 @@ class _PaymentStatusScreenState extends ConsumerState<PaymentStatusScreen>
         break;
       case PaymentFlowState.failed:
         title = 'Paiement échoué';
-        subtitle = _status.errorMessage ?? 'Une erreur est survenue';
+        subtitle = _status.errorMessage != null 
+            ? ErrorHandler.cleanMessage(_status.errorMessage!) 
+            : 'Une erreur est survenue';
         break;
       case PaymentFlowState.timeout:
         title = 'Délai dépassé';
@@ -421,7 +424,9 @@ class _PaymentStatusScreenState extends ConsumerState<PaymentStatusScreen>
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              _status.errorMessage ?? 'Une erreur est survenue',
+              _status.errorMessage != null 
+                  ? ErrorHandler.cleanMessage(_status.errorMessage!)
+                  : 'Une erreur est survenue',
               style: TextStyle(color: Colors.red.shade800),
             ),
           ),

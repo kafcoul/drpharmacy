@@ -2,6 +2,24 @@ import 'package:dio/dio.dart';
 
 /// Classe utilitaire pour convertir les erreurs techniques en messages compréhensibles
 class ErrorHandler {
+  /// Nettoie un message d'erreur pour l'affichage utilisateur
+  /// Supprime les préfixes "Exception:" et rend le message plus lisible
+  static String cleanMessage(dynamic error) {
+    String message = error.toString();
+    
+    // Supprimer les préfixes "Exception:" répétés
+    while (message.startsWith('Exception: ')) {
+      message = message.substring(11);
+    }
+    
+    // Si le message est vide après nettoyage
+    if (message.trim().isEmpty) {
+      return 'Une erreur est survenue. Veuillez réessayer.';
+    }
+    
+    return message;
+  }
+
   /// Convertit une erreur Dio en message user-friendly
   static String getReadableMessage(dynamic error, {String? defaultMessage}) {
     if (error is DioException) {
@@ -23,7 +41,7 @@ class ErrorHandler {
       return 'La connexion a pris trop de temps. Veuillez réessayer.';
     }
     
-    return defaultMessage ?? 'Une erreur est survenue. Veuillez réessayer.';
+    return defaultMessage ?? cleanMessage(error);
   }
 
   static String _handleDioError(DioException error, {String? defaultMessage}) {
