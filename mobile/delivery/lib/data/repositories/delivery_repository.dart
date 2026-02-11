@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
+import '../../core/utils/error_handler.dart';
 import '../models/courier_profile.dart';
 import '../models/delivery.dart';
 import '../models/chat_message.dart';
@@ -25,7 +26,7 @@ class DeliveryRepository {
       final data = response.data['data'] as List;
       return data.map((e) => Delivery.fromJson(e)).toList();
     } catch (e) {
-      throw Exception('Failed to fetch deliveries: $e');
+      throw Exception(ErrorHandler.getDeliveryErrorMessage(e));
     }
   }
 
@@ -33,7 +34,7 @@ class DeliveryRepository {
     try {
       await _dio.post(ApiConstants.acceptDelivery(id));
     } catch (e) {
-      throw Exception('Failed to accept delivery: $e');
+      throw Exception(ErrorHandler.getDeliveryErrorMessage(e));
     }
   }
 
@@ -64,7 +65,7 @@ class DeliveryRepository {
         data: {'confirmation_code': code},
       );
     } catch (e) {
-      throw Exception('Failed to complete delivery: $e');
+      throw Exception(ErrorHandler.getDeliveryErrorMessage(e));
     }
   }
 
@@ -104,7 +105,7 @@ class DeliveryRepository {
         data: {'latitude': latitude, 'longitude': longitude},
       );
     } catch (e) {
-      throw Exception('Failed to update location: $e');
+      throw Exception(ErrorHandler.getReadableMessage(e, defaultMessage: 'Impossible de mettre à jour la position.'));
     }
   }
 
@@ -140,7 +141,7 @@ class DeliveryRepository {
       final data = response.data['data'] as List;
       return data.map((e) => ChatMessage.fromJson(e)).toList();
     } catch (e) {
-      throw Exception('Failed to fetch messages: $e');
+      throw Exception(ErrorHandler.getChatErrorMessage(e));
     }
   }
 
@@ -155,7 +156,7 @@ class DeliveryRepository {
       );
       return ChatMessage.fromJson(response.data['data']);
     } catch (e) {
-      throw Exception('Failed to send message: $e');
+      throw Exception(ErrorHandler.getChatErrorMessage(e));
     }
   }
 
@@ -168,10 +169,7 @@ class DeliveryRepository {
       );
       return response.data['data'];
     } catch (e) {
-      if (e is DioException) {
-        throw Exception(e.response?.data['message'] ?? 'Erreur lors de l\'acceptation');
-      }
-      throw Exception('Failed to batch accept deliveries: $e');
+      throw Exception(ErrorHandler.getDeliveryErrorMessage(e));
     }
   }
 
@@ -181,7 +179,7 @@ class DeliveryRepository {
       final response = await _dio.get(ApiConstants.deliveriesRoute);
       return response.data['data'];
     } catch (e) {
-      throw Exception('Failed to get optimized route: $e');
+      throw Exception(ErrorHandler.getReadableMessage(e, defaultMessage: 'Impossible de calculer l\'itinéraire.'));
     }
   }
 
@@ -202,10 +200,7 @@ class DeliveryRepository {
         },
       );
     } catch (e) {
-      if (e is DioException) {
-        throw Exception(e.response?.data['message'] ?? 'Erreur lors de la notation');
-      }
-      throw Exception('Failed to rate customer: $e');
+      throw Exception(ErrorHandler.getReadableMessage(e, defaultMessage: 'Impossible d\'enregistrer la notation.'));
     }
   }
 
@@ -213,7 +208,7 @@ class DeliveryRepository {
     try {
       await _dio.post('/courier/deliveries/$id/reject');
     } catch (e) {
-      throw Exception('Failed to reject delivery: $e');
+      throw Exception(ErrorHandler.getDeliveryErrorMessage(e));
     }
   }
 }

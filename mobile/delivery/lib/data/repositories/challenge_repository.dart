@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
+import '../../core/utils/error_handler.dart';
 
 final challengeRepositoryProvider = Provider<ChallengeRepository>((ref) {
   return ChallengeRepository(ref.read(dioProvider));
@@ -43,7 +44,7 @@ class ChallengeRepository {
       if (e is DioException) {
         throw Exception(e.response?.data['message'] ?? 'Erreur lors de la réclamation');
       }
-      throw Exception('Failed to claim reward: $e');
+      throw Exception(ErrorHandler.getReadableMessage(e, defaultMessage: 'Impossible de réclamer la récompense.'));
     }
   }
 
@@ -53,7 +54,7 @@ class ChallengeRepository {
       final response = await _dio.get(ApiConstants.bonuses);
       return (response.data['data'] as List).cast<Map<String, dynamic>>();
     } catch (e) {
-      throw Exception('Failed to fetch bonuses: $e');
+      throw Exception(ErrorHandler.getReadableMessage(e, defaultMessage: 'Impossible de charger les bonus.'));
     }
   }
 
@@ -66,7 +67,7 @@ class ChallengeRepository {
       );
       return response.data['data'];
     } catch (e) {
-      throw Exception('Failed to calculate bonus: $e');
+      throw Exception(ErrorHandler.getReadableMessage(e, defaultMessage: 'Impossible de calculer le bonus.'));
     }
   }
 }

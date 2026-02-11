@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
+import '../../core/utils/error_handler.dart';
 import '../models/user.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -80,7 +81,7 @@ class AuthRepository {
       }
       throw Exception('Erreur de connexion: ${e.message}');
     } catch (e) {
-      throw Exception('Erreur: $e');
+      throw Exception(ErrorHandler.getReadableMessage(e, defaultMessage: 'Erreur de connexion'));
     }
   }
   
@@ -214,9 +215,9 @@ class AuthRepository {
           }
         }
       }
-      throw Exception('Inscription échouée: ${e.message}');
+      throw Exception(ErrorHandler.getReadableMessage(e, defaultMessage: 'Inscription échouée. Vérifiez les informations saisies.'));
     } catch (e) {
-      throw Exception('Inscription échouée: $e');
+      throw Exception(ErrorHandler.getReadableMessage(e, defaultMessage: 'Inscription échouée'));
     }
   }
 
@@ -249,7 +250,7 @@ class AuthRepository {
       
       return User.fromJson(data);
     } catch (e) {
-      throw Exception('Failed to get profile: $e');
+      throw Exception(ErrorHandler.getProfileErrorMessage(e));
     }
   }
 
@@ -293,7 +294,7 @@ class AuthRepository {
       }
       throw Exception('Erreur lors de la mise à jour: ${e.message}');
     } catch (e) {
-      throw Exception('Erreur: $e');
+      throw Exception(ErrorHandler.getReadableMessage(e, defaultMessage: 'Erreur lors de la mise à jour du profil'));
     }
   }
 
@@ -325,7 +326,7 @@ class AuthRepository {
             throw Exception(data['message']);
          }
       }
-      throw Exception('Failed to update password: $e');
+      throw Exception(ErrorHandler.getReadableMessage(e, defaultMessage: 'Impossible de modifier le mot de passe.'));
     }
   }
 }

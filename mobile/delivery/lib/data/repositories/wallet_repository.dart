@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
+import '../../core/utils/error_handler.dart';
 import '../models/wallet_data.dart';
 
 final walletRepositoryProvider = Provider<WalletRepository>((ref) {
@@ -41,7 +42,7 @@ class WalletRepository {
           throw Exception(message);
         }
       }
-      throw Exception('Failed to fetch wallet data: $e');
+      throw Exception(ErrorHandler.getReadableMessage(e, defaultMessage: 'Impossible de charger le portefeuille.'));
     }
   }
 
@@ -75,7 +76,7 @@ class WalletRepository {
       if (e is DioException) {
         throw Exception(e.response?.data['message'] ?? 'Erreur lors du rechargement');
       }
-      throw Exception('Failed to top up: $e');
+      throw Exception(ErrorHandler.getReadableMessage(e, defaultMessage: 'Impossible d\'effectuer le rechargement.'));
     }
   }
 
@@ -96,7 +97,7 @@ class WalletRepository {
       if (e is DioException) {
         throw Exception(e.response?.data['message'] ?? 'Erreur lors de la demande de retrait');
       }
-      throw Exception('Failed to request payout: $e');
+      throw Exception(ErrorHandler.getReadableMessage(e, defaultMessage: 'Impossible d\'effectuer le retrait.'));
     }
   }
 
@@ -124,7 +125,7 @@ class WalletRepository {
       if (e is DioException) {
         throw Exception(e.response?.data['message'] ?? 'Erreur lors de la récupération de l\'historique');
       }
-      throw Exception('Failed to fetch earnings history: $e');
+      throw Exception(ErrorHandler.getReadableMessage(e, defaultMessage: 'Impossible de charger l\'historique.'));
     }
   }
 }

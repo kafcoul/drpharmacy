@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
+import '../../core/utils/error_handler.dart';
 
 final jekoPaymentRepositoryProvider = Provider<JekoPaymentRepository>((ref) {
   return JekoPaymentRepository(ref.read(dioProvider));
@@ -192,7 +193,7 @@ class JekoPaymentRepository {
       }
       return [];
     } catch (e) {
-      throw Exception('Erreur lors de la récupération de l\'historique: $e');
+      throw Exception(ErrorHandler.getReadableMessage(e, defaultMessage: 'Impossible de charger l\'historique des paiements.'));
     }
   }
 }
