@@ -554,8 +554,8 @@ class _PaymentStatusScreenState extends ConsumerState<PaymentStatusScreen>
       builder: (context) => AlertDialog(
         title: const Text('Annuler le paiement ?'),
         content: const Text(
-          'Le paiement est en cours. Si vous quittez maintenant, '
-          'votre paiement pourrait être perdu.',
+          'Le paiement est en cours. Si vous annulez maintenant, '
+          'vous devrez recommencer.',
         ),
         actions: [
           TextButton(
@@ -563,16 +563,51 @@ class _PaymentStatusScreenState extends ConsumerState<PaymentStatusScreen>
             child: const Text('Continuer'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context); // Close dialog
-              widget.onCancel?.call();
-              Navigator.pop(this.context, false); // Close screen
+              await _cancelPayment();
             },
-            child: const Text('Quitter', style: TextStyle(color: Colors.red)),
+            child: const Text('Annuler', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _cancelPayment() async {
+    if (_status.reference == null) {
+      widget.onCancel?.call();
+      Navigator.pop(context, false);
+      return;
+    }
+
+    try {
+      final repository = ref.read(jekoPaymentRepositoryProvider);
+      await repository.cancelPayment(_status.reference!);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Paiement annulé'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        widget.onCancel?.call();
+        Navigator.pop(context, false);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(ErrorHandler.cleanMessage(e)),
+            backgroundColor: Colors.red,
+          ),
+        );
+        // Fermer quand même l'écran
+        widget.onCancel?.call();
+        Navigator.pop(context, false);
+      }
+    }
   }
 
   Color _getMethodColor(JekoPaymentMethod method) {

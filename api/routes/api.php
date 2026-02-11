@@ -338,6 +338,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/payments', [\App\Http\Controllers\Api\JekoPaymentController::class, 'index']);
         Route::get('/payments/methods', [\App\Http\Controllers\Api\JekoPaymentController::class, 'methods']);
         Route::get('/payments/{reference}/status', [\App\Http\Controllers\Api\JekoPaymentController::class, 'status']);
+        Route::post('/payments/{reference}/cancel', [\App\Http\Controllers\Api\JekoPaymentController::class, 'cancel']);
         
         // Support
         Route::post('/report-problem', [\App\Http\Controllers\Api\Courier\SupportController::class, 'reportProblem']);

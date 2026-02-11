@@ -196,4 +196,18 @@ class JekoPaymentRepository {
       throw Exception(ErrorHandler.getReadableMessage(e, defaultMessage: 'Impossible de charger l\'historique des paiements.'));
     }
   }
+
+  /// Annuler un paiement en attente
+  Future<void> cancelPayment(String reference) async {
+    try {
+      final response = await _dio.post('/courier/payments/$reference/cancel');
+
+      if (response.data['status'] != 'success') {
+        throw Exception(response.data['message'] ?? 'Impossible d\'annuler le paiement');
+      }
+    } on DioException catch (e) {
+      final message = e.response?.data['message'] ?? 'Impossible d\'annuler le paiement';
+      throw Exception(message);
+    }
+  }
 }

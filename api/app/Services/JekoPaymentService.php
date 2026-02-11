@@ -102,13 +102,13 @@ class JekoPaymentService
                 'currency' => 'XOF',
                 'reference' => $payment->reference,
                 'paymentDetails' => [
-                    'type' => 'qr_code',
+                    'type' => 'redirect',
                     'data' => [
                         'paymentMethod' => $method->value,
+                        'successUrl' => $successUrl,
+                        'errorUrl' => $errorUrl,
                     ],
                 ],
-                'successUrl' => $successUrl,
-                'errorUrl' => $errorUrl,
             ]);
 
             if (!$response->successful()) {

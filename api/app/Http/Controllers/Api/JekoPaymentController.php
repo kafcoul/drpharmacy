@@ -454,4 +454,59 @@ class JekoPaymentController extends Controller
             ], 400);
         }
     }
+
+    /**
+     * Annuler un paiement en attente
+     * POST /api/courier/payments/{reference}/cancel
+     */
+    public function cancel(string $reference): JsonResponse
+    {
+        $user = Auth::user();
+        
+        $payment = JekoPayment::byReference($reference)->first();
+
+        if (!$payment) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Paiement non trouvé',
+            ], 404);
+        }
+
+        // Vérifier que le paiement appartient à l'utilisateur
+        if ($payment->user_id !== $user->id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ce paiement ne vous appartient pas',
+            ], 403);
+        }
+
+        // Vérifier que le paiement peut être annulé (pas déjà finalisé)
+        if ($payment->isFinal()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ce paiement ne peut plus être annulé',
+            ], 400);
+        }
+
+        // Annuler le paiement
+        $payment->update([
+            'status' => \App\Enums\JekoPaymentStatus::FAILED,
+            'error_message' => 'Annulé par l\'utilisateur',
+            'completed_at' => now(),
+        ]);
+
+        Log::info('Payment cancelled by user', [
+            'reference' => $reference,
+            'user_id' => $user->id,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Paiement annulé',
+            'data' => [
+                'reference' => $payment->reference,
+                'payment_status' => 'cancelled',
+            ],
+        ]);
+    }
 }
