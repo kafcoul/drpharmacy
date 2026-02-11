@@ -142,27 +142,64 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         // Parser les erreurs et les associer aux champs appropriés
         final errorLower = errorMessage.toLowerCase();
         
-        if (errorLower.contains('email') || errorLower.contains('identifiant') || 
+        // Erreurs de connexion réseau - message convivial
+        if (errorLower.contains('xmlhttprequest') || 
+            errorLower.contains('connection errored') ||
+            errorLower.contains('dioexception') || 
+            errorLower.contains('socketexception') ||
+            errorLower.contains('network') ||
+            errorLower.contains('timeout') ||
+            errorLower.contains('failed host lookup') ||
+            errorLower.contains('connection refused') ||
+            errorLower.contains('connection closed') ||
+            errorLower.contains('handshake')) {
+          setState(() => _generalError = 'Connexion impossible. Vérifiez votre connexion internet et réessayez.');
+        } else if (errorLower.contains('email') || errorLower.contains('identifiant') || 
             errorLower.contains('utilisateur') || errorLower.contains('user') ||
             errorLower.contains('phone') || errorLower.contains('téléphone')) {
-          setState(() => _emailError = errorMessage);
+          setState(() => _emailError = _getReadableError(errorMessage));
         } else if (errorLower.contains('mot de passe') || errorLower.contains('password') ||
-                   errorLower.contains('credentials') || errorLower.contains('identifiants')) {
+                   errorLower.contains('credentials') || errorLower.contains('identifiants') ||
+                   errorLower.contains('invalid') || errorLower.contains('incorrect') ||
+                   errorLower.contains('unauthorized') || errorLower.contains('401')) {
           // Pour les erreurs d'identifiants, afficher sous les deux champs
           setState(() {
             _emailError = 'Identifiants incorrects';
-            _passwordError = 'Vérifiez votre mot de passe';
+            _passwordError = 'Vérifiez votre email et mot de passe';
           });
-        } else if (errorMessage.contains('DioException') || errorMessage.contains('SocketException')) {
-          setState(() => _generalError = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
         } else {
-          // Erreur générale sous le formulaire
-          setState(() => _generalError = errorMessage);
+          // Erreur générale - rendre conviviale
+          setState(() => _generalError = _getReadableError(errorMessage));
         }
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  /// Convertit les messages d'erreur techniques en messages lisibles
+  String _getReadableError(String error) {
+    final errorLower = error.toLowerCase();
+    
+    if (errorLower.contains('xmlhttprequest') || errorLower.contains('network')) {
+      return 'Problème de connexion au serveur';
+    }
+    if (errorLower.contains('timeout')) {
+      return 'La connexion a pris trop de temps';
+    }
+    if (errorLower.contains('unauthorized') || errorLower.contains('401')) {
+      return 'Identifiants incorrects';
+    }
+    if (errorLower.contains('not found') || errorLower.contains('404')) {
+      return 'Compte non trouvé';
+    }
+    if (errorLower.contains('server') || errorLower.contains('500')) {
+      return 'Erreur serveur, réessayez plus tard';
+    }
+    if (error.length > 100) {
+      return 'Une erreur est survenue. Veuillez réessayer.';
+    }
+    return error;
   }
 
   @override
@@ -264,22 +301,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           if (_generalError != null)
                             Container(
                               margin: const EdgeInsets.only(bottom: 16),
-                              padding: const EdgeInsets.all(12),
+                              padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: Colors.red.shade50,
+                                color: _generalError!.contains('connexion') || _generalError!.contains('Connexion')
+                                    ? Colors.orange.shade50
+                                    : Colors.red.shade50,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.red.shade200),
+                                border: Border.all(
+                                  color: _generalError!.contains('connexion') || _generalError!.contains('Connexion')
+                                      ? Colors.orange.shade300
+                                      : Colors.red.shade200,
+                                ),
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
-                                  const SizedBox(width: 8),
+                                  Icon(
+                                    _generalError!.contains('connexion') || _generalError!.contains('Connexion')
+                                        ? Icons.wifi_off_rounded
+                                        : Icons.info_outline_rounded,
+                                    color: _generalError!.contains('connexion') || _generalError!.contains('Connexion')
+                                        ? Colors.orange.shade700
+                                        : Colors.red.shade600,
+                                    size: 22,
+                                  ),
+                                  const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
                                       _generalError!,
                                       style: TextStyle(
-                                        color: Colors.red.shade700,
-                                        fontSize: 13,
+                                        color: _generalError!.contains('connexion') || _generalError!.contains('Connexion')
+                                            ? Colors.orange.shade800
+                                            : Colors.red.shade700,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                   ),
