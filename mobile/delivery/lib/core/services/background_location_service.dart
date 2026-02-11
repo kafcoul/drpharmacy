@@ -12,6 +12,9 @@ enum TrackingMode {
   navigation, // Navigation active -> très haute fréquence
 }
 
+/// Vérifie si la plateforme supporte le background location
+bool get _isSupported => !kIsWeb;
+
 /// Service pour la gestion optimisée de la localisation en arrière-plan
 /// Utilise Workmanager pour économiser la batterie
 class BackgroundLocationService {
@@ -20,6 +23,10 @@ class BackgroundLocationService {
   
   /// Initialiser le service de localisation en arrière-plan
   static Future<void> initialize() async {
+    if (!_isSupported) {
+      debugPrint('⚠️ Background location not supported on this platform');
+      return;
+    }
     await Workmanager().initialize(
       callbackDispatcher,
     );
@@ -28,6 +35,8 @@ class BackgroundLocationService {
   /// Démarrer les mises à jour de position en arrière-plan
   /// [intervalMinutes] - Intervalle entre chaque mise à jour (min 15 minutes sur Android)
   static Future<void> startBackgroundUpdates({int intervalMinutes = 15}) async {
+    if (!_isSupported) return;
+    
     await Workmanager().registerPeriodicTask(
       uniqueTaskName,
       taskName,
@@ -51,6 +60,8 @@ class BackgroundLocationService {
   
   /// Arrêter les mises à jour en arrière-plan
   static Future<void> stopBackgroundUpdates() async {
+    if (!_isSupported) return;
+    
     await Workmanager().cancelByUniqueName(uniqueTaskName);
     
     final prefs = await SharedPreferences.getInstance();
@@ -59,6 +70,8 @@ class BackgroundLocationService {
   
   /// Vérifier si le service est actif
   static Future<bool> isEnabled() async {
+    if (!_isSupported) return false;
+    
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('background_location_enabled') ?? false;
   }
