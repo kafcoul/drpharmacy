@@ -1,52 +1,45 @@
-class WalletData {
-  final double balance;
-  final String currency;
-  final List<WalletTransaction> transactions;
-  final double? pendingPayouts;
-  final double? availableBalance;
-  final bool canDeliver;
-  final int commissionAmount;
-  final double totalTopups;
-  final double totalEarnings;
-  final double totalCommissions;
-  final int deliveriesCount;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  WalletData({
-    required this.balance,
-    required this.currency,
-    required this.transactions,
-    this.pendingPayouts,
-    this.availableBalance,
-    this.canDeliver = true,
-    this.commissionAmount = 200,
-    this.totalTopups = 0,
-    this.totalEarnings = 0,
-    this.totalCommissions = 0,
-    this.deliveriesCount = 0,
-  });
+part 'wallet_data.freezed.dart';
+
+@freezed
+abstract class WalletData with _$WalletData {
+  const factory WalletData({
+    required double balance,
+    @Default('XOF') String currency,
+    @Default([]) List<WalletTransaction> transactions,
+    @Default(0.0) double? pendingPayouts,
+    double? availableBalance,
+    @Default(true) bool canDeliver,
+    @Default(200) int commissionAmount,
+    @Default(0.0) double totalTopups,
+    @Default(0.0) double totalEarnings,
+    @Default(0.0) double totalCommissions,
+    @Default(0) int deliveriesCount,
+  }) = _WalletData;
 
   factory WalletData.fromJson(Map<String, dynamic> json) {
     return WalletData(
       balance: double.parse(json['balance'].toString()),
       currency: json['currency'] ?? 'XOF',
       transactions: (json['transactions'] as List? ?? [])
-          .map((e) => WalletTransaction.fromJson(e))
+          .map((e) => WalletTransaction.fromJson(e as Map<String, dynamic>))
           .toList(),
-      pendingPayouts: json['pending_payouts'] != null 
-          ? double.tryParse(json['pending_payouts'].toString()) 
+      pendingPayouts: json['pending_payouts'] != null
+          ? double.tryParse(json['pending_payouts'].toString())
           : 0.0,
       availableBalance: json['available_balance'] != null
           ? double.tryParse(json['available_balance'].toString())
           : null,
       canDeliver: json['can_deliver'] ?? true,
       commissionAmount: json['commission_amount'] ?? 200,
-      totalTopups: json['total_topups'] != null 
+      totalTopups: json['total_topups'] != null
           ? double.tryParse(json['total_topups'].toString()) ?? 0
           : 0,
-      totalEarnings: json['total_earnings'] != null 
+      totalEarnings: json['total_earnings'] != null
           ? double.tryParse(json['total_earnings'].toString()) ?? 0
           : 0,
-      totalCommissions: json['total_commissions'] != null 
+      totalCommissions: json['total_commissions'] != null
           ? double.tryParse(json['total_commissions'].toString()) ?? 0
           : 0,
       deliveriesCount: json['deliveries_count'] ?? 0,
@@ -54,28 +47,21 @@ class WalletData {
   }
 }
 
-class WalletTransaction {
-  final int id;
-  final double amount;
-  final String type; // 'credit' | 'debit'
-  final String? category; // 'topup', 'commission', 'withdrawal', etc.
-  final String? description;
-  final String? reference;
-  final String? status;
-  final int? deliveryId;
-  final DateTime createdAt;
+@freezed
+abstract class WalletTransaction with _$WalletTransaction {
+  const WalletTransaction._();
 
-  WalletTransaction({
-    required this.id,
-    required this.amount,
-    required this.type,
-    this.category,
-    this.description,
-    this.reference,
-    this.status,
-    this.deliveryId,
-    required this.createdAt,
-  });
+  const factory WalletTransaction({
+    required int id,
+    required double amount,
+    @Default('debit') String type,
+    String? category,
+    String? description,
+    String? reference,
+    String? status,
+    int? deliveryId,
+    required DateTime createdAt,
+  }) = _WalletTransaction;
 
   factory WalletTransaction.fromJson(Map<String, dynamic> json) {
     return WalletTransaction(
@@ -87,9 +73,11 @@ class WalletTransaction {
       reference: json['reference'],
       status: json['status'],
       deliveryId: json['delivery_id'],
-      createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at']) 
-          : (json['date'] != null ? DateTime.parse(json['date']) : DateTime.now()),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : (json['date'] != null
+              ? DateTime.parse(json['date'])
+              : DateTime.now()),
     );
   }
 

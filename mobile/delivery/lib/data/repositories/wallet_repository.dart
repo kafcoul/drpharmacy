@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
+import '../../core/services/cache_service.dart';
 import '../../core/utils/error_handler.dart';
 import '../models/wallet_data.dart';
 
@@ -17,11 +18,24 @@ class WalletRepository {
 
   /// Récupérer les données du wallet (solde, transactions, stats)
   Future<WalletData> getWalletData() async {
+    // Tenter de lire le cache d'abord
+    final cache = CacheService.instance;
+    final cached = await cache.getCachedWallet();
+    if (cached != null) {
+      debugPrint('💾 [WALLET] Serving from cache');
+      return WalletData.fromJson(cached);
+    }
+
     try {
       debugPrint('📱 [WALLET] Fetching wallet data from: ${ApiConstants.wallet}');
       final response = await _dio.get(ApiConstants.wallet);
       debugPrint('✅ [WALLET] Data received successfully');
-      return WalletData.fromJson(response.data['data']);
+      final data = response.data['data'] as Map<String, dynamic>;
+
+      // Sauvegarder dans le cache
+      await cache.cacheWallet(data);
+
+      return WalletData.fromJson(data);
     } catch (e) {
       debugPrint('❌ [WALLET] Error: $e');
       if (e is DioException) {
@@ -71,6 +85,8 @@ class WalletRepository {
         'payment_method': paymentMethod,
         'payment_reference': paymentReference,
       });
+      // Invalider le cache wallet après rechargement
+      await CacheService.instance.invalidateWallet();
       return response.data['data'];
     } catch (e) {
       if (e is DioException) {
@@ -92,6 +108,8 @@ class WalletRepository {
         'payment_method': paymentMethod,
         'phone_number': phoneNumber,
       });
+      // Invalider le cache wallet après retrait
+      await CacheService.instance.invalidateWallet();
       return response.data['data'];
     } catch (e) {
       if (e is DioException) {

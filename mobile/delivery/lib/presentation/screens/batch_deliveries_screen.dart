@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../data/models/delivery.dart';
 import '../../data/repositories/delivery_repository.dart';
 import '../providers/delivery_providers.dart';
+import '../widgets/common/common_widgets.dart';
 
 class BatchDeliveriesScreen extends ConsumerStatefulWidget {
   const BatchDeliveriesScreen({super.key});
@@ -85,7 +86,9 @@ class _BatchDeliveriesScreenState extends ConsumerState<BatchDeliveriesScreen> {
 
           // List of deliveries
           Expanded(
-            child: pendingDeliveriesAsync.when(
+            child: AsyncValueWidget<List<Delivery>>(
+              value: pendingDeliveriesAsync,
+              onRetry: () => ref.invalidate(deliveriesProvider('pending')),
               data: (deliveries) {
                 if (deliveries.isEmpty) {
                   return _buildEmptyState();
@@ -105,22 +108,6 @@ class _BatchDeliveriesScreenState extends ConsumerState<BatchDeliveriesScreen> {
                   },
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                    const SizedBox(height: 16),
-                    Text('Erreur: $err'),
-                    const SizedBox(height: 16),
-                    FilledButton.tonal(
-                      onPressed: () => ref.invalidate(deliveriesProvider('pending')),
-                      child: const Text('Réessayer'),
-                    ),
-                  ],
-                ),
-              ),
             ),
           ),
         ],

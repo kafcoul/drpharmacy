@@ -19,6 +19,7 @@ class ThemeNotifier extends Notifier<ThemeMode> {
 
   Future<void> _loadTheme() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!ref.mounted) return; // Provider may have been disposed during await
     final themeString = prefs.getString(_themeKey);
     
     if (themeString != null) {

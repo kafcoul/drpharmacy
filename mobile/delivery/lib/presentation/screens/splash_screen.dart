@@ -43,12 +43,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
   Future<void> _checkSession() async {
     // Artificial delay for splash effect
     await Future.delayed(const Duration(milliseconds: 2500));
+    if (!mounted) return;
     
     // Check if onboarding is completed
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    
     final onboardingCompleted = prefs.getBool('courier_onboarding_completed') ?? false;
     
-    if (mounted && !onboardingCompleted) {
+    if (!onboardingCompleted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const OnboardingScreen()),
       );
@@ -58,77 +61,76 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
     // Check if token exists
     final token = prefs.getString('auth_token');
     
-    if (mounted) {
-      if (token != null && token.isNotEmpty) {
-        // Token exists, try to validate by getting profile
-        try {
-          await ref.read(authRepositoryProvider).getProfile();
-          // Profile loaded successfully, go to Dashboard
+    if (token != null && token.isNotEmpty) {
+      // Token exists, try to validate by getting profile
+      try {
+        await ref.read(authRepositoryProvider).getProfile();
+        if (!mounted) return;
+        // Profile loaded successfully, go to Dashboard
+        _navigateTo(const DashboardScreen());
+        return;
+      } catch (e) {
+        if (!mounted) return;
+        // Vérifier si c'est une erreur de statut (pending, suspended, rejected)
+        final errorMessage = e.toString();
+        
+        if (errorMessage.contains('PENDING_APPROVAL:')) {
+          final message = errorMessage.split('PENDING_APPROVAL:').last.replaceAll('Exception:', '').trim();
           Navigator.of(context).pushReplacement(
-            PageRouteBuilder(
-              pageBuilder: (_, __, ___) => const DashboardScreen(),
-              transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c),
-              transitionDuration: const Duration(milliseconds: 800),
+            MaterialPageRoute(
+              builder: (_) => PendingApprovalScreen(
+                status: 'pending_approval',
+                message: message.isNotEmpty ? message : 'Votre compte est en attente d\'approbation.',
+              ),
             ),
           );
           return;
-        } catch (e) {
-          // Vérifier si c'est une erreur de statut (pending, suspended, rejected)
-          final errorMessage = e.toString();
-          
-          if (errorMessage.contains('PENDING_APPROVAL:')) {
-            final message = errorMessage.split('PENDING_APPROVAL:').last.replaceAll('Exception:', '').trim();
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => PendingApprovalScreen(
-                  status: 'pending_approval',
-                  message: message.isNotEmpty ? message : 'Votre compte est en attente d\'approbation.',
-                ),
-              ),
-            );
-            return;
-          }
-          
-          if (errorMessage.contains('SUSPENDED:')) {
-            final message = errorMessage.split('SUSPENDED:').last.replaceAll('Exception:', '').trim();
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => PendingApprovalScreen(
-                  status: 'suspended',
-                  message: message.isNotEmpty ? message : 'Votre compte a été suspendu.',
-                ),
-              ),
-            );
-            return;
-          }
-          
-          if (errorMessage.contains('REJECTED:')) {
-            final message = errorMessage.split('REJECTED:').last.replaceAll('Exception:', '').trim();
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => PendingApprovalScreen(
-                  status: 'rejected',
-                  message: message.isNotEmpty ? message : 'Votre demande a été refusée.',
-                ),
-              ),
-            );
-            return;
-          }
-          
-          // Token invalid or expired, clear it
-          await prefs.remove('auth_token');
         }
+        
+        if (errorMessage.contains('SUSPENDED:')) {
+          final message = errorMessage.split('SUSPENDED:').last.replaceAll('Exception:', '').trim();
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => PendingApprovalScreen(
+                status: 'suspended',
+                message: message.isNotEmpty ? message : 'Votre compte a été suspendu.',
+              ),
+            ),
+          );
+          return;
+        }
+        
+        if (errorMessage.contains('REJECTED:')) {
+          final message = errorMessage.split('REJECTED:').last.replaceAll('Exception:', '').trim();
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => PendingApprovalScreen(
+                status: 'rejected',
+                message: message.isNotEmpty ? message : 'Votre demande a été refusée.',
+              ),
+            ),
+          );
+          return;
+        }
+        
+        // Token invalid or expired, clear it
+        await prefs.remove('auth_token');
+        if (!mounted) return;
       }
-      
-      // No valid token, go to Login
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => const LoginScreen(),
-          transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c),
-          transitionDuration: const Duration(milliseconds: 800),
-        ),
-      );
     }
+    
+    // No valid token, go to Login
+    _navigateTo(const LoginScreen());
+  }
+
+  void _navigateTo(Widget screen) {
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (_, _, _) => screen,
+        transitionsBuilder: (_, a, _, c) => FadeTransition(opacity: a, child: c),
+        transitionDuration: const Duration(milliseconds: 800),
+      ),
+    );
   }
 
   @override

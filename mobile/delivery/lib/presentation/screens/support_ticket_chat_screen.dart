@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/support_ticket.dart';
 import '../../data/repositories/support_repository.dart';
+import '../widgets/common/common_widgets.dart';
 
 /// Provider pour les détails d'un ticket
 final ticketDetailsProvider = FutureProvider.autoDispose.family<SupportTicket, int>((ref, ticketId) async {
@@ -54,7 +55,7 @@ class _SupportTicketChatScreenState extends ConsumerState<SupportTicketChatScree
             ],
           ),
           loading: () => const Text('Chargement...'),
-          error: (_, __) => const Text('Erreur'),
+          error: (_, _) => const Text('Erreur'),
         ),
         backgroundColor: Colors.indigo.shade600,
         foregroundColor: Colors.white,
@@ -92,7 +93,9 @@ class _SupportTicketChatScreenState extends ConsumerState<SupportTicketChatScree
           ),
         ],
       ),
-      body: ticketAsync.when(
+      body: AsyncValueWidget<SupportTicket>(
+        value: ticketAsync,
+        onRetry: () => ref.invalidate(ticketDetailsProvider(widget.ticketId)),
         data: (ticket) => Column(
           children: [
             // Info ticket
@@ -101,19 +104,9 @@ class _SupportTicketChatScreenState extends ConsumerState<SupportTicketChatScree
             // Messages
             Expanded(
               child: ticket.messages?.isEmpty ?? true
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.chat_bubble_outline,
-                              size: 64, color: Colors.grey.shade300),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Aucun message',
-                            style: TextStyle(color: Colors.grey.shade500),
-                          ),
-                        ],
-                      ),
+                  ? const AppEmptyWidget(
+                      icon: Icons.chat_bubble_outline,
+                      message: 'Aucun message',
                     )
                   : ListView.builder(
                       controller: _scrollController,
@@ -129,23 +122,6 @@ class _SupportTicketChatScreenState extends ConsumerState<SupportTicketChatScree
             // Zone de saisie (si ticket pas fermé)
             if (ticket.status != 'closed') _buildMessageInput(ticket),
           ],
-        ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
-              const SizedBox(height: 16),
-              Text('Erreur: $error'),
-              const SizedBox(height: 8),
-              TextButton.icon(
-                onPressed: () => ref.invalidate(ticketDetailsProvider(widget.ticketId)),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Réessayer'),
-              ),
-            ],
-          ),
         ),
       ),
     );

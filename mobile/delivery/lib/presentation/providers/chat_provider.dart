@@ -26,6 +26,6 @@ class ChatNotifier extends Notifier<AsyncValue<void>> {
   }
 }
 
-final chatProvider = NotifierProvider<ChatNotifier, AsyncValue<void>>(() {
-  return ChatNotifier();
-});
+final chatProvider = NotifierProvider<ChatNotifier, AsyncValue<void>>(
+  ChatNotifier.new,
+);

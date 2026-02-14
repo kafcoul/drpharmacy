@@ -1,219 +1,145 @@
-class Statistics {
-  final String period;
-  final String startDate;
-  final String endDate;
-  final StatsOverview overview;
-  final StatsPerformance performance;
-  final List<DailyStats> dailyBreakdown;
-  final List<PeakHour> peakHours;
-  final RevenueBreakdown? revenueBreakdown;
-  final StatsGoals? goals;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  Statistics({
-    required this.period,
-    required this.startDate,
-    required this.endDate,
-    required this.overview,
-    required this.performance,
-    required this.dailyBreakdown,
-    required this.peakHours,
-    this.revenueBreakdown,
-    this.goals,
-  });
+part 'statistics.freezed.dart';
+part 'statistics.g.dart';
 
-  factory Statistics.fromJson(Map<String, dynamic> json) {
-    return Statistics(
-      period: json['period'],
-      startDate: json['start_date'],
-      endDate: json['end_date'],
-      overview: StatsOverview.fromJson(json['overview']),
-      performance: StatsPerformance.fromJson(json['performance']),
-      dailyBreakdown: (json['daily_breakdown'] as List?)
-              ?.map((e) => DailyStats.fromJson(e))
-              .toList() ??
-          [],
-      peakHours: (json['peak_hours'] as List?)
-              ?.map((e) => PeakHour.fromJson(e))
-              .toList() ??
-          [],
-      revenueBreakdown: json['revenue_breakdown'] != null
-          ? RevenueBreakdown.fromJson(json['revenue_breakdown'])
-          : null,
-      goals: json['goals'] != null ? StatsGoals.fromJson(json['goals']) : null,
-    );
-  }
+@freezed
+abstract class Statistics with _$Statistics {
+  const factory Statistics({
+    required String period,
+    @JsonKey(name: 'start_date') required String startDate,
+    @JsonKey(name: 'end_date') required String endDate,
+    required StatsOverview overview,
+    required StatsPerformance performance,
+    @JsonKey(name: 'daily_breakdown') @Default([]) List<DailyStats> dailyBreakdown,
+    @JsonKey(name: 'peak_hours') @Default([]) List<PeakHour> peakHours,
+    @JsonKey(name: 'revenue_breakdown') RevenueBreakdown? revenueBreakdown,
+    StatsGoals? goals,
+  }) = _Statistics;
+
+  factory Statistics.fromJson(Map<String, dynamic> json) =>
+      _$StatisticsFromJson(json);
 }
 
-class StatsOverview {
-  final int totalDeliveries;
-  final double totalEarnings;
-  final double totalDistanceKm;
-  final int totalDurationMinutes;
-  final double averageRating;
-  final double deliveryTrend;
-  final double earningsTrend;
-  final String currency;
+@freezed
+abstract class StatsOverview with _$StatsOverview {
+  const factory StatsOverview({
+    @JsonKey(name: 'total_deliveries') @Default(0) int totalDeliveries,
+    @JsonKey(name: 'total_earnings') @Default(0.0) double totalEarnings,
+    @JsonKey(name: 'total_distance_km') @Default(0.0) double totalDistanceKm,
+    @JsonKey(name: 'total_duration_minutes') @Default(0) int totalDurationMinutes,
+    @JsonKey(name: 'average_rating') @Default(0.0) double averageRating,
+    @JsonKey(name: 'delivery_trend') @Default(0.0) double deliveryTrend,
+    @JsonKey(name: 'earnings_trend') @Default(0.0) double earningsTrend,
+    @Default('FCFA') String currency,
+  }) = _StatsOverview;
 
-  StatsOverview({
-    required this.totalDeliveries,
-    required this.totalEarnings,
-    required this.totalDistanceKm,
-    required this.totalDurationMinutes,
-    required this.averageRating,
-    required this.deliveryTrend,
-    required this.earningsTrend,
-    required this.currency,
-  });
-
-  factory StatsOverview.fromJson(Map<String, dynamic> json) {
-    return StatsOverview(
-      totalDeliveries: (json['total_deliveries'] as num?)?.toInt() ?? 0,
-      totalEarnings: (json['total_earnings'] as num?)?.toDouble() ?? 0.0,
-      totalDistanceKm: (json['total_distance_km'] as num?)?.toDouble() ?? 0.0,
-      totalDurationMinutes: (json['total_duration_minutes'] as num?)?.toInt() ?? 0,
-      averageRating: (json['average_rating'] as num?)?.toDouble() ?? 0.0,
-      deliveryTrend: (json['delivery_trend'] as num?)?.toDouble() ?? 0.0,
-      earningsTrend: (json['earnings_trend'] as num?)?.toDouble() ?? 0.0,
-      currency: json['currency'] ?? 'FCFA',
-    );
-  }
+  factory StatsOverview.fromJson(Map<String, dynamic> json) =>
+      _$StatsOverviewFromJson(json);
 }
 
-class StatsPerformance {
-  final int totalAssigned;
-  final int totalAccepted;
-  final int totalDelivered;
-  final int totalCancelled;
-  final double acceptanceRate;
-  final double completionRate;
-  final double cancellationRate;
-  final double onTimeRate;
-  final double satisfactionRate;
+@freezed
+abstract class StatsPerformance with _$StatsPerformance {
+  const factory StatsPerformance({
+    @JsonKey(name: 'total_assigned') @Default(0) int totalAssigned,
+    @JsonKey(name: 'total_accepted') @Default(0) int totalAccepted,
+    @JsonKey(name: 'total_delivered') @Default(0) int totalDelivered,
+    @JsonKey(name: 'total_cancelled') @Default(0) int totalCancelled,
+    @JsonKey(name: 'acceptance_rate') @Default(0.0) double acceptanceRate,
+    @JsonKey(name: 'completion_rate') @Default(0.0) double completionRate,
+    @JsonKey(name: 'cancellation_rate') @Default(0.0) double cancellationRate,
+    @JsonKey(name: 'on_time_rate') @Default(0.0) double onTimeRate,
+    @JsonKey(name: 'satisfaction_rate') @Default(0.0) double satisfactionRate,
+  }) = _StatsPerformance;
 
-  StatsPerformance({
-    required this.totalAssigned,
-    required this.totalAccepted,
-    required this.totalDelivered,
-    required this.totalCancelled,
-    required this.acceptanceRate,
-    required this.completionRate,
-    required this.cancellationRate,
-    required this.onTimeRate,
-    required this.satisfactionRate,
-  });
-
-  factory StatsPerformance.fromJson(Map<String, dynamic> json) {
-    return StatsPerformance(
-      totalAssigned: (json['total_assigned'] as num?)?.toInt() ?? 0,
-      totalAccepted: (json['total_accepted'] as num?)?.toInt() ?? 0,
-      totalDelivered: (json['total_delivered'] as num?)?.toInt() ?? 0,
-      totalCancelled: (json['total_cancelled'] as num?)?.toInt() ?? 0,
-      acceptanceRate: (json['acceptance_rate'] as num?)?.toDouble() ?? 0.0,
-      completionRate: (json['completion_rate'] as num?)?.toDouble() ?? 0.0,
-      cancellationRate: (json['cancellation_rate'] as num?)?.toDouble() ?? 0.0,
-      onTimeRate: (json['on_time_rate'] as num?)?.toDouble() ?? 0.0,
-      satisfactionRate: (json['satisfaction_rate'] as num?)?.toDouble() ?? 0.0,
-    );
-  }
+  factory StatsPerformance.fromJson(Map<String, dynamic> json) =>
+      _$StatsPerformanceFromJson(json);
 }
 
-class DailyStats {
-  final String date;
-  final String dayName;
-  final int deliveries;
-  final double earnings;
+@freezed
+abstract class DailyStats with _$DailyStats {
+  const factory DailyStats({
+    required String date,
+    @JsonKey(name: 'day_name') required String dayName,
+    @Default(0) int deliveries,
+    @Default(0.0) double earnings,
+  }) = _DailyStats;
 
-  DailyStats({
-    required this.date,
-    required this.dayName,
-    required this.deliveries,
-    required this.earnings,
-  });
-
-  factory DailyStats.fromJson(Map<String, dynamic> json) {
-    return DailyStats(
-      date: json['date'],
-      dayName: json['day_name'],
-      deliveries: (json['deliveries'] as num?)?.toInt() ?? 0,
-      earnings: (json['earnings'] as num?)?.toDouble() ?? 0.0,
-    );
-  }
+  factory DailyStats.fromJson(Map<String, dynamic> json) =>
+      _$DailyStatsFromJson(json);
 }
 
-class PeakHour {
-  final String hour;
-  final String label;
-  final int count;
-  final double percentage;
+@freezed
+abstract class PeakHour with _$PeakHour {
+  const factory PeakHour({
+    required String hour,
+    required String label,
+    @Default(0) int count,
+    @Default(0.0) double percentage,
+  }) = _PeakHour;
 
-  PeakHour({
-    required this.hour,
-    required this.label,
-    required this.count,
-    required this.percentage,
-  });
-
-  factory PeakHour.fromJson(Map<String, dynamic> json) {
-    return PeakHour(
-      hour: json['hour'],
-      label: json['label'],
-      count: (json['count'] as num?)?.toInt() ?? 0,
-      percentage: (json['percentage'] as num?)?.toDouble() ?? 0.0,
-    );
-  }
+  factory PeakHour.fromJson(Map<String, dynamic> json) =>
+      _$PeakHourFromJson(json);
 }
 
-class RevenueBreakdown {
-  final double deliveryCommissionsAmount;
-  final double deliveryCommissionsPercent;
-  final double challengeBonusesAmount;
-  final double challengeBonusesPercent;
-  final double rushBonusesAmount;
-  final double rushBonusesPercent;
-  final double total;
+@freezed
+abstract class RevenueBreakdown with _$RevenueBreakdown {
+  const RevenueBreakdown._();
 
-  RevenueBreakdown({
-    required this.deliveryCommissionsAmount,
-    required this.deliveryCommissionsPercent,
-    required this.challengeBonusesAmount,
-    required this.challengeBonusesPercent,
-    required this.rushBonusesAmount,
-    required this.rushBonusesPercent,
-    required this.total,
-  });
+  const factory RevenueBreakdown({
+    @Default(0.0) double deliveryCommissionsAmount,
+    @Default(0.0) double deliveryCommissionsPercent,
+    @Default(0.0) double challengeBonusesAmount,
+    @Default(0.0) double challengeBonusesPercent,
+    @Default(0.0) double rushBonusesAmount,
+    @Default(0.0) double rushBonusesPercent,
+    @Default(0.0) double total,
+  }) = _RevenueBreakdown;
 
   factory RevenueBreakdown.fromJson(Map<String, dynamic> json) {
     return RevenueBreakdown(
-      deliveryCommissionsAmount: (json['delivery_commissions']?['amount'] as num?)?.toDouble() ?? 0.0,
-      deliveryCommissionsPercent: (json['delivery_commissions']?['percentage'] as num?)?.toDouble() ?? 0.0,
-      challengeBonusesAmount: (json['challenge_bonuses']?['amount'] as num?)?.toDouble() ?? 0.0,
-      challengeBonusesPercent: (json['challenge_bonuses']?['percentage'] as num?)?.toDouble() ?? 0.0,
-      rushBonusesAmount: (json['rush_bonuses']?['amount'] as num?)?.toDouble() ?? 0.0,
-      rushBonusesPercent: (json['rush_bonuses']?['percentage'] as num?)?.toDouble() ?? 0.0,
+      deliveryCommissionsAmount:
+          (json['delivery_commissions']?['amount'] as num?)?.toDouble() ?? 0.0,
+      deliveryCommissionsPercent:
+          (json['delivery_commissions']?['percentage'] as num?)?.toDouble() ?? 0.0,
+      challengeBonusesAmount:
+          (json['challenge_bonuses']?['amount'] as num?)?.toDouble() ?? 0.0,
+      challengeBonusesPercent:
+          (json['challenge_bonuses']?['percentage'] as num?)?.toDouble() ?? 0.0,
+      rushBonusesAmount:
+          (json['rush_bonuses']?['amount'] as num?)?.toDouble() ?? 0.0,
+      rushBonusesPercent:
+          (json['rush_bonuses']?['percentage'] as num?)?.toDouble() ?? 0.0,
       total: (json['total'] as num?)?.toDouble() ?? 0.0,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'delivery_commissions': {
+          'amount': deliveryCommissionsAmount,
+          'percentage': deliveryCommissionsPercent,
+        },
+        'challenge_bonuses': {
+          'amount': challengeBonusesAmount,
+          'percentage': challengeBonusesPercent,
+        },
+        'rush_bonuses': {
+          'amount': rushBonusesAmount,
+          'percentage': rushBonusesPercent,
+        },
+        'total': total,
+      };
 }
 
-class StatsGoals {
-  final int weeklyTarget;
-  final int currentProgress;
-  final double progressPercentage;
-  final int remaining;
+@freezed
+abstract class StatsGoals with _$StatsGoals {
+  const factory StatsGoals({
+    @JsonKey(name: 'weekly_target') @Default(0) int weeklyTarget,
+    @JsonKey(name: 'current_progress') @Default(0) int currentProgress,
+    @JsonKey(name: 'progress_percentage') @Default(0.0) double progressPercentage,
+    @Default(0) int remaining,
+  }) = _StatsGoals;
 
-  StatsGoals({
-    required this.weeklyTarget,
-    required this.currentProgress,
-    required this.progressPercentage,
-    required this.remaining,
-  });
-
-  factory StatsGoals.fromJson(Map<String, dynamic> json) {
-    return StatsGoals(
-      weeklyTarget: (json['weekly_target'] as num?)?.toInt() ?? 0,
-      currentProgress: (json['current_progress'] as num?)?.toInt() ?? 0,
-      progressPercentage: (json['progress_percentage'] as num?)?.toDouble() ?? 0.0,
-      remaining: (json['remaining'] as num?)?.toInt() ?? 0,
-    );
-  }
+  factory StatsGoals.fromJson(Map<String, dynamic> json) =>
+      _$StatsGoalsFromJson(json);
 }

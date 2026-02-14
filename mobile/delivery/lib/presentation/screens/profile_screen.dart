@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/theme_provider.dart';
 import '../providers/profile_provider.dart';
+import '../widgets/common/common_widgets.dart';
 import '../../data/models/user.dart';
 import '../../data/models/wallet_data.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -38,24 +39,10 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FD),
-      body: userAsync.when(
+      body: AsyncValueWidget<User>(
+        value: userAsync,
         data: (user) => _ProfileView(user: user),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 48),
-              const SizedBox(height: 16),
-              Text('Erreur de chargement: $err', textAlign: TextAlign.center),
-              const SizedBox(height: 24),
-              FilledButton.tonal(
-                onPressed: () => ref.refresh(profileProvider),
-                child: const Text('Réessayer'),
-              ),
-            ],
-          ),
-        ),
+        onRetry: () => ref.refresh(profileProvider),
       ),
     );
   }
@@ -347,14 +334,14 @@ class _StatsGrid extends ConsumerWidget {
         ),
         _StatCard(
           icon: Icons.account_balance_wallet_outlined,
-          value: '${NumberFormat("#,##0", "fr_FR").format(walletData?.balance ?? 0)}',
+          value: NumberFormat("#,##0", "fr_FR").format(walletData?.balance ?? 0),
           label: 'Solde (FCFA)',
           color: Colors.green.shade700,
           bgColor: Colors.green.shade50,
         ),
         _StatCard(
           icon: Icons.trending_down,
-          value: '${NumberFormat("#,##0", "fr_FR").format(totalCommissions)}',
+          value: NumberFormat("#,##0", "fr_FR").format(totalCommissions),
           label: 'Commissions',
           color: Colors.purple.shade700,
           bgColor: Colors.purple.shade50,
@@ -801,9 +788,9 @@ class _PerformanceCard extends ConsumerWidget {
              children: [
                _PerformanceMetrics(label: 'Livraisons', value: '$deliveriesCount'),
                _VerticalDivider(),
-               _PerformanceMetrics(label: 'Rechargé', value: '${NumberFormat.compact(locale: 'fr').format(totalTopups)}'),
+               _PerformanceMetrics(label: 'Rechargé', value: NumberFormat.compact(locale: 'fr').format(totalTopups)),
                _VerticalDivider(),
-               _PerformanceMetrics(label: 'Solde', value: '${NumberFormat.compact(locale: 'fr').format(walletData?.balance ?? 0)}'),
+               _PerformanceMetrics(label: 'Solde', value: NumberFormat.compact(locale: 'fr').format(walletData?.balance ?? 0)),
              ],
            )
         ],

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../providers/chat_provider.dart';
+import '../widgets/common/common_widgets.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   final int orderId;
@@ -10,11 +11,11 @@ class ChatScreen extends ConsumerStatefulWidget {
   final String title;
 
   const ChatScreen({
-    Key? key,
+    super.key,
     required this.orderId,
     required this.target,
     required this.title,
-  }) : super(key: key);
+  });
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -95,15 +96,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             child: messagesAsync.when(
               data: (messages) {
                 if (messages.isEmpty) {
-                   return Center(
-                     child: Column(
-                       mainAxisAlignment: MainAxisAlignment.center,
-                       children: [
-                         Icon(Icons.chat_bubble_outline, size: 48, color: Colors.grey.shade300),
-                         const SizedBox(height: 16),
-                         Text('Aucun message', style: TextStyle(color: Colors.grey.shade500)),
-                       ],
-                     ),
+                   return const AppEmptyWidget(
+                     icon: Icons.chat_bubble_outline,
+                     message: 'Aucun message',
                    );
                 }
                 return ListView.builder(
@@ -154,8 +149,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   },
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, st) => Center(child: Text('Erreur: $e')),
+              loading: () => const AppLoadingWidget(),
+              error: (e, st) => AppErrorWidget(message: e.toString()),
             ),
           ),
           

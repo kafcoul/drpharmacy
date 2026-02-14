@@ -1,3 +1,5 @@
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
 class RouteStep {
   final String instruction;
   final String distance;
@@ -19,7 +21,7 @@ class RouteStep {
 }
 
 class RouteInfo {
-  final List<dynamic> points; // LatLng is from google_maps_flutter
+  final List<LatLng> points;
   final String totalDistance;
   final String totalDuration;
   final List<RouteStep> steps;

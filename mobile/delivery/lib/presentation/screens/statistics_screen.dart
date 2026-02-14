@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../providers/wallet_provider.dart';
 import '../../data/models/statistics.dart';
 import '../providers/statistics_provider.dart';
+import '../widgets/common/common_widgets.dart';
 
 /// Écran de statistiques avancées pour le livreur
 class StatisticsScreen extends ConsumerStatefulWidget {
@@ -121,61 +122,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   Widget _buildOverviewTab() {
     final statsAsync = ref.watch(statisticsProvider(_selectedPeriod));
 
-    return statsAsync.when(
-      loading: () {
-        debugPrint('Stats State: LOADING');
-        return const Center(child: CircularProgressIndicator());
-      },
-      error: (e, s) {
-        debugPrint('Stats State: ERROR - $e');
-        final errorMessage = e.toString();
-        final isProfileError = errorMessage.contains('coursier') || 
-                               errorMessage.contains('403') ||
-                               errorMessage.contains('non trouvé');
-        
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  isProfileError ? Icons.person_off : Icons.error_outline,
-                  size: 64,
-                  color: isProfileError ? Colors.orange : Colors.red,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  isProfileError 
-                    ? 'Profil coursier non configuré'
-                    : 'Erreur de chargement',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  errorMessage,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                if (!isProfileError)
-                  ElevatedButton.icon(
-                    onPressed: () => ref.invalidate(statisticsProvider(_selectedPeriod)),
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Réessayer'),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
+    return AsyncValueWidget<Statistics>(
+      value: statsAsync,
+      onRetry: () => ref.invalidate(statisticsProvider(_selectedPeriod)),
       data: (stats) {
         debugPrint('Stats State: DATA RECEIVED');
         return SingleChildScrollView(
@@ -650,9 +599,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   Widget _buildDeliveriesTab() {
     final statsAsync = ref.watch(statisticsProvider(_selectedPeriod));
 
-    return statsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Erreur: $e')),
+    return AsyncValueWidget<Statistics>(
+      value: statsAsync,
+      onRetry: () => ref.invalidate(statisticsProvider(_selectedPeriod)),
       data: (stats) {
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -816,9 +765,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   Widget _buildRevenueTab() {
     final walletAsync = ref.watch(walletProvider);
     
-    return walletAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Erreur: $e')),
+    return AsyncValueWidget<dynamic>(
+      value: walletAsync,
+      onRetry: () => ref.invalidate(walletProvider),
       data: (wallet) {
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),

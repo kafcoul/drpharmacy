@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/support_ticket.dart';
 import '../../data/repositories/support_repository.dart';
+import '../widgets/common/common_widgets.dart';
 import 'support_ticket_chat_screen.dart';
 import 'create_ticket_screen.dart';
 
@@ -170,30 +171,13 @@ class _SupportTicketsScreenState extends ConsumerState<SupportTicketsScreen> {
               );
             },
             loading: () => const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
+              child: AppLoadingWidget(),
             ),
             error: (error, _) => SliverFillRemaining(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Erreur de chargement',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton.icon(
-                      onPressed: () => ref.invalidate(supportTicketsProvider),
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Réessayer'),
-                    ),
-                  ],
-                ),
+              child: AppErrorWidget(
+                message: error.toString(),
+                title: 'Erreur de chargement',
+                onRetry: () => ref.invalidate(supportTicketsProvider),
               ),
             ),
           ),

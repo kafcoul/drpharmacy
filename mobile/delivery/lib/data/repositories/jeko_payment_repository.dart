@@ -200,7 +200,7 @@ class JekoPaymentRepository {
   /// Annuler un paiement en attente
   Future<void> cancelPayment(String reference) async {
     try {
-      final response = await _dio.post('/courier/payments/$reference/cancel');
+      final response = await _dio.post(ApiConstants.cancelPayment(reference));
 
       if (response.data['status'] != 'success') {
         throw Exception(response.data['message'] ?? 'Impossible d\'annuler le paiement');

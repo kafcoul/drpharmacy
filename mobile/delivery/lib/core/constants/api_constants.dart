@@ -36,6 +36,9 @@ class ApiConstants {
   static String pickupDelivery(int id) => '/courier/deliveries/$id/pickup';
   static String completeDelivery(int id) =>
       '/courier/deliveries/$id/deliver';
+  static String rejectDelivery(int id) => '/courier/deliveries/$id/reject';
+  static String rateCustomer(int deliveryId) =>
+      '/courier/deliveries/$deliveryId/rate-customer';
   
   // Batch deliveries
   static const String batchAcceptDeliveries = '/courier/deliveries/batch-accept';
@@ -48,4 +51,20 @@ class ApiConstants {
   static const String paymentsMethods = '/courier/payments/methods';
   static const String paymentsHistory = '/courier/payments';
   static String paymentStatus(String reference) => '/courier/payments/$reference/status';
+  static String cancelPayment(String reference) => '/courier/payments/$reference/cancel';
+
+  // Auth - Profile updates
+  static const String updateMe = '/auth/me/update';
+
+  // Challenges & Bonuses (dynamic)
+  static String claimChallenge(int challengeId) => '/courier/challenges/$challengeId/claim';
+  static const String calculateBonus = '/courier/bonuses/calculate';
+
+  // Support
+  static const String supportTickets = '/support/tickets';
+  static const String supportTicketsStats = '/support/tickets/stats';
+  static String supportTicketDetail(int id) => '/support/tickets/$id';
+  static String supportTicketMessages(int id) => '/support/tickets/$id/messages';
+  static String supportTicketResolve(int id) => '/support/tickets/$id/resolve';
+  static String supportTicketClose(int id) => '/support/tickets/$id/close';
 }

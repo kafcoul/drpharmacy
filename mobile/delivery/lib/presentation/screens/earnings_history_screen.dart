@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../data/repositories/wallet_repository.dart';
 import '../../data/models/wallet_data.dart';
+import '../widgets/common/common_widgets.dart';
 
 class EarningsHistoryScreen extends ConsumerWidget {
   const EarningsHistoryScreen({super.key});
@@ -19,24 +20,10 @@ class EarningsHistoryScreen extends ConsumerWidget {
         foregroundColor: Colors.black,
         elevation: 0,
       ),
-      body: walletAsync.when(
+      body: AsyncValueWidget<WalletData>(
+        value: walletAsync,
         data: (wallet) => _EarningsContent(wallet: wallet),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text('Erreur: $err'),
-              const SizedBox(height: 16),
-              FilledButton.tonal(
-                onPressed: () => ref.invalidate(walletDataProvider),
-                child: const Text('Réessayer'),
-              ),
-            ],
-          ),
-        ),
+        onRetry: () => ref.invalidate(walletDataProvider),
       ),
     );
   }
@@ -332,7 +319,7 @@ class _EarningsContent extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: wallet.transactions.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 final tx = wallet.transactions[index];
                 return _TransactionItem(transaction: tx, currency: wallet.currency);

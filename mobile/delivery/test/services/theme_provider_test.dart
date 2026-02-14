@@ -11,7 +11,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     });
 
-    test('should have system theme mode by default', () async {
+    test('should have light theme mode by default', () async {
       SharedPreferences.setMockInitialValues({});
       
       final container = ProviderContainer();
@@ -21,7 +21,7 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 100));
       
       final themeMode = container.read(themeProvider);
-      expect(themeMode, ThemeMode.system);
+      expect(themeMode, ThemeMode.light);
     });
 
     test('should persist theme mode to SharedPreferences', () async {
@@ -69,26 +69,145 @@ void main() {
       
       expect(container.read(themeProvider), ThemeMode.dark);
     });
+
+    test('should toggle from dark back to light', () async {
+      SharedPreferences.setMockInitialValues({});
+      
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      
+      // Explicitly set dark first (reliable, no async race)
+      await container.read(themeProvider.notifier).setTheme(ThemeMode.dark);
+      expect(container.read(themeProvider), ThemeMode.dark);
+
+      await container.read(themeProvider.notifier).toggleTheme();
+      
+      expect(container.read(themeProvider), ThemeMode.light);
+    });
+
+    test('should load saved dark theme from SharedPreferences', () async {
+      SharedPreferences.setMockInitialValues({'theme_mode': 'dark'});
+      
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      
+      // Force read of the notifier to trigger build() + _loadTheme()
+      container.read(themeProvider.notifier);
+      
+      // Give microtasks and timer callbacks time to complete
+      await Future.delayed(const Duration(milliseconds: 100));
+      // Re-pump to ensure state update propagated
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      final themeMode = container.read(themeProvider);
+      expect(themeMode, ThemeMode.dark);
+    });
+
+    test('should load saved system theme from SharedPreferences', () async {
+      SharedPreferences.setMockInitialValues({'theme_mode': 'system'});
+      
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      
+      // Force read of the notifier to trigger build() + _loadTheme()
+      container.read(themeProvider.notifier);
+      
+      // Give microtasks and timer callbacks time to complete
+      await Future.delayed(const Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      final themeMode = container.read(themeProvider);
+      expect(themeMode, ThemeMode.system);
+    });
+
+    test('should fallback to light for invalid saved theme', () async {
+      SharedPreferences.setMockInitialValues({'theme_mode': 'invalid_mode'});
+      
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      
+      await Future.delayed(const Duration(milliseconds: 200));
+      
+      final themeMode = container.read(themeProvider);
+      expect(themeMode, ThemeMode.light);
+    });
+
+    test('isDark getter works', () async {
+      SharedPreferences.setMockInitialValues({});
+      
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      expect(container.read(themeProvider.notifier).isDark, isFalse);
+      
+      await container.read(themeProvider.notifier).setTheme(ThemeMode.dark);
+      expect(container.read(themeProvider.notifier).isDark, isTrue);
+    });
+
+    test('isLight getter works', () async {
+      SharedPreferences.setMockInitialValues({});
+      
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      expect(container.read(themeProvider.notifier).isLight, isTrue);
+      
+      await container.read(themeProvider.notifier).setTheme(ThemeMode.dark);
+      expect(container.read(themeProvider.notifier).isLight, isFalse);
+    });
+
+    test('isSystem getter works', () async {
+      SharedPreferences.setMockInitialValues({});
+      
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      expect(container.read(themeProvider.notifier).isSystem, isFalse);
+      
+      await container.read(themeProvider.notifier).setTheme(ThemeMode.system);
+      expect(container.read(themeProvider.notifier).isSystem, isTrue);
+    });
+
+    test('setTheme to system mode', () async {
+      SharedPreferences.setMockInitialValues({});
+      
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      
+      await container.read(themeProvider.notifier).setTheme(ThemeMode.system);
+      
+      expect(container.read(themeProvider), ThemeMode.system);
+      
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('theme_mode'), 'system');
+    });
   });
 
   group('Light Theme Tests', () {
-    test('should have correct primary color', () {
-      expect(lightTheme.primaryColor, const Color(0xFF1E88E5));
+    test('should use Material 3', () {
+      expect(lightTheme.useMaterial3, isTrue);
     });
 
-    test('should have white scaffold background', () {
-      expect(lightTheme.scaffoldBackgroundColor, Colors.white);
+    test('should have correct scaffold background', () {
+      expect(lightTheme.scaffoldBackgroundColor, const Color(0xFFF8F9FD));
     });
 
     test('should have correct app bar theme', () {
       expect(lightTheme.appBarTheme.backgroundColor, Colors.white);
-      expect(lightTheme.appBarTheme.foregroundColor, const Color(0xFF1E1E1E));
+      expect(lightTheme.appBarTheme.foregroundColor, Colors.black);
+      expect(lightTheme.appBarTheme.centerTitle, isTrue);
     });
   });
 
   group('Dark Theme Tests', () {
-    test('should have correct primary color', () {
-      expect(darkTheme.primaryColor, const Color(0xFF42A5F5));
+    test('should use Material 3', () {
+      expect(darkTheme.useMaterial3, isTrue);
     });
 
     test('should have dark scaffold background', () {
@@ -98,10 +217,43 @@ void main() {
     test('should have correct app bar theme', () {
       expect(darkTheme.appBarTheme.backgroundColor, const Color(0xFF1E1E1E));
       expect(darkTheme.appBarTheme.foregroundColor, Colors.white);
+      expect(darkTheme.appBarTheme.centerTitle, isTrue);
     });
 
-    test('should have elevated card color', () {
-      expect(darkTheme.cardColor, const Color(0xFF1E1E1E));
+    test('should have correct card theme', () {
+      expect(darkTheme.cardTheme.color, const Color(0xFF1E1E1E));
+      expect(darkTheme.cardTheme.elevation, 4);
+    });
+
+    test('should have correct bottom nav bar theme', () {
+      expect(darkTheme.bottomNavigationBarTheme.backgroundColor, const Color(0xFF1E1E1E));
+      expect(darkTheme.bottomNavigationBarTheme.selectedItemColor, Colors.blue);
+      expect(darkTheme.bottomNavigationBarTheme.unselectedItemColor, Colors.grey);
+    });
+
+    test('should have correct bottom sheet theme', () {
+      expect(darkTheme.bottomSheetTheme.backgroundColor, const Color(0xFF1E1E1E));
+    });
+
+    test('should have correct divider theme', () {
+      expect(darkTheme.dividerTheme.color, const Color(0xFF2C2C2C));
+    });
+
+    test('should have correct list tile theme', () {
+      expect(darkTheme.listTileTheme.iconColor, Colors.white70);
+      expect(darkTheme.listTileTheme.textColor, Colors.white);
+    });
+  });
+
+  group('Light Theme detailed', () {
+    test('should have correct bottom nav bar', () {
+      expect(lightTheme.bottomNavigationBarTheme.backgroundColor, Colors.white);
+      expect(lightTheme.bottomNavigationBarTheme.selectedItemColor, Colors.blue);
+    });
+
+    test('should have correct card theme', () {
+      expect(lightTheme.cardTheme.color, Colors.white);
+      expect(lightTheme.cardTheme.elevation, 2);
     });
   });
 }

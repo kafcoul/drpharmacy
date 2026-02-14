@@ -38,10 +38,11 @@ class AppConfig {
   }
 
   /// Google Maps API Key
-  /// ⚠️ En production, cette clé devrait être restreinte dans la console Google Cloud
+  /// Passée via --dart-define=GOOGLE_MAPS_API_KEY=xxx au build
+  /// Ne JAMAIS hardcoder la clé ici
   static const String googleMapsApiKey = String.fromEnvironment(
     'GOOGLE_MAPS_API_KEY',
-    defaultValue: 'AIzaSyDtkPE0r8OdZePsCgpzUVvMTgC8BzpigSQ', // Dev key only
+    defaultValue: '', // Définie via --dart-define ou .env
   );
 
   /// Timeouts

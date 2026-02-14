@@ -1,10 +1,14 @@
 import 'package:dio/dio.dart';
+import 'app_exceptions.dart';
 
 /// Classe utilitaire pour convertir les erreurs techniques en messages compréhensibles
+/// et en exceptions typées [AppException].
 class ErrorHandler {
   /// Nettoie un message d'erreur pour l'affichage utilisateur
   /// Supprime les préfixes "Exception:" et rend le message plus lisible
   static String cleanMessage(dynamic error) {
+    if (error is AppException) return error.userMessage;
+
     String message = error.toString();
     
     // Supprimer les préfixes "Exception:" répétés
@@ -20,59 +24,118 @@ class ErrorHandler {
     return message;
   }
 
-  /// Convertit une erreur Dio en message user-friendly
-  static String getReadableMessage(dynamic error, {String? defaultMessage}) {
-    if (error is DioException) {
-      return _handleDioError(error, defaultMessage: defaultMessage);
+  // ── Conversion vers AppException ────────────────────
+
+  /// Convertit n'importe quelle erreur en [AppException] typée.
+  static AppException toAppException(dynamic error, {String? fallbackMessage}) {
+    if (error is AppException) return error;
+    if (error is DioException) return _dioToAppException(error, fallbackMessage: fallbackMessage);
+
+    final msg = error.toString().toLowerCase();
+    if (msg.contains('socketexception') ||
+        msg.contains('connection refused') ||
+        msg.contains('network is unreachable') ||
+        msg.contains('xmlhttprequest')) {
+      return const NetworkException();
     }
-    
-    final errorString = error.toString().toLowerCase();
-    
-    // Erreurs réseau
-    if (errorString.contains('socketexception') ||
-        errorString.contains('connection refused') ||
-        errorString.contains('network is unreachable') ||
-        errorString.contains('xmlhttprequest')) {
-      return 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+    if (msg.contains('timeout')) {
+      return const NetworkException(
+        message: 'Timeout',
+        userMessage: 'La connexion a pris trop de temps. Veuillez réessayer.',
+      );
     }
-    
-    // Timeout
-    if (errorString.contains('timeout')) {
-      return 'La connexion a pris trop de temps. Veuillez réessayer.';
-    }
-    
-    return defaultMessage ?? cleanMessage(error);
+
+    return ApiException(
+      message: error.toString(),
+      userMessage: fallbackMessage ?? cleanMessage(error),
+    );
   }
 
-  static String _handleDioError(DioException error, {String? defaultMessage}) {
-    // Essayer d'abord de récupérer le message du serveur
-    final serverMessage = _extractServerMessage(error);
-    
+  static AppException _dioToAppException(DioException error, {String? fallbackMessage}) {
     switch (error.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        return 'La connexion a pris trop de temps. Vérifiez votre connexion.';
-        
+        return const NetworkException(
+          message: 'Timeout',
+          userMessage: 'La connexion a pris trop de temps. Vérifiez votre connexion.',
+        );
       case DioExceptionType.connectionError:
-        return 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
-        
-      case DioExceptionType.badResponse:
-        return _handleStatusCode(error.response?.statusCode, serverMessage, defaultMessage);
-        
+        return const NetworkException();
       case DioExceptionType.cancel:
-        return 'Requête annulée.';
-        
+        return const ApiException(
+          message: 'Request cancelled',
+          userMessage: 'Requête annulée.',
+        );
       case DioExceptionType.badCertificate:
-        return 'Erreur de sécurité. Contactez le support.';
-        
+        return const ApiException(
+          message: 'Bad certificate',
+          userMessage: 'Erreur de sécurité. Contactez le support.',
+        );
+      case DioExceptionType.badResponse:
+        return _statusCodeToException(error, fallbackMessage);
       case DioExceptionType.unknown:
-        if (error.error.toString().contains('SocketException') ||
-            error.error.toString().contains('XMLHttpRequest')) {
-          return 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+        final errStr = error.error.toString();
+        if (errStr.contains('SocketException') || errStr.contains('XMLHttpRequest')) {
+          return const NetworkException();
         }
-        return defaultMessage ?? 'Une erreur est survenue. Veuillez réessayer.';
+        return ApiException(
+          message: errStr,
+          userMessage: fallbackMessage ?? 'Une erreur est survenue. Veuillez réessayer.',
+        );
     }
+  }
+
+  static AppException _statusCodeToException(DioException error, String? fallbackMessage) {
+    final statusCode = error.response?.statusCode;
+    final serverMessage = _extractServerMessage(error);
+    final errorCode = _extractErrorCode(error);
+
+    switch (statusCode) {
+      case 401:
+        return const SessionExpiredException();
+      case 403:
+        return ForbiddenException(
+          message: '403 Forbidden: $serverMessage',
+          userMessage: serverMessage ?? 'Accès refusé.',
+          code: errorCode,
+        );
+      case 404:
+        return NotFoundException(
+          message: '404 Not Found',
+          userMessage: serverMessage ?? 'Élément introuvable.',
+        );
+      case 409:
+        return ConflictException(
+          message: '409 Conflict',
+          userMessage: serverMessage ?? 'Cette action ne peut pas être effectuée actuellement.',
+        );
+      case 422:
+        return ValidationException(
+          message: '422 Validation Error',
+          userMessage: serverMessage ?? 'Données invalides. Vérifiez les informations saisies.',
+          fieldErrors: _extractFieldErrors(error),
+        );
+      case 429:
+        return const RateLimitException();
+      case 500:
+      case 502:
+      case 503:
+        return const ServerException();
+      default:
+        return ApiException(
+          statusCode: statusCode,
+          message: 'HTTP $statusCode',
+          userMessage: serverMessage ?? fallbackMessage ?? 'Une erreur est survenue. Veuillez réessayer.',
+        );
+    }
+  }
+
+  // ── Compatibilité existante ─────────────────────────
+
+  /// Convertit une erreur Dio en message user-friendly
+  static String getReadableMessage(dynamic error, {String? defaultMessage}) {
+    return toAppException(error, fallbackMessage: defaultMessage).userMessage;
   }
 
   static String? _extractServerMessage(DioException error) {
@@ -85,29 +148,30 @@ class ErrorHandler {
     return null;
   }
 
-  static String _handleStatusCode(int? statusCode, String? serverMessage, String? defaultMessage) {
-    switch (statusCode) {
-      case 400:
-        return serverMessage ?? 'Requête invalide. Vérifiez les informations saisies.';
-      case 401:
-        return 'Session expirée. Veuillez vous reconnecter.';
-      case 403:
-        return serverMessage ?? 'Accès refusé. Vous n\'avez pas les droits nécessaires.';
-      case 404:
-        return serverMessage ?? 'Élément introuvable.';
-      case 409:
-        return serverMessage ?? 'Cette action ne peut pas être effectuée actuellement.';
-      case 422:
-        return serverMessage ?? 'Données invalides. Vérifiez les informations saisies.';
-      case 429:
-        return 'Trop de requêtes. Veuillez patienter quelques instants.';
-      case 500:
-      case 502:
-      case 503:
-        return 'Le serveur rencontre des difficultés. Veuillez réessayer plus tard.';
-      default:
-        return serverMessage ?? defaultMessage ?? 'Une erreur est survenue. Veuillez réessayer.';
-    }
+  static String? _extractErrorCode(DioException error) {
+    try {
+      final data = error.response?.data;
+      if (data is Map) {
+        return data['error_code'] as String?;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  static Map<String, List<String>> _extractFieldErrors(DioException error) {
+    try {
+      final data = error.response?.data;
+      if (data is Map && data.containsKey('errors')) {
+        final errors = data['errors'] as Map;
+        return errors.map((key, value) {
+          final messages = value is List
+              ? value.map((e) => e.toString()).toList()
+              : [value.toString()];
+          return MapEntry(key.toString(), messages);
+        });
+      }
+    } catch (_) {}
+    return {};
   }
 
   /// Messages spécifiques pour les livraisons
@@ -115,7 +179,7 @@ class ErrorHandler {
     if (error is DioException) {
       final statusCode = error.response?.statusCode;
       final serverMessage = _extractServerMessage(error);
-      final errorCode = error.response?.data?['error_code'];
+      final errorCode = _extractErrorCode(error);
       
       if (statusCode == 403) {
         if (errorCode == 'COURIER_PROFILE_NOT_FOUND') {
@@ -140,7 +204,7 @@ class ErrorHandler {
   static String getProfileErrorMessage(dynamic error) {
     if (error is DioException) {
       final statusCode = error.response?.statusCode;
-      final errorCode = error.response?.data?['error_code'];
+      final errorCode = _extractErrorCode(error);
       
       if (statusCode == 403 && errorCode == 'COURIER_PROFILE_NOT_FOUND') {
         return 'Profil coursier non trouvé. Ce compte n\'est pas configuré comme livreur.';

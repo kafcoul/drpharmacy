@@ -1,0 +1,244 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:courier_flutter/presentation/screens/settings_screen.dart';
+import 'package:courier_flutter/core/theme/theme_provider.dart';
+
+void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({
+      'notifications_enabled': true,
+      'navigation_app': 'google_maps',
+      'language': 'fr',
+    });
+  });
+
+  Widget buildScreen() {
+    return const ProviderScope(
+      child: MaterialApp(
+        home: SettingsScreen(),
+      ),
+    );
+  }
+
+  group('SettingsScreen', () {
+    testWidgets('displays app bar with title', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Paramètres'), findsOneWidget);
+    });
+
+    testWidgets('displays Apparence section with theme', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Apparence'), findsOneWidget);
+      expect(find.text('Thème'), findsOneWidget);
+      expect(find.text('Clair'), findsOneWidget); // default theme label
+    });
+
+    testWidgets('displays Préférences section', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Préférences'), findsOneWidget);
+      expect(find.text('Notifications Push'), findsOneWidget);
+      expect(find.text('Application de Navigation'), findsOneWidget);
+    });
+
+    testWidgets('displays Compte section', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Compte'), findsOneWidget);
+      expect(find.text('Changer le mot de passe'), findsOneWidget);
+      expect(find.text('Langue de l\'application'), findsOneWidget);
+    });
+
+    testWidgets('displays Sécurité section with biometric card', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sécurité'), findsOneWidget);
+      expect(find.text('Connexion biométrique'), findsOneWidget);
+    });
+
+    testWidgets('displays Aide & Support section', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      // Scroll to bottom
+      final listView = find.byType(Scrollable).first;
+      await tester.scrollUntilVisible(find.text('Aide & Support'), 200, scrollable: listView);
+
+      expect(find.text('Aide & Support'), findsOneWidget);
+      expect(find.text('Mes demandes de support'), findsOneWidget);
+    });
+
+    testWidgets('displays Informations section', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      final listView = find.byType(Scrollable).first;
+      await tester.scrollUntilVisible(find.text('Politique de confidentialité'), 200, scrollable: listView);
+
+      expect(find.text('Informations'), findsOneWidget);
+      expect(find.text('Politique de confidentialité'), findsOneWidget);
+      expect(find.text('Conditions d\'utilisation'), findsOneWidget);
+    });
+
+    testWidgets('displays version number', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      final listView = find.byType(Scrollable).first;
+      await tester.scrollUntilVisible(find.text('Version 1.0.0+1'), 200, scrollable: listView);
+
+      expect(find.text('Version 1.0.0+1'), findsOneWidget);
+    });
+
+    testWidgets('notification switch toggles', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      // Find the notifications switch
+      final switches = find.byType(Switch);
+      expect(switches, findsWidgets);
+
+      // First Switch should be notifications (notifications enabled by default)
+      // Tap to toggle off
+      await tester.tap(switches.first);
+      await tester.pumpAndSettle();
+
+      // Verify persisted
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('notifications_enabled'), isFalse);
+    });
+
+    testWidgets('language selector shows current language', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Français'), findsOneWidget);
+    });
+
+    testWidgets('tapping language opens bottom sheet', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Langue de l\'application'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Choisir la langue'), findsOneWidget);
+      expect(find.text('English'), findsOneWidget);
+    });
+
+    testWidgets('tapping theme opens theme selector', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Thème'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Choisir le thème'), findsOneWidget);
+      expect(find.text('Système'), findsOneWidget);
+      expect(find.text('Sombre'), findsOneWidget);
+    });
+
+    testWidgets('navigation app selector shows Google Maps', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Google Maps'), findsOneWidget);
+    });
+
+    testWidgets('tapping navigation app opens bottom sheet', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Application de Navigation'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Choisir l\'application GPS'), findsOneWidget);
+      expect(find.text('Waze'), findsOneWidget);
+      expect(find.text('Apple Maps'), findsOneWidget);
+    });
+
+    testWidgets('selecting Waze persists choice', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Application de Navigation'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Waze'));
+      await tester.pumpAndSettle();
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('navigation_app'), 'waze');
+    });
+
+    testWidgets('displays Optimisation section', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      final listView = find.byType(Scrollable).first;
+      await tester.scrollUntilVisible(find.text('Optimisation'), 200, scrollable: listView);
+
+      expect(find.text('Optimisation'), findsOneWidget);
+      expect(find.text('Localisation en arrière-plan'), findsOneWidget);
+    });
+
+    testWidgets('displays Centre d\'aide FAQ action', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      final listView = find.byType(Scrollable).first;
+      await tester.scrollUntilVisible(find.text('Centre d\'aide (FAQ)'), 200, scrollable: listView);
+
+      expect(find.text('Centre d\'aide (FAQ)'), findsOneWidget);
+    });
+
+    testWidgets('displays Signaler un problème action', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      final listView = find.byType(Scrollable).first;
+      await tester.scrollUntilVisible(find.text('Signaler un problème'), 200, scrollable: listView);
+
+      expect(find.text('Signaler un problème'), findsOneWidget);
+    });
+
+    testWidgets('biometric card shows unavailable on test device', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      // On test device, biometrics are not available
+      expect(find.text('Connexion biométrique'), findsOneWidget);
+      expect(find.text('Non disponible sur cet appareil'), findsOneWidget);
+    });
+
+    testWidgets('selecting language English persists', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Langue de l\'application'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('English'));
+      await tester.pumpAndSettle();
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('language'), 'en');
+    });
+
+    testWidgets('back button is present', (tester) async {
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(BackButton), findsOneWidget);
+    });
+  });
+}

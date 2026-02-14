@@ -50,6 +50,6 @@ class RouteService {
   // Legacy support if needed, or deprecate
   Future<List<LatLng>> getRoute(LatLng origin, LatLng destination) async {
     final info = await getRouteInfo(origin, destination);
-    return info?.points as List<LatLng>? ?? [];
+    return info?.points ?? [];
   }
 }

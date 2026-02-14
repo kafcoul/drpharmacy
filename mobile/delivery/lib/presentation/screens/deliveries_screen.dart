@@ -4,6 +4,7 @@ import '../../core/theme/theme_provider.dart';
 import 'delivery_details_screen.dart';
 import 'batch_deliveries_screen.dart';
 import '../providers/delivery_providers.dart';
+import '../widgets/common/common_widgets.dart';
 import 'package:intl/intl.dart';
 
 class DeliveriesScreen extends ConsumerStatefulWidget {
@@ -167,15 +168,9 @@ class DeliveryList extends ConsumerWidget {
         }).toList();
 
         if (deliveries.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey.shade300),
-                const SizedBox(height: 16),
-                Text('Aucune course trouvée', style: TextStyle(color: Colors.grey.shade500)),
-              ],
-            ),
+          return const AppEmptyWidget(
+            icon: Icons.inventory_2_outlined,
+            message: 'Aucune course trouvée',
           );
         }
 
@@ -271,8 +266,8 @@ class DeliveryList extends ConsumerWidget {
           },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, st) => Center(child: Text('Erreur: $e')),
+      loading: () => const AppLoadingWidget(),
+      error: (e, st) => AppErrorWidget(message: e.toString()),
     );
   }
 

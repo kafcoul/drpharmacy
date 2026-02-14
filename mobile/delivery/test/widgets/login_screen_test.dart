@@ -134,5 +134,99 @@ void main() {
       
       expect(find.text('Version 1.0.0'), findsOneWidget);
     });
+
+    testWidgets('displays shipping icon in header', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: LoginScreen(),
+          ),
+        ),
+      );
+      
+      await tester.pumpAndSettle();
+      
+      expect(find.byIcon(Icons.local_shipping_rounded), findsOneWidget);
+    });
+
+    testWidgets('displays form field labels', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: LoginScreen(),
+          ),
+        ),
+      );
+      
+      await tester.pumpAndSettle();
+      
+      expect(find.text('Email ou Téléphone'), findsOneWidget);
+      expect(find.text('Mot de passe'), findsOneWidget);
+    });
+
+    testWidgets('displays form field prefix icons', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: LoginScreen(),
+          ),
+        ),
+      );
+      
+      await tester.pumpAndSettle();
+      
+      expect(find.byIcon(Icons.person_outline), findsOneWidget);
+      expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+    });
+
+    testWidgets('can enter text in both fields', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: LoginScreen(),
+          ),
+        ),
+      );
+      
+      await tester.pumpAndSettle();
+      
+      await tester.enterText(find.byType(TextFormField).first, 'user@test.com');
+      expect(find.text('user@test.com'), findsOneWidget);
+      
+      await tester.enterText(find.byType(TextFormField).last, 'password123');
+      expect(find.text('password123'), findsOneWidget);
+    });
+
+    testWidgets('displays hint text for email field', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: LoginScreen(),
+          ),
+        ),
+      );
+      
+      await tester.pumpAndSettle();
+      
+      expect(find.text('ex: +225 0102030405'), findsOneWidget);
+    });
+
+    testWidgets('both validation errors show when both fields empty', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: LoginScreen(),
+          ),
+        ),
+      );
+      
+      await tester.pumpAndSettle();
+      
+      await tester.tap(find.text('SE CONNECTER'));
+      await tester.pumpAndSettle();
+      
+      expect(find.text('Veuillez entrer votre identifiant'), findsOneWidget);
+      expect(find.text('Veuillez entrer votre mot de passe'), findsOneWidget);
+    });
   });
 }

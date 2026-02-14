@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
+import '../../core/services/cache_service.dart';
 import '../../core/utils/error_handler.dart';
 import '../models/user.dart';
 
@@ -222,6 +223,13 @@ class AuthRepository {
   }
 
   Future<User> getProfile() async {
+    // Tenter de lire le cache d'abord
+    final cache = CacheService.instance;
+    final cached = await cache.getCachedProfile();
+    if (cached != null) {
+      return User.fromJson(cached);
+    }
+
     try {
       final response = await _dio.get(ApiConstants.me);
       final responseData = response.data;
@@ -247,9 +255,17 @@ class AuthRepository {
           throw Exception('REJECTED:Votre demande d\'inscription a été refusée.');
         }
       }
+
+      // Sauvegarder dans le cache
+      await cache.cacheProfile(data as Map<String, dynamic>);
       
       return User.fromJson(data);
     } catch (e) {
+      // Re-throw courier status exceptions without wrapping
+      final msg = e.toString();
+      if (msg.contains('PENDING_APPROVAL') || msg.contains('SUSPENDED') || msg.contains('REJECTED')) {
+        rethrow;
+      }
       throw Exception(ErrorHandler.getProfileErrorMessage(e));
     }
   }
@@ -269,13 +285,16 @@ class AuthRepository {
       }
       
       final response = await _dio.post(
-        '${ApiConstants.baseUrl}/auth/me/update',
+        ApiConstants.updateMe,
         data: data,
       );
       
       // Handle wrapped response structure
       final responseData = response.data;
       final userData = responseData['data'] ?? responseData;
+      
+      // Invalider le cache profil après mise à jour
+      await CacheService.instance.invalidateProfile();
       
       return User.fromJson(userData);
     } on DioException catch (e) {
@@ -306,6 +325,8 @@ class AuthRepository {
     } finally {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('auth_token');
+      // Vider tout le cache applicatif
+      await CacheService.instance.clearAll();
       // Ne pas effacer les credentials biométriques pour permettre reconnexion rapide
       // Pour les effacer complètement: await clearStoredCredentials();
     }

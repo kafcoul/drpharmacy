@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/theme_provider.dart';
 import '../../data/repositories/challenge_repository.dart';
+import '../widgets/common/common_widgets.dart';
 
 class ChallengesScreen extends ConsumerWidget {
   const ChallengesScreen({super.key});
@@ -16,60 +17,10 @@ class ChallengesScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FD),
-      body: challengesAsync.when(
+      body: AsyncValueWidget<Map<String, dynamic>>(
+        value: challengesAsync,
         data: (data) => _ChallengesContent(data: data, ref: ref),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) {
-          // Extraire le message d'erreur lisible
-          String errorMessage = err.toString();
-          if (errorMessage.startsWith('Exception: ')) {
-            errorMessage = errorMessage.replaceFirst('Exception: ', '');
-          }
-          
-          // Déterminer l'icône selon le type d'erreur
-          final bool isProfileError = errorMessage.contains('coursier non trouvé') || 
-                                      errorMessage.contains('compte livreur');
-          
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    isProfileError ? Icons.person_off : Icons.error_outline, 
-                    size: 64, 
-                    color: isProfileError ? Colors.orange : Colors.red,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    isProfileError ? 'Compte non autorisé' : 'Erreur',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    errorMessage,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton.icon(
-                    onPressed: () => ref.invalidate(challengesProvider),
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Réessayer'),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
+        onRetry: () => ref.invalidate(challengesProvider),
       ),
     );
   }

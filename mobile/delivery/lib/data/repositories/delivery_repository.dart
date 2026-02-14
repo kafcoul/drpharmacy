@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
+import '../../core/services/cache_service.dart';
 import '../../core/utils/error_handler.dart';
 import '../models/courier_profile.dart';
 import '../models/delivery.dart';
@@ -64,6 +65,9 @@ class DeliveryRepository {
         ApiConstants.completeDelivery(id),
         data: {'confirmation_code': code},
       );
+      // Invalider wallet et stats après livraison complétée
+      await CacheService.instance.invalidateWallet();
+      await CacheService.instance.invalidateStatistics();
     } catch (e) {
       throw Exception(ErrorHandler.getDeliveryErrorMessage(e));
     }
@@ -110,9 +114,21 @@ class DeliveryRepository {
   }
 
   Future<CourierProfile> getProfile() async {
+    // Tenter de lire le cache d'abord
+    final cache = CacheService.instance;
+    final cached = await cache.getCachedCourierProfile();
+    if (cached != null) {
+      return CourierProfile.fromJson(cached);
+    }
+
     try {
       final response = await _dio.get(ApiConstants.profile);
-      return CourierProfile.fromJson(response.data['data']);
+      final data = response.data['data'] as Map<String, dynamic>;
+
+      // Sauvegarder dans le cache
+      await cache.cacheCourierProfile(data);
+
+      return CourierProfile.fromJson(data);
     } catch (e) {
       if (e is DioException) {
         final statusCode = e.response?.statusCode;
@@ -192,7 +208,7 @@ class DeliveryRepository {
   }) async {
     try {
       await _dio.post(
-        '/courier/deliveries/$deliveryId/rate-customer',
+        ApiConstants.rateCustomer(deliveryId),
         data: {
           'rating': rating,
           if (comment != null && comment.isNotEmpty) 'comment': comment,
@@ -206,7 +222,7 @@ class DeliveryRepository {
 
   Future<void> rejectDelivery(int id) async {
     try {
-      await _dio.post('/courier/deliveries/$id/reject');
+      await _dio.post(ApiConstants.rejectDelivery(id));
     } catch (e) {
       throw Exception(ErrorHandler.getDeliveryErrorMessage(e));
     }

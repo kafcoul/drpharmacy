@@ -5,6 +5,7 @@ import '../../core/theme/theme_provider.dart';
 import '../../data/models/wallet_data.dart';
 import '../../data/repositories/wallet_repository.dart';
 import '../../data/repositories/jeko_payment_repository.dart';
+import '../widgets/common/common_widgets.dart';
 import 'payment_status_screen.dart';
 import 'earnings_history_screen.dart';
 
@@ -301,24 +302,10 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
             ),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
-                const SizedBox(height: 16),
-                Text('Erreur: $err', textAlign: TextAlign.center),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => ref.invalidate(walletDataProvider),
-                  child: const Text('Réessayer'),
-                ),
-              ],
-            ),
-          ),
+        loading: () => const AppLoadingWidget(),
+        error: (err, stack) => AppErrorWidget(
+          message: err.toString(),
+          onRetry: () => ref.invalidate(walletDataProvider),
         ),
       ),
     );

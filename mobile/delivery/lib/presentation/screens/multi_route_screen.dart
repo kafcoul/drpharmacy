@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../data/repositories/delivery_repository.dart';
+import '../widgets/common/common_widgets.dart';
 
 class MultiRouteScreen extends ConsumerStatefulWidget {
   const MultiRouteScreen({super.key});
@@ -133,22 +134,11 @@ class _MultiRouteScreenState extends ConsumerState<MultiRouteScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const AppLoadingWidget()
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                      const SizedBox(height: 16),
-                      Text('Erreur: $_error'),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadRoute,
-                        child: const Text('Réessayer'),
-                      ),
-                    ],
-                  ),
+              ? AppErrorWidget(
+                  message: _error!,
+                  onRetry: _loadRoute,
                 )
               : _buildContent(currencyFormat),
     );
@@ -162,27 +152,10 @@ class _MultiRouteScreenState extends ConsumerState<MultiRouteScreen> {
     final deliveryCount = _routeData?['delivery_count'] ?? 0;
 
     if (stops.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.route_outlined, size: 64, color: Colors.grey.shade300),
-            const SizedBox(height: 16),
-            Text(
-              'Aucune course active',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey.shade600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Acceptez des courses pour voir votre itinéraire',
-              style: TextStyle(color: Colors.grey.shade500),
-            ),
-          ],
-        ),
+      return const AppEmptyWidget(
+        icon: Icons.route_outlined,
+        message: 'Aucune course active',
+        subtitle: 'Acceptez des courses pour voir votre itinéraire',
       );
     }
 

@@ -341,7 +341,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       );
                       if (authenticated) {
                         await ref.read(biometricSettingsProvider.notifier).enableBiometricLogin();
-                        if (mounted) {
+                        if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text('$biometricLabel activé avec succès'),
@@ -352,7 +352,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       }
                     } else {
                       await ref.read(biometricSettingsProvider.notifier).disableBiometricLogin();
-                      if (mounted) {
+                      if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Connexion biométrique désactivée'),
@@ -406,7 +406,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               onChanged: (value) async {
                 if (value) {
                   await BackgroundLocationService.startBackgroundUpdates();
-                  if (mounted) {
+                  if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Localisation en arrière-plan activée'),
@@ -416,7 +416,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   }
                 } else {
                   await BackgroundLocationService.stopBackgroundUpdates();
-                  if (mounted) {
+                  if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Localisation en arrière-plan désactivée'),

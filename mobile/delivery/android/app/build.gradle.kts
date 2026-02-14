@@ -18,6 +18,13 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
+// Charger local.properties pour la clé Google Maps
+val localPropertiesFile = rootProject.file("local.properties")
+val localProperties = Properties()
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+}
+
 android {
     namespace = "com.drpharma.courier_flutter"
     compileSdk = flutter.compileSdkVersion
@@ -42,6 +49,9 @@ android {
         
         // Configuration pour WorkManager
         multiDexEnabled = true
+        
+        // Google Maps API Key depuis local.properties
+        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = localProperties.getProperty("GOOGLE_MAPS_API_KEY", "")
     }
 
     signingConfigs {

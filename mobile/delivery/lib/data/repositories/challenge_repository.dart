@@ -38,7 +38,7 @@ class ChallengeRepository {
   /// Réclamer la récompense d'un défi complété
   Future<Map<String, dynamic>> claimReward(int challengeId) async {
     try {
-      final response = await _dio.post('${ApiConstants.challenges}/$challengeId/claim');
+      final response = await _dio.post(ApiConstants.claimChallenge(challengeId));
       return response.data['data'];
     } catch (e) {
       if (e is DioException) {
@@ -62,7 +62,7 @@ class ChallengeRepository {
   Future<Map<String, dynamic>> calculateBonus(double baseEarnings) async {
     try {
       final response = await _dio.post(
-        '${ApiConstants.bonuses}/calculate',
+        ApiConstants.calculateBonus,
         data: {'base_earnings': baseEarnings},
       );
       return response.data['data'];

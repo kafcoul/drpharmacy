@@ -14,7 +14,7 @@ final deliveriesProvider = FutureProvider.family<List<Delivery>, String>((
   return ref.read(deliveryRepositoryProvider).getDeliveries(status: status);
 });
 
-final profileProvider = FutureProvider<CourierProfile>((ref) async {
+final courierProfileProvider = FutureProvider<CourierProfile>((ref) async {
   return ref.read(deliveryRepositoryProvider).getProfile();
 });
 

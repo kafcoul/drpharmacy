@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
+import '../../core/services/cache_service.dart';
 import '../models/statistics.dart';
 
 final statisticsRepositoryProvider = Provider<StatisticsRepository>((ref) {
@@ -14,13 +15,25 @@ class StatisticsRepository {
   StatisticsRepository(this._dio);
 
   Future<Statistics> getStatistics({String period = 'week'}) async {
+    // Tenter de lire le cache d'abord
+    final cache = CacheService.instance;
+    final cached = await cache.getCachedStatistics(period);
+    if (cached != null) {
+      return Statistics.fromJson(cached);
+    }
+
     try {
       final response = await _dio.get(
         ApiConstants.statistics,
         queryParameters: {'period': period},
       );
 
-      return Statistics.fromJson(response.data['data']);
+      final data = response.data['data'] as Map<String, dynamic>;
+
+      // Sauvegarder dans le cache
+      await cache.cacheStatistics(period, data);
+
+      return Statistics.fromJson(data);
     } catch (e) {
       if (e is DioException) {
         final statusCode = e.response?.statusCode;

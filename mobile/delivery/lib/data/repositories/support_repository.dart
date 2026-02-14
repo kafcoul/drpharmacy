@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
 import '../models/support_ticket.dart';
 
@@ -16,7 +17,7 @@ class SupportRepository {
   Future<List<SupportTicket>> getTickets({int page = 1}) async {
     try {
       final response = await _dio.get(
-        '/support/tickets',
+        ApiConstants.supportTickets,
         queryParameters: {'page': page},
       );
 
@@ -42,7 +43,7 @@ class SupportRepository {
   }) async {
     try {
       final response = await _dio.post(
-        '/support/tickets',
+        ApiConstants.supportTickets,
         data: {
           'subject': subject,
           'description': description,
@@ -64,7 +65,7 @@ class SupportRepository {
   /// Récupérer les détails d'un ticket avec ses messages
   Future<SupportTicket> getTicketDetails(int ticketId) async {
     try {
-      final response = await _dio.get('/support/tickets/$ticketId');
+      final response = await _dio.get(ApiConstants.supportTicketDetail(ticketId));
 
       final data = response.data;
       if (data['success'] == true && data['data'] != null) {
@@ -89,7 +90,7 @@ class SupportRepository {
       }
 
       final response = await _dio.post(
-        '/support/tickets/$ticketId/messages',
+        ApiConstants.supportTicketMessages(ticketId),
         data: formData ?? {'message': message},
       );
 
@@ -106,7 +107,7 @@ class SupportRepository {
   /// Marquer un ticket comme résolu
   Future<SupportTicket> resolveTicket(int ticketId) async {
     try {
-      final response = await _dio.post('/support/tickets/$ticketId/resolve');
+      final response = await _dio.post(ApiConstants.supportTicketResolve(ticketId));
 
       final data = response.data;
       if (data['success'] == true && data['data'] != null) {
@@ -121,7 +122,7 @@ class SupportRepository {
   /// Fermer un ticket
   Future<SupportTicket> closeTicket(int ticketId) async {
     try {
-      final response = await _dio.post('/support/tickets/$ticketId/close');
+      final response = await _dio.post(ApiConstants.supportTicketClose(ticketId));
 
       final data = response.data;
       if (data['success'] == true && data['data'] != null) {
@@ -136,7 +137,7 @@ class SupportRepository {
   /// Récupérer les statistiques de support
   Future<SupportStats> getStats() async {
     try {
-      final response = await _dio.get('/support/tickets/stats');
+      final response = await _dio.get(ApiConstants.supportTicketsStats);
 
       final data = response.data;
       if (data['success'] == true && data['data'] != null) {
